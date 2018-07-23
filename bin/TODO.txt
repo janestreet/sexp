@@ -1,0 +1,31 @@
+
+add more tests for to-csv
+
+new query commands
+    (split ,)       "one,two,three" => { ("one" "two" "three") }
+    (merge ,)       ("one" "two" "three") => "one,two,three"
+    (match PAT)     (match ".*\.PK") matches
+
+variations on existing query command
+    (smash NUM)     never remove any more than N parens
+    (equal A B C)   (or (equal A) (equal B) (equal C))
+    (index -2)      (a b c d) => c
+
+add commands
+    sexp set        bundled-in sexpset.exe as requested by ralph
+    sexp print      basically just 'sexp query this' (same back-end)
+    sexp of-csv     reverse of to-csv
+
+add additional options for (of/to)-csv commands
+
+    support for "2D array" sexps ((a b c) (1 2 3))
+    optional header record in the CSV
+
+rethink command names
+    s/test/grep/ (?)
+    ... I think I like this better the longer I think about it
+
+work out the algebra of commands (what laws hold)
+
+some recursion combinator?
+    one that doesn't introduce non-termination?

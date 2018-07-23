@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e -u -o pipefail
+shopt -s nullglob
+
+ROOT="$(jenga root)"
+export TEST_DIR=$(cd "$(dirname "$BASH_SOURCE")"/.. && pwd)
+export TEST_BIN=$(mktemp -d --tmpdir); trap 'rm -rf "$TEST_BIN"' EXIT
+export TEST_ETC=$TEST_DIR/etc
+export TEST_TMP=$TEST_DIR/tmp
+export PATH=$TEST_BIN:/bin:/usr/bin
+export HGRCPATH= # or a custom file if you want one in your tests
+
+cd $TEST_DIR
+
+function tab_complete {
+  COMP_CWORD=$((${#@} - 1)) "$@"
+}
+
+export -f tab_complete
+
+# Save the exe we need so jenga can't change it from under running tests.
+cp "$TEST_DIR"/../bin/main.exe "$TEST_BIN"/sexp
+
+"$ROOT"/external/unified-tests/run-tests.sh "$@"
+
+# Make sure jenga didn't delete our binary because if it has, we can wrongly
+# pick up /usr/bin/sexp
+[ -f "$TEST_BIN"/sexp ]

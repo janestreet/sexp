@@ -1,0 +1,12 @@
+(alias
+ ((name runtest)
+  (deps (
+         (alias ../../../external/unified-tests/runtime-deps-of:run-tests.sh)
+         (glob_files *.t)
+         bin/run-tests ;; generated files in bin/ prevent from using (files_recursively_in bin)
+         ../bin/main.exe
+         ))
+  (action (bash "bin/run-tests"))))
+
+
+(jbuild_version 1)

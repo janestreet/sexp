@@ -1,0 +1,67 @@
+-------------------------------------------------------------------------------
+released ____________ from trunk on 2009-12-10
+
+* new change language and subcommand for transforming s-expressions using
+  rewrite rules
+* bug fix: overhauled implementation is obviously tail-recursive 
+  (no more segfaults!)
+* bug fix: equals query now works with non-atomic argument
+* new flags for sexp query
+    * -allow-empty-output
+    * -quine flag
+    * new output modes -count and -quiet
+* sexp query handles multiple filenames on the command line the way grep does
+    * query results optionally labelled with the file they came from
+* added (test E1 E2 ...) as syntactic sugar for (test (pipe E1 E2 ...))
+* pipe is now assumed as a default top-level connective
+* split out a sexpquery library for OCaml programs (thanks to Michael O'Connor)
+* various improvements to Command module, in anticipation of wider use
+
+-------------------------------------------------------------------------------
+released 051af2d59b95 from trunk on 2009-03-20
+
+* added a subcommand facility with auto-help
+* added a revision subcommand
+* added a to-csv subcommand
+* fixed a non-tail-recursion in sexp_ext.ml
+* moved to using internally lazy S-expressions
+* moved to long flag names
+* new flags for sexpquery
+    -quiet  Silent mode (use when running only for exit status)
+    -group  Tread incoming sequence of sexps as a single list sexp
+
+-------------------------------------------------------------------------------
+released ??? from trunk on 2009-02-19 (again)
+
+* added "branch" and "lowercase" commands
+* reimplemented "or" in terms of "branch" for expected output behavior
+
+-------------------------------------------------------------------------------
+released 3b224e82263d from trunk on 2009-02-19
+
+* redefined "and" and "if" with more straightforward semantics
+* fixed a bug in the implementation of "and"
+* cut empty EXAMPLES section from README
+
+-------------------------------------------------------------------------------
+released 77a502743af1 from trunk on 2009-02-19
+
+* removed complicating distinction between printed and selected
+    sub-expressions so that the 'print' command is no longer necessary.
+* lazy input of multiple s-expressions from standard input
+* template-based printing via scheme-inspired quasi-quotation
+* command line options
+    -d       dump README
+    -g       display grammar for sexpquery programs
+    -f FILE  load programs from a file
+    -s FILE  run standalone scripts (using #! convention)
+    -m       machine output mode: one sexp per line
+* exit with status 1 on failed search, just like grep
+* various bugs fixed
+    - wrap now works
+    - multiple sexps on stdin are no longer handled in reverse order
+
+-------------------------------------------------------------------------------
+
+* initial release on 2009-02-03
+
