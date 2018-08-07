@@ -10,14 +10,5 @@
   (flags (:standard -g))
   (preprocess (pps (ppx_jane ppxlib.runner)))))
 
-(rule
- ((targets (readme.ml readme.mli))
-  (deps (${ROOT}/app/embed-file/bin/embed_file.exe
-         ${ROOT}/app/sexp/doc/query_by_example.md
-         ${ROOT}/app/sexp/doc/query_semantics.md
-         ${ROOT}/app/sexp/doc/change_by_example.md
-         ${ROOT}/app/sexp/doc/change_semantics.md))
-  (action (bash "${bin:ocaml-embed-file} ${^} -output readme"))))
-
 
 (jbuild_version 1)
