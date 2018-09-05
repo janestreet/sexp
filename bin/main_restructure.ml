@@ -28,7 +28,9 @@ let command =
     ~readme
     (let open Command.Let_syntax in
      let%map_open argv =
-       anon (maybe (t2 ("INFILE" %: file) (maybe ("OUTFILE" %: file))))
+       anon
+         (maybe
+            (t2 ("INFILE" %: Filename.arg_type) (maybe ("OUTFILE" %: Filename.arg_type))))
      in
      fun () ->
        let cin, cout = In_channel.stdin, Out_channel.stdout in

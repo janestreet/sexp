@@ -37,11 +37,12 @@ let command =
          ~doc:" raise exception on bad input (override default behavior)"
      and source, files =
        let%map_open x =
-         anon (maybe (t2 ("QUERY" %: change_arg) (sequence ("FILE" %: file))))
+         anon
+           (maybe (t2 ("QUERY" %: change_arg) (sequence ("FILE" %: Filename.arg_type))))
        and file =
          flag
            "file"
-           (optional file)
+           (optional Filename.arg_type)
            ~doc:"FILE Read program from file instead of command line"
        in
        match x, file with

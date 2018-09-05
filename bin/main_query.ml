@@ -41,14 +41,15 @@ let command =
        let%map_open file =
          flag
            "file"
-           (optional file)
+           (optional Filename.arg_type)
            ~doc:"FILE Read program from file instead of command line"
        and script =
          flag
            "script"
-           (optional file)
+           (optional Filename.arg_type)
            ~doc:"FILE Read program from file instead of command line (skip #!)"
-       and query = anon (maybe (t2 ("QUERY" %: query_arg) (sequence ("FILE" %: file))))
+       and query =
+         anon (maybe (t2 ("QUERY" %: query_arg) (sequence ("FILE" %: Filename.arg_type))))
        and stdin_label =
          flag
            "stdin-label"

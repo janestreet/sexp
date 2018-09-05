@@ -19,7 +19,7 @@ let command =
     ~readme
     (let open Command.Let_syntax in
      let%map_open infile, maybe_cout =
-       anon (t2 ("INFILE" %: file) (maybe ("OUTFILE" %: file)))
+       anon (t2 ("INFILE" %: Filename.arg_type) (maybe ("OUTFILE" %: Filename.arg_type)))
      in
      fun () ->
        let cout = stdout in
