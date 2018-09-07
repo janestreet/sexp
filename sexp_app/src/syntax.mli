@@ -10,9 +10,7 @@ module Template : sig
     | List of 'a t list
 
   val t_of_sexp : (Sexp.t -> 'a) -> Sexp.t -> 'a t
-
   val map : 'a t -> f:('a -> 'b) -> 'b t
-
   val literal : Sexp.t -> 'a t
 end
 
@@ -43,12 +41,10 @@ module type Pattern_general = sig
   type t = Var.t Template.t [@@deriving sexp]
 
   val pmatch : t -> Sexp.t -> fail:(unit -> 'a) -> succ:(Sexp.t Var.Table.t -> 'a) -> 'a
-
   val instantiate : t -> Sexp.t Var.Table.t -> (Sexp.t -> 'b) -> 'b
 end
 
 module Pattern : Pattern_general
-
 module Pattern_record : Pattern_general
 
 type 'a anti_quote =
@@ -106,30 +102,19 @@ and change =
   | Query of query
 
 val pipe : query list -> query
-
 val cat : query list -> query
-
 val or_ : query list -> query
-
 val and_ : query list -> query
-
 val quote : query Quotation.t -> query
-
 val equals : Sexp.t -> query
-
 val try_ : change -> change
-
 val alt : change list -> change
-
 val seq : change list -> change
-
 val const : Sexp.t -> change
 
 (* recursive syntactic sugar *)
-
 module Unroll : sig
   val topdown : change -> change
-
   val bottomup : change -> change
 end
 

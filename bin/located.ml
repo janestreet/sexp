@@ -22,7 +22,6 @@ let iter t ~f =
 ;;
 
 let stdin label_opt = Stdin (label_opt, ())
-
 let files fs = Files (X.map (of_list fs) ~f:(fun f -> f, ()))
 
 let channels = function

@@ -22,7 +22,7 @@ let read lexbuf =
          Some (record, len_opt)))
 ;;
 
-let write ?(sep=',') out t =
+let write ?(sep = ',') out t =
   let length = ref None in
   Lazy_list.iter t ~f:(fun record ->
     let found = List.length record in

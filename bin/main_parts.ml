@@ -2,7 +2,10 @@ open Core
 open Sexp_app
 
 let rec flatten () =
-  match try Some (Sexp.input_sexp In_channel.stdin) with End_of_file -> None with
+  match
+    try Some (Sexp.input_sexp In_channel.stdin) with
+    | End_of_file -> None
+  with
   | None -> ()
   | Some sexp ->
     Parts.output (Parts.flatten sexp) stdout;

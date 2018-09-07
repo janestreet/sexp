@@ -12,7 +12,6 @@ let prgm =
 ;;
 
 let prgm_sexp = Sexp.of_string prgm
-
 let prgm = Syntax.Query.t_of_sexp prgm_sexp
 
 let show chan =

@@ -57,6 +57,9 @@ let command =
          let sparser = Sexp.With_layout.Parser.sexp Sexp.With_layout.Lexer.main in
          let lexbuf = Lexing.from_channel Caml.Pervasives.stdin in
          let fmt = Format.formatter_of_out_channel stdout in
-         let next () = try Some (sparser lexbuf) with _ -> None in
+         let next () =
+           try Some (sparser lexbuf) with
+           | _ -> None
+         in
          Sexp_pretty.Sexp_with_layout.pp_formatter' ~next config fmt))
 ;;

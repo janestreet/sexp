@@ -64,7 +64,6 @@ let ccmds =
 ;;
 
 let cprgm x = S.Change.t_of_sexp (Sexp.of_string x)
-
 let qprgm x = S.Query.t_of_sexp (Sexp.of_string x)
 
 module P = S.Template

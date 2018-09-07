@@ -66,9 +66,7 @@ module Quotation = struct
   (* recursive record needed here to account for polymorphic recursion *)
   module rec X : sig
     val sexp_of_t : ('a -> Sexp.t) -> 'a t -> Sexp.t
-
     val t_of_sexp : (Sexp.t -> 'a) -> Sexp.t -> 'a t
-
     val flatten' : ('a -> 'b Template.t) -> 'a t -> 'b Template.t
   end = struct
     let rec sexp_of_t sexp_of_a = function
@@ -117,7 +115,6 @@ module Var = struct
     type t = string [@@deriving compare, bin_io, hash]
 
     let prefixes = [ '$'; '@' ]
-
     let invariant t = String.length t > 0 && List.mem prefixes t.[0] ~equal:Char.equal
 
     let of_string x =
@@ -220,6 +217,7 @@ module Pattern_general = struct
       (match Hashtbl.find env v with
        | Some s -> k s
        | None -> assert false)
+
   (* error in [Syntax.check_rewrite_scope] *)
   and instantiate_all ts env k =
     match ts with
@@ -247,7 +245,6 @@ module type Pattern_general = sig
   type t = Var.t Template.t [@@deriving sexp]
 
   val pmatch : t -> Sexp.t -> fail:(unit -> 'a) -> succ:(Sexp.t Var.Table.t -> 'a) -> 'a
-
   val instantiate : t -> Sexp.t Var.Table.t -> (Sexp.t -> 'b) -> 'b
 end
 
@@ -298,7 +295,8 @@ module Pattern = struct
           | _ -> fail ()
         in
         gather_all (ts, xs) ~rev:false ~fail ~succ
-      | Template.List _, Atom _ | Template.Atom _, List _ -> fail ()
+      | Template.List _, Atom _
+      | Template.Atom _, List _ -> fail ()
     in
     gather (t, s) ~fail ~succ:(fun () -> succ env)
   ;;
@@ -452,14 +450,11 @@ let alt = function
 ;;
 
 let quote q = Quote (flatten q)
-
 let try_ c = Alt (c, Id)
-
 let equals s = Equals (Sexps.of_list [ s ])
 
 module Unroll = struct
   let topdown c = Seq (c, Children (Topdown c))
-
   let bottomup c = Seq (Children (Bottomup c), c)
 end
 
@@ -492,7 +487,6 @@ let lowercase_deprecated =
 
 (* custom sexp conversion *)
 let old_query_of_sexp = query_of_sexp
-
 let old_change_of_sexp = change_of_sexp
 
 let rec query_of_sexp = function
@@ -519,6 +513,7 @@ let rec query_of_sexp = function
     lowercase_deprecated ();
     Change Lowercase
   | other -> old_query_of_sexp other
+
 and change_of_sexp = function
   | List [ Atom "children"; x ] -> Children (change_of_sexp x)
   | List [ Atom "try"; x ] -> try_ (change_of_sexp x)

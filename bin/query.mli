@@ -23,7 +23,6 @@ type t =
   }
 
 val load : ('a -> Sexp.t list) -> 'a -> Syntax.query
-
 val main : t -> unit
 
 (* For parsing File/Script sources as changes *)

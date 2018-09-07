@@ -19,8 +19,12 @@ let load' f x ~is_change =
     then fun sexp -> Syntax.Change (Syntax.Change.t_of_sexp sexp)
     else Syntax.Query.t_of_sexp
   in
-  let sexps = try f x with e -> syntax_error "bad s-expression" e in
-  try Syntax.pipe (List.map ~f:t_of_sexp sexps) with e -> syntax_error "bad program" e
+  let sexps =
+    try f x with
+    | e -> syntax_error "bad s-expression" e
+  in
+  try Syntax.pipe (List.map ~f:t_of_sexp sexps) with
+  | e -> syntax_error "bad program" e
 ;;
 
 let load = load' ~is_change:false
@@ -47,20 +51,17 @@ let scan lexbuf ~fail_on_parse_error =
       | None -> None
       | Some sexp -> Some (Sexp_ext.t_of_sexp sexp, ())
     with
-    | _ignored_exn when not fail_on_parse_error -> None)
+    | _ignored_exn
+      when not fail_on_parse_error -> None)
 ;;
 
 module Transform : sig
   type t
 
   val make : parameters -> t
-
   val initialize_source : t -> string -> Sexp.t -> unit
-
   val finalize_source : t -> string -> unit
-
   val finalize_all : t -> unit
-
   val any_output : t -> bool
 end = struct
   type t =
@@ -72,13 +73,9 @@ end = struct
     }
 
   let initialize_source t label = t.initialize_source label
-
   let finalize_source t label = t.finalize_source label
-
   let finalize_all t = t.finalize_all ()
-
   let any_output t = t.any_output.contents
-
   let with_label label sexp = Sexp.List [ Sexp.Atom label; sexp ]
 
   let make_count t ~f =
@@ -176,5 +173,4 @@ let main' t ~is_change =
 ;;
 
 let main_change = main' ~is_change:true
-
 let main = main' ~is_change:false

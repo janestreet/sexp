@@ -3,7 +3,10 @@ open Async
 open Sexplib.Type
 
 module Action = struct
-  type ident = [`star | `string of string | `one_of of String.Set.t]
+  type ident =
+    [ `star
+    | `string of string
+    | `one_of of String.Set.t ]
 
   type t =
     [ `descendants of ident (* All descendants matching [ident] *)
@@ -18,7 +21,8 @@ module Eval = struct
   ;;
 
   let rec descendants name = function
-    | List [ Atom key; value ] when matches key name -> value :: descendants name value
+    | List [ Atom key; value ]
+      when matches key name -> value :: descendants name value
     | List l -> List.bind l ~f:(descendants name)
     | _ -> []
   ;;
@@ -27,7 +31,8 @@ module Eval = struct
     | Atom _ -> []
     | List l ->
       List.filter_map l ~f:(function
-        | List [ Atom key; value ] when matches key name -> Some value
+        | List [ Atom key; value ]
+          when matches key name -> Some value
         | _ -> None)
   ;;
 end

@@ -71,6 +71,7 @@ let rec assemble (l : (Path.t * Sexp.t) list) =
          | Pos _ :: _, _ -> assemble (one_deeper l)
          | Rec n :: _, _ -> List [ Atom n; assemble (one_deeper l) ]
          | _ -> assert false))
+
 and assemble1 p v =
   match p with
   | [] -> v
@@ -88,7 +89,8 @@ let output t out =
 let input inch =
   let rec loop res =
     match In_channel.input_line ~fix_win_eol:true inch with
-    | None | Some "" -> List.rev res
+    | None
+    | Some "" -> List.rev res
     | Some l ->
       let a, b = String.lsplit2_exn l ~on:'\t' in
       let path = Sexplib.Path.parse a in

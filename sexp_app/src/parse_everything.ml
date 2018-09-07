@@ -25,7 +25,8 @@ let read_of_next_char
     let terminates_atom c ~paren_depth =
       match c with
       | '(' | '"' | ' ' | '\t' | '\012' | '\n' | '\r' -> true
-      | ')' when !paren_depth > 0 -> true
+      | ')'
+        when !paren_depth > 0 -> true
       | _ -> false
     in
     (* State variables *)
@@ -61,13 +62,12 @@ let read_of_next_char
                 Buffer.clear atom_so_far;
                 inside_string := false;
                 `Ok s
-              | (* Any other character gets added to the string, and if it's an escape
-                   character, we remember this *)
-                c ->
+              (* Any other character gets added to the string, and if it's an escape
+                 character, we remember this *)
+              | c ->
                 if c = '\\' then follows_escape_in_string := true;
                 Buffer.add_char atom_so_far c;
-                `Ok "")
-            (* Not inside string *))
+                `Ok "" (* Not inside string *)))
           else if (* Chars that don't terminate the atom just get appended and we continue *)
             not (terminates_atom c ~paren_depth)
           then (
@@ -196,31 +196,18 @@ let transform_string s =
 let unchanged s = transform_string s = s
 
 let%test _ = unchanged ""
-
 let%test _ = unchanged "abc"
-
 let%test _ = unchanged "()"
-
 let%test _ = unchanged "bf((a)d((c\"eg\")))"
-
 let%test _ = unchanged " d ( ef) \n (\r\t ) \\ \\m  x \") \b\r (\""
-
 let%test _ = unchanged "%!@&*^:'?/,.~`[}]{-+=_-"
-
 let%test _ = unchanged "\"foo\\\"d\""
-
 let%test "completes unmatched parens" = transform_string "(" = "()"
-
 let%test "completes unmatched parens" = transform_string "(a)(b(()(c" = "(a)(b(()(c)))"
-
 let%test "completes unmatched quotes" = transform_string "\"" = "\"\""
-
 let%test "completes unmatched quotes" = transform_string "\"\\\"" = "\"\\\"\""
-
 let%test "completes unmatched quotes" = transform_string "((\"ab" = "((\"ab\"))"
-
 let%test "completes unmatched escape in string" = transform_string "\"\\" = "\"\\\\\""
-
 let%test "stringifies extra close parens" = transform_string ")" = "\")\""
 
 let%test "stringifies extra close parens" =
@@ -228,9 +215,7 @@ let%test "stringifies extra close parens" =
 ;;
 
 let%test "turns sexp special chars to strings" = transform_string "#" = "\"#\""
-
 let%test "turns sexp special chars to strings" = transform_string ";" = "\";\""
-
 let%test "turns sexp special chars to strings" = transform_string "|" = "\"|\""
 
 let%test "turns sexp special chars to strings" =

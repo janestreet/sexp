@@ -7,7 +7,6 @@ include Hash_set.Make (struct
     [@@deriving compare]
 
     let sexp_of_t = Fn.id
-
     let t_of_sexp = Fn.id
 
     let rec hash = function

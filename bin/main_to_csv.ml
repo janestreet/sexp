@@ -1,7 +1,10 @@
 open Core
 open Sexp_app
 
-let myprotect f x = try Some (f x) with _ -> None
+let myprotect f x =
+  try Some (f x) with
+  | _ -> None
+;;
 
 let main ~view_atoms_as_strings ~delimiter:sep =
   let sexps =

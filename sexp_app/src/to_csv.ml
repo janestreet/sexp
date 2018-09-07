@@ -20,9 +20,7 @@ let rec has_duplicates = function
 
 module Query : sig
   val is_a_record : Sexp.t -> bool
-
   val header : Sexp.t -> string list
-
   val record : view_atoms_as_strings:bool -> string list -> Sexp.t -> Csv_record.t
 end = struct
   open Syntax
@@ -57,7 +55,8 @@ end = struct
       match results with
       | Sexp.List [ x ] ->
         (match x with
-         | Sexp.Atom str when view_atoms_as_strings -> str
+         | Sexp.Atom str
+           when view_atoms_as_strings -> str
          | _ -> Sexp.to_string x)
       | Sexp.List (x :: _) ->
         eprintf "multiple values for field %s. Arbitrarily picking the first one.\n" f;

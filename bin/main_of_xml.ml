@@ -35,6 +35,7 @@ module Main = struct
       | Element (tag, attrs, children) ->
         sexps_of_xmls children (fun children ->
           k (List [ Atom tag; sexp_of_attributes attrs; List children ]))
+
     and sexps_of_xmls xmls k =
       match xmls with
       | [] -> k []
@@ -61,14 +62,17 @@ module Main = struct
       | PCData x -> apply k (Atom x)
       | Element (tag, attrs, children) ->
         sexps_of_xmls children (Quz (k, tag, sexp_of_attributes attrs))
+
     and sexps_of_xmls xmls k =
       match xmls with
       | [] -> apply2 k []
       | xml :: xmls -> sexp_of_xml xml (Foo (k, xmls))
+
     and apply k sexp =
       match k with
       | Top -> sexp
       | Foo (k, xmls) -> sexps_of_xmls xmls (Bar (k, sexp))
+
     and apply2 k sexps =
       match k with
       | Bar (k, sexp) -> apply2 k (sexp :: sexps)

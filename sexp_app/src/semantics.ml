@@ -23,7 +23,6 @@ type 'sexp query_meaning = 'sexp -> Sexp.t Lazy_list.t
 *)
 module type S = sig
   val query : Query.t -> Sexp.t query_meaning
-
   val change : Change.t -> Sexp.t -> Sexp.t option
 end
 
@@ -65,13 +64,9 @@ let restructure acc s ~nil ~of_list =
 (* the reference implementation *)
 module Vanilla : S = struct
   let nil : Sexp.t Lazy_list.t = Lazy_list.empty ()
-
   let cons = Lazy_list.cons
-
   let one s = Lazy_list.cons s nil
-
   let ( >>= ) = Lazy_list.( >>= )
-
   let ( ++ ) = Lazy_list.append
 
   let atomic = function
@@ -115,17 +110,20 @@ module Vanilla : S = struct
     | Atom _ -> nil
     | List ss ->
       (match%bind Lazy_list.of_list ss with
-       | List [ Atom fname; fvalue ] when fname = name -> one fvalue
+       | List [ Atom fname; fvalue ]
+         when fname = name -> one fvalue
        | _ -> nil)
   ;;
 
   let variant name n_opt s =
     match s with
-    | Atom cname when cname = name ->
+    | Atom cname
+      when cname = name ->
       (match n_opt with
        | None -> one s
        | Some n -> if n = 0 then one s else nil)
-    | List (Atom cname :: args) when cname = name ->
+    | List (Atom cname :: args)
+      when cname = name ->
       (match n_opt with
        | None -> one s
        | Some n -> if n = List.length args then one s else nil)
@@ -140,7 +138,9 @@ module Vanilla : S = struct
   let regex r = function
     | Atom s ->
       if Re2.num_submatches r > 1
-      then (try one (Atom (Re2.find_first_exn ~sub:(`Index 1) r s)) with _ -> nil)
+      then (
+        try one (Atom (Re2.find_first_exn ~sub:(`Index 1) r s)) with
+        | _ -> nil)
       else if Re2.matches r s
       then one (Atom s)
       else nil
@@ -206,6 +206,7 @@ module Vanilla : S = struct
         s
         ~nil:(fun () -> nil)
         ~of_list:(fun sexps () -> Lazy_list.of_list sexps)
+
   and quote t s =
     match t with
     | Template.Atom a -> One (Atom a)
@@ -228,6 +229,7 @@ module Vanilla : S = struct
       Col
         (let%bind row = rows ts in
          one (List row))
+
   and change c s =
     match c with
     | Syntax.Id -> Same
@@ -286,6 +288,7 @@ module Vanilla : S = struct
         (List
            (List.rev
               (Lazy_list.fold_left (query q s) ~init:[] ~f:(fun acc x -> x :: acc))))
+
   and children c = function
     | [] -> Same
     | s :: ss ->
@@ -348,7 +351,6 @@ module Cont : S = struct
       | Cons of 'a * ('a, 'r) seq
 
     let nil k = k Nil
-
     let one s k = k (Cons (s, nil))
 
     let rec app m n k =
@@ -415,18 +417,21 @@ module Cont : S = struct
           (fun k -> of_list ss k)
           ~f:(fun s k ->
             match s with
-            | List [ Atom fname; fvalue ] when fname = name -> one fvalue k
+            | List [ Atom fname; fvalue ]
+              when fname = name -> one fvalue k
             | _ -> nil k)
           k
     ;;
 
     let variant name n_opt s k =
       match s with
-      | Atom cname when cname = name ->
+      | Atom cname
+        when cname = name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = 0 then one s k else nil k)
-      | List (Atom cname :: args) when cname = name ->
+      | List (Atom cname :: args)
+        when cname = name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = List.length args then one s k else nil k)
@@ -465,7 +470,8 @@ module Cont : S = struct
       | Atom s ->
         if Re2.num_submatches r > 1
         then (
-          try one (Atom (Re2.find_first_exn ~sub:(`Index 1) r s)) k with _ -> nil k)
+          try one (Atom (Re2.find_first_exn ~sub:(`Index 1) r s)) k with
+          | _ -> nil k)
         else if Re2.matches r s
         then one (Atom s) k
         else nil k
@@ -529,6 +535,7 @@ module Cont : S = struct
           ~same:(fun () -> one s k)
           ~diff:(fun s -> one s k)
       | Syntax.Restructure -> restructure k s ~nil ~of_list
+
     and quote t s ~dot ~col ~row =
       match t with
       | Template.Atom a -> dot (Atom a)
@@ -553,6 +560,7 @@ module Cont : S = struct
                   bind xs ~f:(fun x k -> map blocks ~f:(fun ys k -> k (x :: ys)) k) k)
         in
         col (fun k -> bind (fun k -> rows ts k) ~f:(fun row k -> one (List row) k) k)
+
     and change c s ~fail ~same ~diff ~delete =
       match c with
       | Syntax.Id -> same ()
@@ -596,6 +604,7 @@ module Cont : S = struct
         query q s (function
           | Nil -> diff (List []) (* or [fail ()] *)
           | Cons (x, v) -> to_list v (fun xs -> diff (List (x :: xs))))
+
     and children c ss ~fail ~same ~diff =
       match ss with
       | [] -> same ()
@@ -613,6 +622,7 @@ module Cont : S = struct
               ~same:(fun () -> diff (s :: ss))
               ~diff:(fun ss -> diff (s :: ss)))
           ~delete:(fun () -> children c ss ~fail ~same ~diff)
+
     and to_list v k =
       v (function
         | Nil -> k []
@@ -681,9 +691,7 @@ module Mono : S = struct
       | Cons' of Sexp.t list * 'r seq'
 
     let nil k = k Nil
-
     let nil' k = k Nil'
-
     let one s k = k (Cons (s, nil))
 
     let rec app m n k =
@@ -769,18 +777,21 @@ module Mono : S = struct
           (fun k -> of_list ss k)
           ~f:(fun s k ->
             match s with
-            | List [ Atom fname; fvalue ] when fname = name -> one fvalue k
+            | List [ Atom fname; fvalue ]
+              when fname = name -> one fvalue k
             | _ -> nil k)
           k
     ;;
 
     let variant name n_opt s k =
       match s with
-      | Atom cname when cname = name ->
+      | Atom cname
+        when cname = name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = 0 then one s k else nil k)
-      | List (Atom cname :: args) when cname = name ->
+      | List (Atom cname :: args)
+        when cname = name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = List.length args then one s k else nil k)
@@ -819,7 +830,8 @@ module Mono : S = struct
       | Atom s ->
         if Re2.num_submatches r > 1
         then (
-          try one (Atom (Re2.find_first_exn ~sub:(`Index 1) r s)) k with _ -> nil k)
+          try one (Atom (Re2.find_first_exn ~sub:(`Index 1) r s)) k with
+          | _ -> nil k)
         else if Re2.matches r s
         then one (Atom s) k
         else nil k
@@ -883,6 +895,7 @@ module Mono : S = struct
           ~same:(fun () -> one s k)
           ~diff:(fun s -> one s k)
       | Syntax.Restructure -> restructure k s ~nil ~of_list
+
     and quote t s ~dot ~(col : ('r cont -> 'r) -> 'r) ~row =
       match t with
       | Template.Atom a -> dot (Atom a)
@@ -907,6 +920,7 @@ module Mono : S = struct
                 bind_' xs (fun x k -> map' blocks ~f:(fun ys k -> k (x :: ys)) k) k)
         in
         col (fun k -> bind'_ (fun k -> rows ts k) (fun row k -> one (List row) k) k)
+
     and change c s ~fail ~same ~diff ~delete =
       match c with
       | Syntax.Id -> same ()
@@ -950,6 +964,7 @@ module Mono : S = struct
         query q s (function
           | Nil -> diff (List []) (* or [fail ()] *)
           | Cons (x, v) -> to_list v (fun xs -> diff (List (x :: xs))))
+
     and children c ss ~fail ~same ~diff =
       match ss with
       | [] -> same ()
@@ -1003,7 +1018,6 @@ module Nofun : S = struct
       | Cons of Sexp.t * 'r seq
 
     val pull : 'r seq -> ('r node -> 'r) -> 'r
-
     val query : Query.t -> Sexp.t -> 'r seq
 
     val change
@@ -1124,6 +1138,7 @@ module Nofun : S = struct
       | Apply_bindf'_ (x, f) -> apply_bindf'_ f x k
       | Bind'_ (xs, f) -> bind'_ xs f k
       | Bind_rows_wrap (s, ts) -> bind'_ (Rows (s, ts)) Wrap k
+
     and apply_cont code node =
       match code with
       | CONT f -> f node
@@ -1171,6 +1186,7 @@ module Nofun : S = struct
         (match node with
          | Nil -> diff (List []) (* or [fail ()] *)
          | Cons (x, v) -> to_list v (fun xs -> diff (List (x :: xs))))
+
     and apply_bindf code x k =
       match code with
       (*| BINDF (f, _never_fires) -> f x k*)
@@ -1178,16 +1194,20 @@ module Nofun : S = struct
       | Query q -> query q x k
       | Extract_field name ->
         (match x with
-         | List [ Atom fname; fvalue ] when fname = name -> one fvalue k
+         | List [ Atom fname; fvalue ]
+           when fname = name -> one fvalue k
          | _ -> nil k)
+
     and apply_bindf'_ code row k =
       match code with
       (*| BINDF'_ (f, _never_fires) -> f row k*)
       | Wrap -> one (List row) k
+
     and apply_bindf_' code x k =
       match code with
       (*| BINDF_' (f, _never_fires) -> f x k*)
       | Prepend_col blocks -> map' blocks ~f:(Prepend_one x) k
+
     and apply_seq' code k =
       match code with
       (*| SEQ' (f, _never_fires) -> f k*)
@@ -1201,6 +1221,7 @@ module Nofun : S = struct
         (match !cache with
          | Evaluated v -> apply_cont' k v
          | Unevaluated m -> apply_seq' m (Remember (cache, k)))
+
     and apply_cont' code node =
       match code with
       (*| CONT' (f, _never_fires) -> f node*)
@@ -1221,11 +1242,13 @@ module Nofun : S = struct
          | Cons' (x, xs) ->
            let y = apply_mapf' f x in
            apply_cont' k (Cons' (y, Map (xs, f))))
+
     and apply_mapf' code ys =
       match code with
       (*| MAPF' (f, _never_fires) -> f ys*)
       | Prepend_one x -> x :: ys
       | Prepend_row xs -> xs @ ys
+
     and nil k = apply_cont k Nil
     and nil' k = apply_cont' k Nil'
     and one s k = apply_cont k (Cons (s, Nil_seq))
@@ -1235,10 +1258,12 @@ module Nofun : S = struct
     and bind_' m f k = apply_seq m (Bind_'body (f, k))
     and bind'_ m f k = apply_seq' m (Bind'_body (f, k))
     and map' m ~f k = apply_seq' m (Map'_body (f, k))
+
     and atomic s k =
       match s with
       | Atom _ as s -> one s k
       | List _ -> nil k
+
     and index i s k =
       match s with
       | Atom _ -> nil k
@@ -1246,53 +1271,67 @@ module Nofun : S = struct
         (match List.nth xs i with
          | None -> nil k
          | Some s -> one s k)
+
     and of_list xs k =
       match xs with
       | [] -> apply_seq Nil_seq k
       | y :: ys -> apply_cont k (Cons (y, Of_list ys))
+
     and to_list xs k = apply_seq xs (To_list_body k)
+
     and smash s k =
       match s with
       | Atom _ -> one s k
       | List ss -> apply_cont k (Cons (s, Smash_all ss))
+
     and each s k =
       match s with
       | Atom _ -> nil k
       | List ss -> of_list ss k
+
     and field name s k =
       match s with
       | Atom _ -> nil k
       | List ss -> bind (Of_list ss) ~f:(Extract_field name) k
+
     and variant name n_opt s k =
       match s with
-      | Atom cname when cname = name ->
+      | Atom cname
+        when cname = name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = 0 then one s k else nil k)
-      | List (Atom cname :: args) when cname = name ->
+      | List (Atom cname :: args)
+        when cname = name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = List.length args then one s k else nil k)
       | _ -> nil k
+
     and list_map xs ~f k =
       match xs with
       | [] -> k []
       | x :: xs -> f x (fun x -> list_map xs ~f (fun xs -> k (x :: xs)))
+
     and atom_map ~f s k =
       match s with
       | Atom x -> k (Atom (f x))
       | List ss -> list_map ss ~f:(fun s k -> atom_map ~f s k) (fun ss -> k (List ss))
+
     and memo m = Thunk (ref (Unevaluated m))
+
     and regex r s k =
       match s with
       | Atom s ->
         if Re2.num_submatches r > 1
         then (
-          try one (Atom (Re2.find_first_exn ~sub:(`Index 1) r s)) k with _ -> nil k)
+          try one (Atom (Re2.find_first_exn ~sub:(`Index 1) r s)) k with
+          | _ -> nil k)
         else if Re2.matches r s
         then one (Atom s) k
         else nil k
       | List _ -> nil k
+
     and query q s k =
       match q with
       | Syntax.This -> one s k
@@ -1330,12 +1369,14 @@ module Nofun : S = struct
           ~same:(fun () -> one s k)
           ~diff:(fun s -> one s k)
       | Syntax.Restructure -> restructure k s ~nil ~of_list
+
     and quote t s ~dot ~col ~row =
       match t with
       | Template.Atom a -> dot (Atom a)
       | Template.Hole (Syntax.Unquote q) -> col (Suspend (q, s))
       | Template.Hole (Syntax.Splice q) -> to_list (Suspend (q, s)) row
       | Template.List ts -> col (Bind_rows_wrap (s, ts))
+
     and rows s ts k =
       match ts with
       | [] -> apply_cont' k (Cons' ([], Nil_seq'))
@@ -1347,6 +1388,7 @@ module Nofun : S = struct
           ~dot:(fun x -> map' blocks ~f:(Prepend_one x) k)
           ~row:(fun xs -> map' blocks ~f:(Prepend_row xs) k)
           ~col:(fun xs -> bind_' xs (Prepend_col (memo blocks)) k)
+
     and change c s ~fail ~same ~diff ~delete =
       match c with
       | Syntax.Id -> same ()
@@ -1397,7 +1439,8 @@ module Nofun : S = struct
                          | `Both (f, iv) -> f, Some iv
                        in
                        (match presence, is_some iv with
-                        | `Present, false | `Absent, true -> r.return None
+                        | `Present, false
+                        | `Absent, true -> r.return None
                         | (`Present | `Optional | `Absent), _ -> ());
                        let index, value =
                          match iv with
@@ -1420,6 +1463,7 @@ module Nofun : S = struct
          | Atom _ -> same ()
          | List _ -> diff (Atom (sexp_collapse s)))
       | Syntax.Query q -> query q s (Gather diff)
+
     and children c ss ~fail ~same ~diff =
       match ss with
       | [] -> same ()
@@ -1437,6 +1481,7 @@ module Nofun : S = struct
               ~same:(fun () -> diff (s :: ss))
               ~diff:(fun ss -> diff (s :: ss)))
           ~delete:(fun () -> children c ss ~fail ~same:(fun () -> diff ss) ~diff)
+
     and record ~field_changes ~fail ~diff ~accum =
       match field_changes with
       | [] ->
@@ -1471,7 +1516,6 @@ module Nofun : S = struct
     ;;
 
     let pull seq k = apply_seq seq (CONT k)
-
     let query q s = Suspend (q, s)
   end
 

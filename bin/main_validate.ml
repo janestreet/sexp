@@ -1,6 +1,9 @@
 open Core
 
-let main query = try Query.main query with _ -> exit 1
+let main query =
+  try Query.main query with
+  | _ -> exit 1
+;;
 
 (* preserve failure, but silently *)
 

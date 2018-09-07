@@ -21,7 +21,6 @@ let rec add t x =
 ;;
 
 let singleton x = add empty x
-
 let add_char t c = add t (String.of_char c)
 
 let rec dump = function

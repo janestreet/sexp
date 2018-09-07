@@ -18,7 +18,8 @@ end
 let get_one_field sexp field =
   let results = get_fields sexp field in
   match results with
-  | [] | _ :: _ :: _ ->
+  | []
+  | _ :: _ :: _ ->
     Or_error.error
       "non-unique field"
       { Non_unique_field.field; sexp; matches = results }
@@ -72,8 +73,8 @@ let replace_immediate_field ~field ~value sexp =
 
 let replace_field_recursively ~field ~value sexp =
   sexp_rewrite sexp ~f:(function
-    | Sexp.List [ Sexp.Atom f; _ ] when String.equal field f ->
-      `Changed (Sexp.List [ Sexp.Atom f; value ])
+    | Sexp.List [ Sexp.Atom f; _ ]
+      when String.equal field f -> `Changed (Sexp.List [ Sexp.Atom f; value ])
     | _ -> `Unchanged)
 ;;
 
@@ -88,24 +89,18 @@ let replace_field ~field ~value sexp immediate_or_recursive =
 ;;
 
 let%test_module "Utils" =
-  ( module struct
+  (module struct
     let sexp =
       Sexp.of_string
         "((first (a b c)) (second 123) (third ()) (fourth ((foo a) (boo b))))"
     ;;
 
     let%test _ = get_one_field sexp "second" = Ok (Sexp.Atom "123")
-
     let%test _ = Result.is_error (get_one_field sexp "zoo")
-
     let%test _ = get_one_field sexp "boo" = Ok (Sexp.Atom "b")
-
     let%test _ = Result.is_error (immediate_fields (Sexp.of_string "zoo"))
-
     let%test _ = Result.is_error (immediate_fields (Sexp.of_string "(zoo)"))
-
     let%test _ = Result.is_error (immediate_fields (Sexp.of_string "(zoo boo)"))
-
     let%test _ = Result.is_error (immediate_fields (Sexp.of_string "((good true)(bad))"))
 
     let%test _ =
@@ -161,5 +156,5 @@ let%test_module "Utils" =
         "foo"
       = value
     ;;
-  end )
+  end)
 ;;
