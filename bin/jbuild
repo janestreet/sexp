@@ -4,6 +4,7 @@
   (libraries (async
               core
               sexp_app
+              sexp_macro
               sexp_pretty
               sexplib
               csvfields.xml-light))

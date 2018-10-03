@@ -15,6 +15,7 @@ depends: [
   "csvfields"
   "ppx_jane"
   "re2"
+  "sexp_macro"
   "sexp_pretty"
   "sexplib"
   "jbuilder"                {build & >= "1.0+beta18.1"}

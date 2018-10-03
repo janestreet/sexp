@@ -2,14 +2,14 @@ open Core
 module Sexp = Sexplib.Sexp
 
 let main infile cout =
-  List.iter (Sexplib.Macro.load_sexps infile) ~f:(fun sexp ->
+  List.iter (Sexp_macro.Blocking.load_sexps infile) ~f:(fun sexp ->
     Sexp.output_hum cout sexp;
     (* a whitespace is necessary to separate adjacent atoms *)
     Out_channel.output_char cout '\n')
 ;;
 
 let readme () =
-  "Resolve a sexp with macros as understood by [Sexplib.Macros].\n\
+  "Resolve a sexp with macros as understood by [Sexp_macros].\n\
    Reads from INFILE and writes to stdout (or OUTFILE)"
 ;;
 
