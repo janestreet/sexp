@@ -3,18 +3,21 @@ open Core_kernel
 type 'a node =
   | Empty
   | Cons of 'a * 'a lazy_list
+
 and 'a lazy_list = 'a node Lazy.t
 
-let rec map t ~f = Lazy.map t ~f:(function
-  | Empty -> Empty
-  | Cons (x, xs) -> Cons (f x, map xs ~f))
+let rec map t ~f =
+  Lazy.map t ~f:(function
+    | Empty -> Empty
+    | Cons (x, xs) -> Cons (f x, map xs ~f))
 ;;
 
 module Base : sig
   type 'a t = 'a lazy_list
+
   val empty : unit -> 'a t
   val return : 'a -> 'a t
-  val map : [> `Custom of ('a t -> f:('a -> 'b) -> 'b t) ]
+  val map : [> `Custom of 'a t -> f:('a -> 'b) -> 'b t]
   val append : 'a t -> 'a t -> 'a t
   val concat : 'a t t -> 'a t
   val bind : 'a t -> f:('a -> 'b t) -> 'b t
@@ -22,28 +25,27 @@ end = struct
   type 'a t = 'a lazy_list
 
   let empty () = Lazy.from_val Empty
+  let return x = Lazy.from_val (Cons (x, Lazy.from_val Empty))
 
-  let return x = Lazy.from_val (Cons(x, Lazy.from_val Empty))
-
-  let rec append t1 t2 = Lazy.map t1 ~f:(function
-    | Empty -> Lazy.force t2
-    | Cons (x, xs) -> Cons (x, append xs t2))
+  let rec append t1 t2 =
+    Lazy.map t1 ~f:(function
+      | Empty -> Lazy.force t2
+      | Cons (x, xs) -> Cons (x, append xs t2))
   ;;
 
-  let rec concat t = Lazy.map t ~f:(function
-    | Empty -> Empty
-    | Cons (x, xs) -> Lazy.force (append x (concat xs)))
+  let rec concat t =
+    Lazy.map t ~f:(function
+      | Empty -> Empty
+      | Cons (x, xs) -> Lazy.force (append x (concat xs)))
   ;;
 
   let bind m ~f = concat (map ~f m)
-
   let map = `Custom map
-
 end
 
 type 'a t = 'a Base.t
 
-include (Monad.Make(Base):Monad.S with type 'a t := 'a t)
+include (Monad.Make (Base) : Monad.S with type 'a t := 'a t)
 
 let empty = Base.empty
 let append = Base.append
@@ -58,7 +60,7 @@ let is_empty t =
 let length t =
   let rec loop n t =
     match Lazy.force t with
-    | Cons(_, t) -> loop (n+1) t
+    | Cons (_, t) -> loop (n + 1) t
     | Empty -> n
   in
   loop 0 t
@@ -67,91 +69,93 @@ let length t =
 let decons t =
   match Lazy.force t with
   | Empty -> None
-  | Cons(h, t) -> Some(h, t)
+  | Cons (h, t) -> Some (h, t)
 ;;
 
-let cons x t = Lazy.from_val (Cons(x, t));;
+let cons x t = Lazy.from_val (Cons (x, t))
 
-let rec snoc t x = Lazy.map t ~f:(function
-  | Empty -> Cons (x, Base.empty ())
-  | Cons(y, ys) -> Cons(y, snoc ys x)
-);;
+let rec snoc t x =
+  Lazy.map t ~f:(function
+    | Empty -> Cons (x, Base.empty ())
+    | Cons (y, ys) -> Cons (y, snoc ys x))
+;;
 
 let rec find ~f t =
   match Lazy.force t with
   | Empty -> None
-  | Cons(x, xs) -> if f x then Some x else find ~f xs
+  | Cons (x, xs) -> if f x then Some x else find ~f xs
 ;;
 
-let rec filter ~f t = Lazy.bind t ~f:(function
-  | Empty -> empty ()
-  | Cons(x, xs) ->
-    if f x then
-      cons x (filter ~f xs)
-    else
-      filter ~f xs
-);;
+let rec filter ~f t =
+  Lazy.bind t ~f:(function
+    | Empty -> empty ()
+    | Cons (x, xs) -> if f x then cons x (filter ~f xs) else filter ~f xs)
+;;
 
-let rec filter_opt t = Lazy.bind t ~f:(function
-  | Empty -> empty ()
-  | Cons(Some x, xs) -> cons x (filter_opt xs)
-  | Cons(None, xs) -> filter_opt xs
-);;
+let rec filter_opt t =
+  Lazy.bind t ~f:(function
+    | Empty -> empty ()
+    | Cons (Some x, xs) -> cons x (filter_opt xs)
+    | Cons (None, xs) -> filter_opt xs)
+;;
 
-let rec filter_map ~f t = Lazy.bind t ~f:(function
-  | Empty -> empty ()
-  | Cons(x, xs) ->
-    match f x with
-    | Some y -> cons y (filter_map ~f xs)
-    | None -> filter_map ~f xs)
+let rec filter_map ~f t =
+  Lazy.bind t ~f:(function
+    | Empty -> empty ()
+    | Cons (x, xs) ->
+      (match f x with
+       | Some y -> cons y (filter_map ~f xs)
+       | None -> filter_map ~f xs))
 ;;
 
 let rec fold_left ~f ~init t =
   match Lazy.force t with
   | Empty -> init
-  | Cons(x, xs) -> fold_left ~f xs ~init:(f init x)
+  | Cons (x, xs) -> fold_left ~f xs ~init:(f init x)
 ;;
 
 let to_rev_list t = fold_left t ~init:[] ~f:(fun xs x -> x :: xs)
-
 let to_list t = List.rev (to_rev_list t)
+let fold_right ~f t ~init = List.fold (to_rev_list t) ~init ~f:(fun a b -> f b a)
 
-let fold_right ~f t ~init =
-  List.fold (to_rev_list t) ~init ~f:(fun a b -> f b a)
+let rec foldr t ~f ~init =
+  Lazy.map t ~f:(function
+    | Empty -> init
+    | Cons (x, xs) -> f x (foldr ~f xs ~init))
 ;;
-
-let rec foldr t ~f ~init = Lazy.map t ~f:(function
-  | Empty -> init
-  | Cons(x, xs) -> f x (foldr ~f xs ~init)
-);;
 
 let rec iter t ~f =
   match Lazy.force t with
   | Empty -> ()
-  | Cons(x, xs) -> f x; iter ~f xs
+  | Cons (x, xs) ->
+    f x;
+    iter ~f xs
 ;;
 
 let of_iterator ~curr ~next ~init =
   let rec loop accum () =
     match curr accum with
-    | Some(x) -> Cons(x, Lazy.from_fun (loop (next accum)))
+    | Some x -> Cons (x, Lazy.from_fun (loop (next accum)))
     | None -> Empty
   in
   Lazy.from_fun (loop init)
 ;;
 
-let rec build ~f ~seed = Lazy.from_fun (fun () ->
-  match f seed with
-  | None -> Empty
-  | Some (x, seed) -> Cons (x, build ~f ~seed))
+let rec build ~f ~seed =
+  Lazy.from_fun (fun () ->
+    match f seed with
+    | None -> Empty
+    | Some (x, seed) -> Cons (x, build ~f ~seed))
 ;;
 
 module Of_container = struct
   module type T = sig
     type 'a t
+
     val lazy_fold : 'a t -> f:('a -> 'b Lazy.t -> 'b) -> last:'b -> 'b
   end
-  module Make (X:T) = struct
+
+  module Make (X : T) = struct
     let lazy_list_of_t x =
       Lazy.from_fun (fun () ->
         X.lazy_fold x ~f:(fun x seed -> Cons (x, seed)) ~last:Empty)
@@ -162,7 +166,7 @@ end
 let unfold ~f ~init =
   let rec loop accum () =
     match f accum with
-    | Some(x) -> Cons(x, Lazy.from_fun (loop x))
+    | Some x -> Cons (x, Lazy.from_fun (loop x))
     (*| Some(x) -> Cons(accum, Lazy.from_fun (loop x)) *)
     | None -> Empty
   in
@@ -172,69 +176,74 @@ let unfold ~f ~init =
 let uniter ~f =
   let rec loop () =
     match f () with
-    | Some x -> Cons(x, Lazy.from_fun loop)
+    | Some x -> Cons (x, Lazy.from_fun loop)
     | None -> Empty
   in
   Lazy.from_fun loop
 ;;
 
-let rec of_list xs = Lazy.from_fun (fun () ->
-  match xs with
-  | [] -> Empty
-  | x :: xs -> Cons (x, of_list xs))
+let rec of_list xs =
+  Lazy.from_fun (fun () ->
+    match xs with
+    | [] -> Empty
+    | x :: xs -> Cons (x, of_list xs))
 ;;
 
 let concat_list t = concat (map t ~f:of_list)
 
 let of_array ary =
   let rec loop i () =
-    if i < Array.length ary then Cons(ary.(i), Lazy.from_fun (loop (succ i)))
-    else Empty
+    if i < Array.length ary then Cons (ary.(i), Lazy.from_fun (loop (succ i))) else Empty
   in
   Lazy.from_fun (loop 0)
 ;;
 
 let rec nth xs i =
-  if i < 0 then None else
+  if i < 0
+  then None
+  else (
     match Lazy.force xs with
     | Empty -> None
-    | Cons(x, xs) -> if i = 0 then Some x else nth xs (i-1)
+    | Cons (x, xs) -> if i = 0 then Some x else nth xs (i - 1))
 ;;
 
 let to_array t =
   match Lazy.force t with
   | Empty -> [||]
-  | Cons(x, xs) ->
+  | Cons (x, xs) ->
     let ary = Array.create ~len:(length t) x in
     let i = ref 1 in
-    iter xs ~f:(fun x -> ary.(!i) <- x; incr i);
+    iter xs ~f:(fun x ->
+      ary.(!i) <- x;
+      incr i);
     ary
 ;;
 
-let rec merge ~cmp xlst ylst = Lazy.bind xlst ~f:(function
-  | Empty -> ylst
-  | Cons(x, xs) -> Lazy.bind ylst ~f:(function
-    | Empty -> xlst
-    | Cons(y, ys) ->
-      if (cmp x y) <= 0 then
-        cons x (merge ~cmp xs ylst)
-      else
-        cons y (merge ~cmp xlst ys)
-  )
-);;
+let rec merge ~cmp xlst ylst =
+  Lazy.bind xlst ~f:(function
+    | Empty -> ylst
+    | Cons (x, xs) ->
+      Lazy.bind ylst ~f:(function
+        | Empty -> xlst
+        | Cons (y, ys) ->
+          if cmp x y <= 0
+          then cons x (merge ~cmp xs ylst)
+          else cons y (merge ~cmp xlst ys)))
+;;
 
-let rec unify ~cmp xlst ylst = Lazy.bind xlst ~f:(function
-  | Empty -> map ylst ~f:(fun y -> `Right y)
-  | Cons(x, xs) -> Lazy.bind ylst ~f:(function
-    | Empty -> map xlst ~f:(fun x -> `Left x)
-    | Cons(y, ys) ->
-      match cmp x y with
-      | -1 -> cons (`Left x) (unify ~cmp xs ylst)
-      | 0 -> cons (`Both (x,y)) (unify ~cmp xs ys)
-      | 1 -> cons (`Right y) (unify ~cmp xlst ys)
-      | _ -> assert false
-  )
-);;
+let rec unify ~cmp xlst ylst =
+  Lazy.bind xlst ~f:(function
+    | Empty -> map ylst ~f:(fun y -> `Right y)
+    | Cons (x, xs) ->
+      Lazy.bind ylst ~f:(function
+        | Empty -> map xlst ~f:(fun x -> `Left x)
+        | Cons (y, ys) ->
+          (match cmp x y with
+           | -1 -> cons (`Left x) (unify ~cmp xs ylst)
+           | 0 -> cons (`Both (x, y)) (unify ~cmp xs ys)
+           | 1 -> cons (`Right y) (unify ~cmp xlst ys)
+           | _ -> assert false)))
+;;
 
 
 let lazy_sort ~cmp zlst =
@@ -260,14 +269,13 @@ let lazy_sort ~cmp zlst =
   *)
   let rec to_zlist_list accum = function
     | Empty -> accum
-    | Cons(x, xs) -> to_zlist_list ((return x) :: accum) (Lazy.force xs)
+    | Cons (x, xs) -> to_zlist_list (return x :: accum) (Lazy.force xs)
   in
   let rec merge_pairs reversed accum = function
     | x1 :: x2 :: xs ->
-      if reversed then
-        merge_pairs reversed ((merge ~cmp x2 x1) :: accum) xs
-      else
-        merge_pairs reversed ((merge ~cmp x1 x2) :: accum) xs
+      if reversed
+      then merge_pairs reversed (merge ~cmp x2 x1 :: accum) xs
+      else merge_pairs reversed (merge ~cmp x1 x2 :: accum) xs
     | [ x ] -> x :: accum
     | [] -> accum
   in
@@ -286,7 +294,7 @@ let sort ~cmp zlst =
   *)
   match Lazy.force zlst with
   | Empty -> zlst
-  | Cons(x, xs) ->
+  | Cons (x, xs) ->
     (* Note, a little convolution is necessary here, as I want to trap
      * Invalid_argument exceptions *only* around the Array.create ~len:call.
      * Remember that iterating through the lazy list is potientially
@@ -295,47 +303,54 @@ let sort ~cmp zlst =
      * exceptions.
     *)
     let ary_opt =
-      try
-        Some (Array.create ~len:(length zlst) x)
-      with
+      try Some (Array.create ~len:(length zlst) x) with
       | Invalid_argument _ -> None
     in
-    match ary_opt with
-    | None ->
-      (* Array was too large- abort to lazy_sort *)
-      lazy_sort ~cmp zlst
-    | Some ary ->
-      begin
-        (* Fill the array *)
-        let i = ref 1 in
-        iter xs ~f:(fun x -> ary.(!i) <- x; incr i);
-        (* Sort the array *)
-        Array.sort ~compare:cmp ary;
-        (* Return the lazy list of the array *)
-        of_array ary
-      end
+    (match ary_opt with
+     | None -> (* Array was too large- abort to lazy_sort *)
+       lazy_sort ~cmp zlst
+     | Some ary ->
+       (* Fill the array *)
+       let i = ref 1 in
+       iter xs ~f:(fun x ->
+         ary.(!i) <- x;
+         incr i);
+       (* Sort the array *)
+       Array.sort ~compare:cmp ary;
+       (* Return the lazy list of the array *)
+       of_array ary)
 ;;
 
 module Iterator = struct
   type 'a lazy_list = 'a t
   type 'a t = 'a lazy_list ref
+
   let create zlst = ref zlst
-  let next t = match decons !t with
-    | Some(hd,tl) -> t := tl; Some hd
-    | None ->  None
+
+  let next t =
+    match decons !t with
+    | Some (hd, tl) ->
+      t := tl;
+      Some hd
+    | None -> None
+  ;;
+
   let iter t ~f =
-    let rec loop () = match next t with
-      | Some item -> f item; loop ()
+    let rec loop () =
+      match next t with
+      | Some item ->
+        f item;
+        loop ()
       | None -> ()
     in
     loop ()
+  ;;
 end
 
 (* cartesian_product : [[a]] -> [[a]] *)
-let rec cartesian_product t = match Lazy.force t with
+let rec cartesian_product t =
+  match Lazy.force t with
   | Empty -> return (empty ())
   | Cons (xs, xss) ->
-    xs >>= fun y ->
-    cartesian_product xss >>= fun ys ->
-    return (cons y ys)
+    xs >>= fun y -> cartesian_product xss >>= fun ys -> return (cons y ys)
 ;;
