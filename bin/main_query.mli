@@ -1,3 +1,4 @@
 open! Core
 
-val command : Command.t
+val query_command : Command.t
+val change_command : Command.t

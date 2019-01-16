@@ -48,14 +48,14 @@ let command =
              atom_coloring = Color_none; paren_coloring = false; atom_printing = Escaped
            }
          in
-         let fmt = Format.formatter_of_out_channel Pervasives.stdout in
+         let fmt = Format.formatter_of_out_channel Caml.stdout in
          let sexp =
            Sexp_pretty.sexp_to_sexp_or_comment (Sexp_pretty.Config.sexp_of_t config)
          in
          Sexp_pretty.Sexp_with_layout.pp_formatter config_for_output fmt sexp)
        else (
          let sparser = Sexp.With_layout.Parser.sexp Sexp.With_layout.Lexer.main in
-         let lexbuf = Lexing.from_channel Caml.Pervasives.stdin in
+         let lexbuf = Lexing.from_channel Caml.stdin in
          let fmt = Format.formatter_of_out_channel stdout in
          let next () =
            try Some (sparser lexbuf) with

@@ -13,14 +13,18 @@ let command =
          ~doc:" raise exception on bad input (override default behavior)"
      in
      fun () ->
-       Query.main
-         { source = Query.Anon Sexp_app.Syntax.This
-         ; inputs = Located.stdin None
+       let perform_query sexp_ext ~on_result =
+         let lazy_results = Sexp_app.Semantics.query' Sexp_app.Syntax.This sexp_ext in
+         Lazy_list.iter lazy_results ~f:on_result
+       in
+       Query.execute
+         { inputs = Located.stdin None
          ; output_mode = Query.Sexp
          ; allow_empty_output = true
          ; group = false
          ; machine
          ; labeled = false
          ; fail_on_parse_error
+         ; perform_query
          })
 ;;

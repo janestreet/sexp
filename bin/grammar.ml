@@ -68,11 +68,10 @@ let qprgm x = S.Query.t_of_sexp (Sexp.of_string x)
 
 module P = S.Template
 
-let print () =
-  let munge =
-    let change =
-      cprgm
-        {|
+let munge =
+  let change =
+    cprgm
+      {|
           (seq
             (topdown (try lowercase))
             (topdown (
@@ -96,32 +95,52 @@ let print () =
                 (rewrite (query  $_) (query  Q))
                 (rewrite (alt $C id) (try $C))))))
         |}
+  in
+  fun sexp ->
+    match Semantics.change change sexp with
+    | None -> assert false
+    | Some sexp -> sexp
+;;
+
+let make_lead x ~print_string =
+  let flag = ref true in
+  fun () ->
+    let str =
+      if !flag
+      then (
+        flag := false;
+        "  " ^ x ^ " ::= ")
+      else "      | "
     in
-    fun sexp ->
-      match Semantics.change change sexp with
-      | None -> assert false
-      | Some sexp -> sexp
+    print_string str
+;;
+
+let grammar_for_readme () =
+  let buf = Buffer.create 0 in
+  let print_string s = Buffer.add_string buf s in
+  let print_endline s =
+    Buffer.add_string buf s;
+    Buffer.add_string buf "\n"
   in
-  let make_lead x =
-    let flag = ref true in
-    fun () ->
-      let str =
-        if !flag
-        then (
-          flag := false;
-          "  " ^ x ^ " ::= ")
-        else "      | "
-      in
-      print_string str
-  in
+  print_string "=== Grammar summary for query expressions ===\n";
+  print_string "See '-grammar' for a more complete grammar.\n\n";
+  let lead = make_lead "Q" ~print_string in
+  List.iter qcmds ~f:(fun cmd ->
+    lead ();
+    print_string (Sexp.to_string_hum (munge cmd));
+    print_endline "");
+  Buffer.contents buf
+;;
+
+let print () =
   (print_string "\n--- grammar for query expressions ---\n\n";
-   let lead = make_lead "Q" in
+   let lead = make_lead "Q" ~print_string in
    List.iter qcmds ~f:(fun cmd ->
      lead ();
      Sexp.output_hum stdout (munge cmd);
      print_endline ""));
   (print_string "\n--- grammar for change expressions ---\n\n";
-   let lead = make_lead "C" in
+   let lead = make_lead "C" ~print_string in
    List.iter ccmds ~f:(fun cmd ->
      lead ();
      Sexp.output_hum stdout (munge cmd);

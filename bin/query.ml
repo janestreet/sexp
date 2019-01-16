@@ -1,43 +1,20 @@
 open Core
 open Sexp_app
 
-type source =
-  | Anon of Syntax.query
-  | File of string
-  | Script of string
-
 type output_mode =
   | Sexp
   | Count
   | Silent
 
-let syntax_error msg e = failwithf "Syntax error: %s\n\t%s" msg (Exn.to_string e) ()
-
-let load' f x ~is_change =
-  let t_of_sexp =
-    if is_change
-    then fun sexp -> Syntax.Change (Syntax.Change.t_of_sexp sexp)
-    else Syntax.Query.t_of_sexp
-  in
-  let sexps =
-    try f x with
-    | e -> syntax_error "bad s-expression" e
-  in
-  try Syntax.pipe (List.map ~f:t_of_sexp sexps) with
-  | e -> syntax_error "bad program" e
-;;
-
-let load = load' ~is_change:false
-
 type t =
-  { source : source
-  ; inputs : unit Located.t
+  { inputs : unit Located.t
   ; output_mode : output_mode
   ; allow_empty_output : bool
   ; labeled : bool
   ; group : bool
   ; machine : bool
   ; fail_on_parse_error : bool
+  ; perform_query : Sexp_ext.t -> on_result:(Sexp.t -> unit) -> unit
   }
 
 type parameters = t
@@ -132,7 +109,7 @@ end = struct
   ;;
 end
 
-let execute prgm t =
+let execute t =
   let transform = Transform.make t in
   let channels = Located.channels t.inputs in
   let input =
@@ -144,33 +121,10 @@ let execute prgm t =
   in
   let iter_source label sexps =
     let process_sexp = Transform.initialize_source transform label in
-    let iter_sexp sexp =
-      let lazy_results = Semantics.query' prgm sexp in
-      Lazy_list.iter lazy_results ~f:process_sexp
-    in
-    Lazy_list.iter sexps ~f:iter_sexp;
+    Lazy_list.iter sexps ~f:(fun sexp -> t.perform_query sexp ~on_result:process_sexp);
     Transform.finalize_source transform label
   in
   Located.iter input ~f:iter_source;
   Transform.finalize_all transform;
   exit (if Transform.any_output transform then 0 else 1)
 ;;
-
-let load_file file ~is_change ~skip_first_line =
-  let handle = In_channel.create file in
-  if skip_first_line then ignore (In_channel.input_line_exn handle : string);
-  load' Sexp.input_sexps handle ~is_change
-;;
-
-let main' t ~is_change =
-  let prgm =
-    match t.source with
-    | Anon prgm -> prgm
-    | File file -> load_file file ~skip_first_line:false ~is_change
-    | Script file -> load_file file ~skip_first_line:true ~is_change
-  in
-  execute prgm t
-;;
-
-let main_change = main' ~is_change:true
-let main = main' ~is_change:false
