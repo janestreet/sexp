@@ -1,4 +1,4 @@
-(library (name sexp_app_pattern) (libraries core lazy_list re2 sexplib str)
+(library (name sexp_app_pattern) (libraries core re2 sexplib str)
  (preprocess (pps ppx_jane)))
 
 (ocamllex lexer)
