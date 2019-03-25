@@ -123,7 +123,8 @@ let grammar_for_readme () =
     Buffer.add_string buf "\n"
   in
   print_string "=== Grammar summary for query expressions ===\n";
-  print_string "See '-grammar' for a more complete grammar.\n\n";
+  print_string "See '-grammar' for a more complete grammar.\n";
+  print_string "See 'sexp pat-query' for simpler regular-expression-like language.\n\n";
   let lead = make_lead "Q" ~print_string in
   List.iter qcmds ~f:(fun cmd ->
     lead ();

@@ -2,308 +2,310 @@ let query_by_example_dot_md =
   "---\ntitle: Sexp query by example\nparent: ../README.md\n---\n\nSexp query is a comma\
    nd-line tool for getting data out of S-expressions. Really it's a\nmini programmi\
    ng language, and if you want to use it effectively you'll want to see lots of\nex\
-   amples. That's what this README is for.\n\nTable of contents\n=================\n\n- \
-   Basic sexp query commands and how they work\n    - Field\n    - Index\n    - Equals\
-  \ and Test\n    - Pipe\n    - Each\n    - Smash\n    - Regex\n    - Cat and Wrap\n- \"se\
-   xp select\" and \"sexp multi-select\"\n\nBasic sexp query commands and how they work\n\
-   ==============================================\n\nThe basic building blocks of a s\
-   exp query are the commands `field`, `index`, `equals`,\n`test`, `pipe`, `each`, `\
-   smash`, `regex`, `cat`, and `wrap`. (There are a few other\ncommands but they're \
-   less important.) We'll explain each of these in turn before getting\ninto more co\
-   mplicated examples.\n\nField\n-----\n\n`field` gets the value from a `(key value)` pa\
-   ir. Suppose you've got a record with two\nfields, `jane_symbol` and `bloomberg`. \
-   Well, calling `(field jane_symbol)` gets you the\nvalue of that field:\n\n```sh\n  $\
-  \ echo '((jane_symbol \"AAPL US\") \\\\\n           (bloomberg \"AAPL UW Equity\"))' | s\
-   exp query '(field jane_symbol)'\n  # => \"AAPL US\"\n```\n\nIndex\n-----\n\n`index` is a \
-   little dumber, in that it just gives you the nth element in a list, indexed\nfrom\
-  \ 0:\n\n```sh\n  $ echo \"(one two three four five)\" | sexp query '(index 2)'\n  # => \
-   three\n```\n\nIf you've got a single-element list, like `(one)`, calling `(index 0)\
-   ` on it is a nifty\ntrick for removing the parens.\n\nEquals and Test\n-------------\
-   --\n\n`equals` and `test` are often used together, because `equals` alone is rarel\
-   y what you\nwant. It just returns a value if the value is equal to some string, a\
-   nd nothing otherwise.\nSuppose we had a little corpdir expressed as an S-expressi\
-   on (or really, a series of\nexpressions, each separated by a blank line):\n\n```oca\
-   ml\n  ;; ./corpdir.sexp\n\n  ((name ((first Bill) (last Nye)))\n   (role \"Science gu\
-   y\")\n   (start_date ((year 2012) (month 3) (day 4))))\n\n  ((name ((first Zadie) (l\
-   ast Smith)))\n   (role \"Author\")\n   (start_date ((year 2016) (month 10) (day 21))\
-   ))\n```\n\nNow we can run some `equals` checks against it. Notice below how the `eq\
-   uals` expression\nfollows the `(field role)` expression; that's because it's oper\
-   ating on the output of\n`(field role)`, as if piping the results of the first com\
-   mand into the second. (We'll see\nhow this works under the hood once we get to th\
-   e `pipe` command.)\n\n```sh\n  $ cat corpdir.sexp | sexp query '(field role) (equal\
-   s \"Author\")'\n  # => Author\n\n  $ cat corpdir.sexp | sexp query '(field role) (equ\
-   als \"Science guy\")'\n  # => \"Science guy\"\n\n  $ cat corpdir.sexp | sexp query '(fi\
-   eld role) (equals \"Foo\")'\n  # =>\n```\n\nYou can see why this isn't very useful: in\
-  \ general when we test a record for something, we\nwant to *do* something with tha\
-   t record. But here we just return the value we're testing\nagainst. This is where\
-  \ `test` comes in:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(test (field role) (\
-   equals \"Author\"))'\n  # => ((name ((first Zadie) (last Smith))) (role Author)\n  #\
-  \ => (start_date ((year 2016) (month 10) (day 21))))\n\n  $ cat corpdir.sexp | sexp\
-  \ query \\\\\n      '(test (field role) (equals \"Author\")) (field start_date)'\n  # =\
-   > ((year 2016) (month 10) (day 21))\n```\n\n`test` wraps around a condition, like `\
-   (equals 'foo')`, and if the condition passes, it\nreturns the entire S-expression\
-  \ satisfying the condition. You can then pass this to the\nright -- here, to the `\
-   (field start_date)` operator -- to get at some field within that\nreturned value.\
-  \ A lot of sexp queries work this way: first you filter for records\nsatisfying a \
-   condition, and then you dig in to those looking for specific data.\n\nPipe\n----\n\n`\
-   pipe` gets its name from the Unix command-line `|` that passes output from one p\
-   rogram to\nanother. It's a way of chaining together a sequence of commands, like \
-   a\n`Sequence.concat_map` for sexp queries.\n\nIn many cases you don't actually have\
-  \ to write the pipe, because it's already there\nimplicitly. For instance this que\
-   ry:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(field start_date) (field day)'\n  \
-   # => 4\n  # => 21\n```\n\ntakes the result of the first command, `(field start_date)\
-   `, and implicitly pipes it to\nthe next, `(field day)`. It's as if there's a lite\
-   ral `|` pipe character between the two\nstatements. Writing it with the actual pi\
-   pe command gives:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(pipe (field start_d\
-   ate) (field day))'\n  # => 4\n  # => 21\n```\n\nOne pipe command can take an arbitrar\
-   y number of sub-statements, not just 2, as in the\nfollowing example:\n\n```sh\n  $ \
-   cat corpdir.sexp | sexp query '(pipe (field start_date) (field day) (equals 4))'\
-   \n  # => 4\n```\n\nIt's worth asking: if there's syntactic sugar to get rid of these\
-  \ explicit pipes, do you\never really need the `pipe` command? In fact you do. Whi\
-   le some commands, like `test`, can\ntake a series of substatements without requir\
-   ing a pipe, others, like `cat` and `unquote`,\nwhich we'll see later, require it.\
-  \ So you'll see `pipe` all over, usually in places where\nyou have a complex sub-q\
-   uery, i.e., a query that involves more than a single `(field ...)`\ncommand.\n\nEac\
-   h\n----\n\n`each` is pretty simple: it takes each element in a list and passes them\
-  \ one by one to\nanother expression. At the top level, you can use it like:\n\n```sh\
-   \n  <list> each <expression>\n```\n\nas in the following example:\n\n```sh\n  $ cat cor\
-   pdir.sexp | sexp query \\\\\n      '(test (field role) (equals \"Science guy\")) (fie\
-   ld name) each (index 1)'\n  # => Bill\n  # => Nye\n```\n\nIt's worth dwelling a bit o\
-   n what's happening here. On the left-hand side of the `each`,\nyou have an expres\
-   sion that returns the `name` field of the record where the role field\nhas the va\
-   lue \"Science guy\". So what you're passing to the `each` is the list:\n\n```sh\n  ((\
-   first Bill) (last Nye))\n```\n\nwhich has two elements. (Notice how our little comm\
-   and-line program returns two lines.)\nThen, the right-hand side of the `each` is \
-   just an expression that operates on each\nelement of the list, so on `(first Bill\
-   )` and `(last Nye)` in turn. `(index 1)` returns\nthe second element of whatever \
-   it's passed, which is how we end up with \"Bill\" and \"Nye\".\n\n(`each` appears to b\
-   e an infix operator because of the implicit pipe\nat the top level. But if you we\
-   re to use it inside of a `test`, for\nexample, as in `(test (pipe (field hosts) e\
-   ach)`, you must explicitly\npipe the output of `field` to the `each`.)\n\nSmash\n---\
-   --\n\nsmaaaaasssshhhh!!!! This one has the coolest name, and also, in a way, the c\
-   oolest\nbehavior: It takes an S-expression and returns every sub-expression of it\
-   . Then, like\n`each`, it lets you apply a command to every one of those sub-expre\
-   ssions. So it also uses\nthat infix-style `<expression> smash <expression>` synta\
-   x. But let's see what it looks\nlike when we operate on the whole _corpdir.sexp_ \
-   file, without actually doing anything\nwith the smashed contents:\n\n```sh\n  $ cat \
-   corpdir.sexp | sexp query 'smash'\n  # => ((name ((first Bill) (last Nye))) (role\
-  \ \"Science guy\")\n  # =>  (start_date ((year 2012) (month 3) (day 4))))\n  # => (na\
-   me ((first Bill) (last Nye)))\n  # => name\n  # => ((first Bill) (last Nye))\n  # =\
-   > (first Bill)\n  # => first\n  # => Bill\n  # => (last Nye)\n  # => last\n  # => Nye\
-   \n  # => (role \"Science guy\")\n  # => role\n  # => \"Science guy\"\n  # => (start_date\
-  \ ((year 2012) (month 3) (day 4)))\n  # => start_date\n  # => ((year 2012) (month 3\
-   ) (day 4))\n  # => (year 2012)\n  # => year\n  # => 2012\n  # => (month 3)\n  # => mo\
-   nth\n  # => 3\n  # => (day 4)\n  # => day\n  # => 4\n  #\n  # => ((name ((first Zadie)\
-  \ (last Smith))) (role Author)\n  # =>  (start_date ((year 2016) (month 10) (day 2\
-   1))))\n  # => (name ((first Zadie) (last Smith)))\n  # => name\n  # => ((first Zadi\
-   e) (last Smith))\n  # => (first Zadie)\n  # => first\n  # => Zadie\n  # => (last Smi\
-   th)\n  # => last\n  # => Smith\n  # => (role Author)\n  # => role\n  # => Author\n  # \
-   => (start_date ((year 2016) (month 10) (day 21)))\n  # => start_date\n  # => ((yea\
-   r 2016) (month 10) (day 21))\n  # => (year 2016)\n  # => year\n  # => 2016\n  # => (\
-   month 10)\n  # => month\n  # => 10\n  # => (day 21)\n  # => day\n  # => 21\n```\n\nWhat'\
-   s going on here? Well, since we passed the whole file to `smash`, rather than ju\
-   st a\nsingle record, we're getting the smashed contents of each of our two record\
-   s in turn (one\nfor Bill Nye and one for Zadie Smith). For each of these, the com\
-   mand is coughing up every\nsub-expression of the original record. You can think o\
-   f it as taking anything of the form\n`<left> <right>` and printing `<left> <right\
-   >`, `<left>`, and `<right>`. Since\nS-expressions can be deeply nested, this can \
-   end up printing a lot of stuff.\n\nSmashing is useful when you don't want to do a \
-   million chained tests in order to get to\nsome record nested deep in an S-express\
-   ion. For instance, suppose our day records were\nburied in a lot of other stuff, \
-   like so:\n\n```ocaml\n  ;; ./corpdir.sexp\n\n  ((name ((first Bill) (last Nye)))\n   (\
-   role \"Science guy\")\n   (start_date ((year 2012) (month 3) (period ((unit ((kind \
-   ((sol 400) (day 4))))))))))\n\n  ((name ((first Zadie) (last Smith)))\n   (role \"Au\
-   thor\")\n   (start_date ((year 2016) (month 10) (period ((unit ((kind ((sol 2100) \
-   (day 21))))))))))\n```\n\nIf you knew you wanted to get at those `(day <num>)` reco\
-   rds, you could write something\nlike:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(\
-   field start_date) (field period) (field unit) \\\\\n                               \
-  \      (field kind) each (test (index 0) (equals day))'\n  # => (day 4)\n  # => (da\
-   y 21)\n```\n\nor... you could just smash the input and filter on the field name:\n\n`\
-   ``sh\n  $ cat corpdir.sexp | sexp query 'smash (test (index 0) (equals day))'\n  #\
-  \ => (day 4)\n  # => (day 21)\n```\n\nKeep in mind that using `smash` isn't free: the\
-   re's a tradeoff between being concise and\nbeing precise when deciding whether to\
-  \ use it. That is, while it may be powerful for\nfinding deeply nested things, tha\
-   t's only because you've given up some control over where\nthe thing is to be foun\
-   d. In a way, `smash` is the sexp query analog of `.*` in regular\nexpressions. It\
-  \ should be used with caution.\n\nRegex\n-----\n\n`regex` is like `equals`, except tha\
-   t instead of taking a simple string argument, it takes\na regular expression, so \
-   that you can do slightly more versatile searching. Let's say we\nhad a new hire i\
-   n our corpdir:\n\n```ocaml\n  ;; ./corpdir.sexp\n\n  ((name ((first Bill) (last Nye))\
-   )\n  (role \"Science guy\")\n  (start_date ((year 2012) (month 3) (day 4))))\n\n  ((na\
-   me ((first Zadie) (last Smith)))\n  (role \"Author\")\n  (start_date ((year 2016) (m\
-   onth 10) (day 21))))\n\n  ((name ((first David) (last Lynch)))\n  (role \"Auteur\")\n \
-  \ (start_date ((year 2017) (month 5) (day 20))))\n```\n\nIf we then wanted to get th\
-   e name records of everyone whose role starts with \"Au\", we\ncould use regex to do\
-  \ it:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(test (field role) (regex \"^Au\"))\
-  \ (field name)'\n  # => ((first Zadie) (last Smith))\n  # => ((first David) (last L\
-   ynch))\n```\n\nBy default, `regex` will return the entire string if there's a match\
-   , and nothing if not;\nbut if you use a capture group, as in the following exampl\
-   e, it'll return the capture\ngroup's contents instead. (If you supply multiple ca\
-   pture groups it'll return the result\nof the first one.) For instance:\n\n```sh\n  $\
-  \ cat corpdir.sexp | sexp query '(field role) (regex \"^Au(.*)\")'\n  # => thor\n  # \
-   => teur\n```\n\nCat and Wrap\n------------\n\n`cat` is how you run multiple commands o\
-   n a single S-expression at one time,\ncon-`cat`-enating the results. Where `pipe`\
-  \ is a way of combining sub-queries in series,\n`cat` combines them in parallel. S\
-   o for example:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(cat (field name) (fiel\
-   d role))'\n  # => ((first Bill) (last Nye))\n  # => \"Science guy\"\n  # => ((first Z\
-   adie) (last Smith))\n  # => Author\n  # => ((first David) (last Lynch))\n  # => Aut\
-   eur\n```\n\nNotice how for each record we've fetched both the name and the role. Bu\
-   t also notice how\nthe results aren't wrapped up into a single S-expression. That\
-   's where `wrap` comes in --\nit's a command that simply takes some stuff and wrap\
-   s it in parens, and it's frequently\nused together with `cat`:\n\n```sh\n  $ cat cor\
-   pdir.sexp | sexp query '(wrap (cat (field name) (field role)))'\n  # => (((first \
-   Bill) (last Nye)) \"Science guy\")\n  # => (((first Zadie) (last Smith)) Author)\n  \
-   # => (((first David) (last Lynch)) Auteur)\n```\n\nNow the results of our multiple \
-   queries are nicely wrapped up into a single S-expression\nper record.\n\n`sexp sele\
-   ct` and `sexp multi-select`\n=====================================\n\nA lot of the \
-   time, what would be a fairly complicated sexp query is more easily expressed\nas \
-   a sexp multi-select. Suppose you wanted to pull out the actual day, month, and y\
-   ear of\neach person in our little corpdir. You could do it using sexp query:\n\n```\
-   sh\n  $ cat corpdir.sexp | sexp query '(field start_date) \\\\\n                    \
-  \                 (wrap (cat (field day) (field month) (field year)))'\n  # => (4 \
-   3 2012)\n  # => (21 10 2016)\n  # => (20 5 1999)\n```\n\nBut it's actually much easie\
-   r when expressed as a multi-select:\n\n```sh\n  $ cat corpdir.sexp | sexp multi-sel\
-   ect day month year\n  # => (4 3 2012)\n  # => (21 10 2016)\n  # => (20 5 1999)\n```\n\
-   \nThis multi-select does a kind of `smash`, `cat`, and `wrap` on the fields that \
-   you pass to\nit. Notice that you don't even need to quote your field names!\n\nBeca\
-   use it's more or less doing a smash, the same caveat applies: multi-select is a\n\
-   concise way to find things, but at the expense of being somewhat imprecise about\
-  \ where\nyou're looking.\n"
+   amples. That's what this README is for.\n\nSee also 'sexp pat-query' for a slightl\
+   y simpler regular-expression-like language that is \nless powerful but can accomp\
+   lish almost all of the same common tasks.\n\nTable of contents\n=================\n\n\
+   - Basic sexp query commands and how they work\n    - Field\n    - Index\n    - Equa\
+   ls and Test\n    - Pipe\n    - Each\n    - Smash\n    - Regex\n    - Cat and Wrap\n- \"\
+   sexp select\" and \"sexp multi-select\"\n\nBasic sexp query commands and how they wor\
+   k\n==============================================\n\nThe basic building blocks of a\
+  \ sexp query are the commands `field`, `index`, `equals`,\n`test`, `pipe`, `each`,\
+  \ `smash`, `regex`, `cat`, and `wrap`. (There are a few other\ncommands but they'r\
+   e less important.) We'll explain each of these in turn before getting\ninto more \
+   complicated examples.\n\nField\n-----\n\n`field` gets the value from a `(key value)` \
+   pair. Suppose you've got a record with two\nfields, `jane_symbol` and `bloomberg`\
+   . Well, calling `(field jane_symbol)` gets you the\nvalue of that field:\n\n```sh\n \
+  \ $ echo '((jane_symbol \"AAPL US\") \\\\\n           (bloomberg \"AAPL UW Equity\"))' |\
+  \ sexp query '(field jane_symbol)'\n  # => \"AAPL US\"\n```\n\nIndex\n-----\n\n`index` is \
+   a little dumber, in that it just gives you the nth element in a list, indexed\nfr\
+   om 0:\n\n```sh\n  $ echo \"(one two three four five)\" | sexp query '(index 2)'\n  # =\
+   > three\n```\n\nIf you've got a single-element list, like `(one)`, calling `(index \
+   0)` on it is a nifty\ntrick for removing the parens.\n\nEquals and Test\n-----------\
+   ----\n\n`equals` and `test` are often used together, because `equals` alone is rar\
+   ely what you\nwant. It just returns a value if the value is equal to some string,\
+  \ and nothing otherwise.\nSuppose we had a little corpdir expressed as an S-expres\
+   sion (or really, a series of\nexpressions, each separated by a blank line):\n\n```o\
+   caml\n  ;; ./corpdir.sexp\n\n  ((name ((first Bill) (last Nye)))\n   (role \"Science \
+   guy\")\n   (start_date ((year 2012) (month 3) (day 4))))\n\n  ((name ((first Zadie) \
+   (last Smith)))\n   (role \"Author\")\n   (start_date ((year 2016) (month 10) (day 21\
+   ))))\n```\n\nNow we can run some `equals` checks against it. Notice below how the `\
+   equals` expression\nfollows the `(field role)` expression; that's because it's op\
+   erating on the output of\n`(field role)`, as if piping the results of the first c\
+   ommand into the second. (We'll see\nhow this works under the hood once we get to \
+   the `pipe` command.)\n\n```sh\n  $ cat corpdir.sexp | sexp query '(field role) (equ\
+   als \"Author\")'\n  # => Author\n\n  $ cat corpdir.sexp | sexp query '(field role) (e\
+   quals \"Science guy\")'\n  # => \"Science guy\"\n\n  $ cat corpdir.sexp | sexp query '(\
+   field role) (equals \"Foo\")'\n  # =>\n```\n\nYou can see why this isn't very useful: \
+   in general when we test a record for something, we\nwant to *do* something with t\
+   hat record. But here we just return the value we're testing\nagainst. This is whe\
+   re `test` comes in:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(test (field role)\
+  \ (equals \"Author\"))'\n  # => ((name ((first Zadie) (last Smith))) (role Author)\n \
+  \ # => (start_date ((year 2016) (month 10) (day 21))))\n\n  $ cat corpdir.sexp | se\
+   xp query \\\\\n      '(test (field role) (equals \"Author\")) (field start_date)'\n  #\
+  \ => ((year 2016) (month 10) (day 21))\n```\n\n`test` wraps around a condition, like\
+  \ `(equals 'foo')`, and if the condition passes, it\nreturns the entire S-expressi\
+   on satisfying the condition. You can then pass this to the\nright -- here, to the\
+  \ `(field start_date)` operator -- to get at some field within that\nreturned valu\
+   e. A lot of sexp queries work this way: first you filter for records\nsatisfying \
+   a condition, and then you dig in to those looking for specific data.\n\nPipe\n----\n\
+   \n`pipe` gets its name from the Unix command-line `|` that passes output from one\
+  \ program to\nanother. It's a way of chaining together a sequence of commands, lik\
+   e a\n`Sequence.concat_map` for sexp queries.\n\nIn many cases you don't actually ha\
+   ve to write the pipe, because it's already there\nimplicitly. For instance this q\
+   uery:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(field start_date) (field day)'\n\
+  \  # => 4\n  # => 21\n```\n\ntakes the result of the first command, `(field start_dat\
+   e)`, and implicitly pipes it to\nthe next, `(field day)`. It's as if there's a li\
+   teral `|` pipe character between the two\nstatements. Writing it with the actual \
+   pipe command gives:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(pipe (field start\
+   _date) (field day))'\n  # => 4\n  # => 21\n```\n\nOne pipe command can take an arbitr\
+   ary number of sub-statements, not just 2, as in the\nfollowing example:\n\n```sh\n  \
+   $ cat corpdir.sexp | sexp query '(pipe (field start_date) (field day) (equals 4)\
+   )'\n  # => 4\n```\n\nIt's worth asking: if there's syntactic sugar to get rid of the\
+   se explicit pipes, do you\never really need the `pipe` command? In fact you do. W\
+   hile some commands, like `test`, can\ntake a series of substatements without requ\
+   iring a pipe, others, like `cat` and `unquote`,\nwhich we'll see later, require i\
+   t. So you'll see `pipe` all over, usually in places where\nyou have a complex sub\
+   -query, i.e., a query that involves more than a single `(field ...)`\ncommand.\n\nE\
+   ach\n----\n\n`each` is pretty simple: it takes each element in a list and passes th\
+   em one by one to\nanother expression. At the top level, you can use it like:\n\n```\
+   sh\n  <list> each <expression>\n```\n\nas in the following example:\n\n```sh\n  $ cat c\
+   orpdir.sexp | sexp query \\\\\n      '(test (field role) (equals \"Science guy\")) (f\
+   ield name) each (index 1)'\n  # => Bill\n  # => Nye\n```\n\nIt's worth dwelling a bit\
+  \ on what's happening here. On the left-hand side of the `each`,\nyou have an expr\
+   ession that returns the `name` field of the record where the role field\nhas the \
+   value \"Science guy\". So what you're passing to the `each` is the list:\n\n```sh\n  \
+   ((first Bill) (last Nye))\n```\n\nwhich has two elements. (Notice how our little co\
+   mmand-line program returns two lines.)\nThen, the right-hand side of the `each` i\
+   s just an expression that operates on each\nelement of the list, so on `(first Bi\
+   ll)` and `(last Nye)` in turn. `(index 1)` returns\nthe second element of whateve\
+   r it's passed, which is how we end up with \"Bill\" and \"Nye\".\n\n(`each` appears to\
+  \ be an infix operator because of the implicit pipe\nat the top level. But if you \
+   were to use it inside of a `test`, for\nexample, as in `(test (pipe (field hosts)\
+  \ each)`, you must explicitly\npipe the output of `field` to the `each`.)\n\nSmash\n-\
+   ----\n\nsmaaaaasssshhhh!!!! This one has the coolest name, and also, in a way, the\
+  \ coolest\nbehavior: It takes an S-expression and returns every sub-expression of \
+   it. Then, like\n`each`, it lets you apply a command to every one of those sub-exp\
+   ressions. So it also uses\nthat infix-style `<expression> smash <expression>` syn\
+   tax. But let's see what it looks\nlike when we operate on the whole _corpdir.sexp\
+   _ file, without actually doing anything\nwith the smashed contents:\n\n```sh\n  $ ca\
+   t corpdir.sexp | sexp query 'smash'\n  # => ((name ((first Bill) (last Nye))) (ro\
+   le \"Science guy\")\n  # =>  (start_date ((year 2012) (month 3) (day 4))))\n  # => (\
+   name ((first Bill) (last Nye)))\n  # => name\n  # => ((first Bill) (last Nye))\n  #\
+  \ => (first Bill)\n  # => first\n  # => Bill\n  # => (last Nye)\n  # => last\n  # => N\
+   ye\n  # => (role \"Science guy\")\n  # => role\n  # => \"Science guy\"\n  # => (start_da\
+   te ((year 2012) (month 3) (day 4)))\n  # => start_date\n  # => ((year 2012) (month\
+  \ 3) (day 4))\n  # => (year 2012)\n  # => year\n  # => 2012\n  # => (month 3)\n  # => \
+   month\n  # => 3\n  # => (day 4)\n  # => day\n  # => 4\n  #\n  # => ((name ((first Zadi\
+   e) (last Smith))) (role Author)\n  # =>  (start_date ((year 2016) (month 10) (day\
+  \ 21))))\n  # => (name ((first Zadie) (last Smith)))\n  # => name\n  # => ((first Za\
+   die) (last Smith))\n  # => (first Zadie)\n  # => first\n  # => Zadie\n  # => (last S\
+   mith)\n  # => last\n  # => Smith\n  # => (role Author)\n  # => role\n  # => Author\n  \
+   # => (start_date ((year 2016) (month 10) (day 21)))\n  # => start_date\n  # => ((y\
+   ear 2016) (month 10) (day 21))\n  # => (year 2016)\n  # => year\n  # => 2016\n  # =>\
+  \ (month 10)\n  # => month\n  # => 10\n  # => (day 21)\n  # => day\n  # => 21\n```\n\nWha\
+   t's going on here? Well, since we passed the whole file to `smash`, rather than \
+   just a\nsingle record, we're getting the smashed contents of each of our two reco\
+   rds in turn (one\nfor Bill Nye and one for Zadie Smith). For each of these, the c\
+   ommand is coughing up every\nsub-expression of the original record. You can think\
+  \ of it as taking anything of the form\n`<left> <right>` and printing `<left> <rig\
+   ht>`, `<left>`, and `<right>`. Since\nS-expressions can be deeply nested, this ca\
+   n end up printing a lot of stuff.\n\nSmashing is useful when you don't want to do \
+   a million chained tests in order to get to\nsome record nested deep in an S-expre\
+   ssion. For instance, suppose our day records were\nburied in a lot of other stuff\
+   , like so:\n\n```ocaml\n  ;; ./corpdir.sexp\n\n  ((name ((first Bill) (last Nye)))\n  \
+  \ (role \"Science guy\")\n   (start_date ((year 2012) (month 3) (period ((unit ((kin\
+   d ((sol 400) (day 4))))))))))\n\n  ((name ((first Zadie) (last Smith)))\n   (role \"\
+   Author\")\n   (start_date ((year 2016) (month 10) (period ((unit ((kind ((sol 2100\
+   ) (day 21))))))))))\n```\n\nIf you knew you wanted to get at those `(day <num>)` re\
+   cords, you could write something\nlike:\n\n```sh\n  $ cat corpdir.sexp | sexp query \
+   '(field start_date) (field period) (field unit) \\\\\n                             \
+  \        (field kind) each (test (index 0) (equals day))'\n  # => (day 4)\n  # => (\
+   day 21)\n```\n\nor... you could just smash the input and filter on the field name:\n\
+   \n```sh\n  $ cat corpdir.sexp | sexp query 'smash (test (index 0) (equals day))'\n \
+  \ # => (day 4)\n  # => (day 21)\n```\n\nKeep in mind that using `smash` isn't free: t\
+   here's a tradeoff between being concise and\nbeing precise when deciding whether \
+   to use it. That is, while it may be powerful for\nfinding deeply nested things, t\
+   hat's only because you've given up some control over where\nthe thing is to be fo\
+   und. In a way, `smash` is the sexp query analog of `.*` in regular\nexpressions. \
+   It should be used with caution.\n\nRegex\n-----\n\n`regex` is like `equals`, except t\
+   hat instead of taking a simple string argument, it takes\na regular expression, s\
+   o that you can do slightly more versatile searching. Let's say we\nhad a new hire\
+  \ in our corpdir:\n\n```ocaml\n  ;; ./corpdir.sexp\n\n  ((name ((first Bill) (last Nye\
+   )))\n  (role \"Science guy\")\n  (start_date ((year 2012) (month 3) (day 4))))\n\n  ((\
+   name ((first Zadie) (last Smith)))\n  (role \"Author\")\n  (start_date ((year 2016) \
+   (month 10) (day 21))))\n\n  ((name ((first David) (last Lynch)))\n  (role \"Auteur\")\
+   \n  (start_date ((year 2017) (month 5) (day 20))))\n```\n\nIf we then wanted to get \
+   the name records of everyone whose role starts with \"Au\", we\ncould use regex to \
+   do it:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(test (field role) (regex \"^Au\"\
+   )) (field name)'\n  # => ((first Zadie) (last Smith))\n  # => ((first David) (last\
+  \ Lynch))\n```\n\nBy default, `regex` will return the entire string if there's a mat\
+   ch, and nothing if not;\nbut if you use a capture group, as in the following exam\
+   ple, it'll return the capture\ngroup's contents instead. (If you supply multiple \
+   capture groups it'll return the result\nof the first one.) For instance:\n\n```sh\n \
+  \ $ cat corpdir.sexp | sexp query '(field role) (regex \"^Au(.*)\")'\n  # => thor\n  \
+   # => teur\n```\n\nCat and Wrap\n------------\n\n`cat` is how you run multiple commands\
+  \ on a single S-expression at one time,\ncon-`cat`-enating the results. Where `pip\
+   e` is a way of combining sub-queries in series,\n`cat` combines them in parallel.\
+  \ So for example:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(cat (field name) (fi\
+   eld role))'\n  # => ((first Bill) (last Nye))\n  # => \"Science guy\"\n  # => ((first\
+  \ Zadie) (last Smith))\n  # => Author\n  # => ((first David) (last Lynch))\n  # => A\
+   uteur\n```\n\nNotice how for each record we've fetched both the name and the role. \
+   But also notice how\nthe results aren't wrapped up into a single S-expression. Th\
+   at's where `wrap` comes in --\nit's a command that simply takes some stuff and wr\
+   aps it in parens, and it's frequently\nused together with `cat`:\n\n```sh\n  $ cat c\
+   orpdir.sexp | sexp query '(wrap (cat (field name) (field role)))'\n  # => (((firs\
+   t Bill) (last Nye)) \"Science guy\")\n  # => (((first Zadie) (last Smith)) Author)\n\
+  \  # => (((first David) (last Lynch)) Auteur)\n```\n\nNow the results of our multipl\
+   e queries are nicely wrapped up into a single S-expression\nper record.\n\n`sexp se\
+   lect` and `sexp multi-select`\n=====================================\n\nA lot of th\
+   e time, what would be a fairly complicated sexp query is more easily expressed\na\
+   s a sexp multi-select. Suppose you wanted to pull out the actual day, month, and\
+  \ year of\neach person in our little corpdir. You could do it using sexp query:\n\n`\
+   ``sh\n  $ cat corpdir.sexp | sexp query '(field start_date) \\\\\n                  \
+  \                   (wrap (cat (field day) (field month) (field year)))'\n  # => (\
+   4 3 2012)\n  # => (21 10 2016)\n  # => (20 5 1999)\n```\n\nBut it's actually much eas\
+   ier when expressed as a multi-select:\n\n```sh\n  $ cat corpdir.sexp | sexp multi-s\
+   elect day month year\n  # => (4 3 2012)\n  # => (21 10 2016)\n  # => (20 5 1999)\n``\
+   `\n\nThis multi-select does a kind of `smash`, `cat`, and `wrap` on the fields tha\
+   t you pass to\nit. Notice that you don't even need to quote your field names!\n\nBe\
+   cause it's more or less doing a smash, the same caveat applies: multi-select is \
+   a\nconcise way to find things, but at the expense of being somewhat imprecise abo\
+   ut where\nyou're looking.\n"
 ;;
 
 let query_semantics_dot_md =
   "---\ntitle: Sexp query formal semantics\nparent: ../README.md\n---\n\nSee also the ge\
-   t and select subcommands.\n\nThis document explains the semantics of query express\
-   ions, whose\nsyntax is as follows:\n\n    E ::=\n        -- selection -------------\n\
-  \        | (index NUM)\n        | (field STRING)\n        | each\n        | smash\n  \
-  \      -- composition -----------\n        | (pipe E E ...)\n        | (cat E E ...\
-   )\n        | this\n        | none\n        -- tests/conditionals ----\n        | ato\
-   mic\n        | (variant TAG NUM)\n        | (equals SEXP ...)\n        | (regex R)\n\
-  \        | (test E E ...)\n        | (not E)\n        | (and E E ...)\n        | (or\
-  \ E E ...)\n        | (if E E E)\n        | (branch E E E)\n        -- formatting --\
-   ----------\n        | (wrap E)\n        | (quote T[0])\n        -- transformations \
-   -------\n        | (change C)\n        | restructure\n\nThe meaning of an expression\
-  \ is a function from an input s-expression to a\n(possibly empty) sequence of outp\
-   ut s-expressions.  The toplevel command is\napplied to each expression in the inp\
-   ut.  We will look at five categories\nof expressions: selection, composition, con\
-   ditionals, formatting, and\ntransformation.\n\nSelection\n---------\n\nA `(index N)` e\
-   xpression picks out the Nth element of a list s-expression.\nIt succeeds if N is \
-   a proper index (i.e., 0 <= N < list length) and fails\notherwise.  Upon success, \
-   it returns the single-element sequence containing\nthe selected sub-expressions. \
-  \ Upon failure, it returns an empty list.\n\n    (index 2) : (one two three four) =\
-   > {three}\n    (index 8) : (one two three four) => {}\n\nA `(field F)` expression i\
-   s like `(index N)` except that it projects\nthe field named F out of a record.  I\
-   f more than one field of that\nname exists, they will all be selected.\n\n    (fiel\
-   d foo) : ((bar 1) (foo 2) (baz 3))         => {2}\n    (field foo) : ((bar 1) (fo\
-   o 2) (baz 3) (foo 4)) => {2, 4}\n    (field wow) : ((bar 1) (foo 2) (baz 3))     \
-  \    => {}\n\nAn `each` expression selects every element of a list.\n\n    each : (on\
-   e two three four) => {one, two, three, four}\n    each : ()    => {}\n    each : h\
-   ello => {}\n\nAn `smash` expression selects every sub-expression of an s-expressio\
-   n\n\n    smash : (a (b c) (d (e f))) => { (a (b c) (d (e f))),\n                   \
-  \                   a, (b c), (d (e f)),\n                                        \
-  \  b, c,  d, (e f),\n                                                     e, f }\n\n\
-   Composition\n-----------\n\nThe two basic composition operators are `pipe` and `cat\
-   `.  These two\noperators do sequential and parallel composition, respectively.  T\
-   he\ndenotation of\n\n                    (pipe E1 E2 ... En)\n\nis a \"fanned out\" com\
-   position of the denotations D = [E1] and\nD' = [`(pipe E2 ... En)`] in which D' i\
-   s called on every s-expression\nin the output sequence of D and all the resulting\
-  \ sequences of\ns-expressions are concatenated together into one big sequence.\n\n  \
-  \          (pipe E) = E\n            (pipe E1 E2 ... En) : S => X1 U ... U Xm\n\n   \
-  \         where   E1 : S => {S1, ..., Sm}\n              and   (pipe E2 ... En) : \
-   Si => Xi   for i in {1..m}\n\nIn particular, this means that if D returns an empty\
-  \ sequence, then\nD' will never be called.  The denotation of\n\n                   \
-  \ (cat E1 E2 ... En)\n\nis simply a parallel execution of each Ei on the input X in\
-  \ which all\n\n            (cat E1 ... En) : S => X1 U ... U Xn\n\n            where \
-  \  Ei : S => Xi    for i in {i .. n}\n\nThere are two trivial expressions, `this` a\
-   nd `none`.  A this expression\nsimply selects it input, while a `none` expression\
-  \ selects nothing\n\n                this : S => {S}         none : S => {}\n\nThese \
-   are identities for the pipe and cat operators.\n\n                this = (pipe)   \
-  \       none = (cat)\n\n(For monad fans -- pipe is Kleisli composition and `this` i\
-   s Kleisli\nidentity for the list monad.)\n\n\nConditionals\n------------\n\nFor the pur\
-   pose of conditional execution, we treat an expression returning\na non-empty sequ\
-   ence as true, and an expression returning an empty sequence\nas false.  With this\
-  \ in mind, one may think of `this` and `none` as the\nconstants true and false, re\
-   spectively.\n\nA `atomic` expression tests for atomic s-expressions.\n\n        atom\
-   ic : foo       => {foo}\n        atomic : (foo bar) => {}\n\nThe most basic non-tri\
-   vial condition is equality.  The expression\n`(equals S)` selects its input in th\
-   e case that the (returns true) and\nfails (returns false) otherwise.\n\n        (eq\
-   uals S) : S' => {S'}    if S = S'\n        (equals S) : S' => {}      otherwise\n\n\
-   There is also a N-ary version of equals that is expands to a disjunction\n\n      \
-  \  (equals S1 S2 ...) = (or (equals S1) (equals S2) ...)\n\nA `(regex R)` expressio\
-   n tests for the s-expresion to be an ATOM that\nmatches R.  The truth value will \
-   be the first capturing group of the\nregular expression or the whole atom if regu\
-   lar expression has no\ncapturing groups.\n\nA `(variant F N)` expression tests for \
-   the s-expression form of an element\nof a variant type with constructor F applied\
-  \ to N arguments.  You can leave N off, in\nwhich case it will match a variant wit\
-   h any number of arguments.\n\n    (variant foo 5) : (foo 1 2 3 4 5) => {(foo 1 2 3\
-  \ 4 5)}\n    (variant foo 3) : (foo 1 2 3 4 5) => {}\n    (variant foo 8) : (foo 1 \
-   2 3 4 5) => {}\n    (variant bar 5) : (foo 1 2 3 4 5) => {}\n    (variant foo 0) :\
-  \ foo => {foo}\n    (variant foo 0) : (foo) => {(foo)}\n    (variant foo)   : (foo \
-   1 2 3 4 5) => {(foo 1 2 3 4 5)}\n    (variant foo)   : foo => {foo}\n    (variant \
-   foo)   : (foo) => {(foo)}\n\nA `(test E)` expression proceeds by evaluating E on t\
-   he current s-expression\nS and selecting S only in the case that E succeeds.\n\n   \
-  \     (test E) : S => {}    if X empty      where  E : S => X\n        (test E) : \
-   S => {S}   otherwise\n\nWe also provide `(test E1 E2 ...)` as syntactic sugar for \
-   the common\nidiom `(test (pipe E1 E2 ...))`.\n\nA `(not E)` expression proceeds by \
-   evaluating E on the current s-expression\nS and selecting S only in the case that\
-  \ E fails.\n\n        (not E) : S => {S}    if X empty      where  E : S => X\n     \
-  \   (not E) : S => {}     otherwise\n\nNote that X is is discarded from the output \
-   of both (test E) and (not E).\nFor this reason, these two operators are useful fo\
-   r \"looking down\" into an\ns-expression while remembering your place at some point\
-  \ above where you will\nreturn later.\n\nAn `(and E1 ... En)` expression does short-\
-   circuit evaluation based on whether\nor not E1 succeeds.  Upon success, it return\
-   s the results of En.\n\n    (and) = this\n\n    (and E) = E\n\n    (and E1 E2 ... En) \
-   : S => {}        if  E1 : S => {}\n    (and E1 E2 ... En) : S => Y         if  E1\
-  \ : S => X  (nonempty)\n                                        and (and E2 ... En\
-   ) : S => Y\n\nAn `(or E1 ... En)` expression does short-circuit evaluation based o\
-   n whether\nor not E1 succeeds.  It returns the results of the first Ei that succe\
-   eds.\n\n    (or) = none\n\n    (or E) = E\n\n    (or E1 E2 ... En) : S => X         if\
-  \  E1 : S => X  (nonempty)\n    (or E1 E2 ... En) : S => Y         if  E1 : S => {\
-   }\n                                       and (or E2 ... En) : S => Y\n\nAn `(if E1\
-  \ E2 E3)` expression does conditional execution of E2 or E3 based\non whether or n\
-   ot E1 succeeds.\n\n    (if E1 E2 E3) : S => X2      if E1 : S => X (non-empty) and\
-   \n    (if E1 E2 E3) : S => X3      if E1 : S => {}\n\n       where   Ei : Si => Xi \
-  \   for i in {2,3}\n\nAn `(branch E1 E2 E3)` expression does conditional execution \
-   like `if`, but\nalso pipes the output of the condition into the `then' branch.\n\n \
-  \   (branch E1 E2 E3) : S => X1 U ... U Xn\n\n                                    i\
-   f E1 : S => {S1, ... , Sn} (non-empty)\n                                    and E\
-   2 : Si => Xi  for i in {1..n}\n\n    (branch E1 E2 E3) : S => X3\n                 \
-  \                   if E1 : S => {}\n                                    and E3 : \
-   S3 => X3\n\nThe following equations relating the behavior of `if` and `branch` are\
-  \ true:\n\n    (if E1 E2 E3) = (branch (test E1) E2 E3)\n\n    (branch E1 E2 E3) = (i\
-   f E1 (pipe E1 E2) E3)\n\n\nFormatting\n----------\n\nUsing the commands so far, one ma\
-   y only output sub-expressions of the input\nexpression itself.  However, we may a\
-   lso want to impose additional structure\non the output.\n\nA `(wrap E)` expression \
-   runs E and gathers up the resulting sequence into a\nsingle list s-expression tha\
-   t becomes the (single) overall result.\n\n    (wrap E) : S => {(S1 ... S2)}  where\
-  \  E : S => {S1, ... , S2}\n\nNote that the final output sequence has exactly one e\
-   lement that is a list.\n\nA `(quote S)` expression adds the provided s-expression \
-   to the manifest.\n\n    (quote S') : S => {S'}\n\nNote that S is discarded here.  Fo\
-   r this reason, quote is often used in\nconjunction with a parallel composition op\
-   erator like `cat`, `and`, or `or`.\n\n    (quote (a b c))              : (1 2 3) =\
-   > {(a b c)}\n    (quote (a (unquote each) c)) : (1 2 3) => {(a 1 c), (a 2 c), (a \
-   3 c)}\n    (quote (a (splice each) c))  : (1 2 3) => {(a 1 2 3 c)}\n\n    (quote (a\
-  \ (splice each) c (unquote each)))\n        : (1 2 3) => {(a 1 2 3 c 1), (a 1 2 3 \
-   c 2), (a 1 2 3 c 3)}\n\nMultiple unquotes in a single quoted template yield a cart\
-   esian product.\n\n    (quote (a (unquote (pipe (index 0) each))\n            b (unq\
-   uote (pipe (index 1) each))))\n        : ((1 2 3) (x y z)) => {(a 1 b x), (a 1 b \
-   y), (a 1 b z),\n                                (a 2 b x), (a 2 b y), (a 2 b z),\n\
-  \                                (a 3 b x), (a 3 b y), (a 3 b z)}\n\nFurthermore, n\
-   ested quotes increase the \"degree\" of quotation.  Splice and\nunquote only have t\
-   heir effect at the degree zero.  This feature is intended\nto facilitate sexpquer\
-   y expressions that manipulate other sexpquery expressions.\n\n--- grammar for sexp\
-   query templates ---\n\n          T[0] ::= ATOM               T[n+1] ::= ATOM\n     \
-  \            | (T[0] ... T[0])             | (T[n+1] ... T[n+1])\n                \
-  \ | (quote T[1])                | (quote T[n+2])\n                 | (unquote E)  \
-  \               | (unquote T[n])\n                 | (splice E)                  |\
-  \ (splice T[n])\n\nTransformations\n---------------\n\nFinally, we have a way to call \
-   the change language from the query\nlanguage.  The semantics of (change C) are to\
-  \ return the transformed\nexpression as a singleton sequence and propagate failure\
-   .\n\n    (change C) : S => {S'}    if C : S => S'\n    (change C) : S => {}      if\
-  \ C : S => _|_\n\n(see the change subcommand's internal documentation for informati\
-   on on\nchange semantics).\n\nSometimes the contents of an atom will be the string r\
-   epresentation of\na sequence of sexps. `restructure` will do this interpretation \
-   for you:\n\n    restructure : \"A (B C) D\" => {A (B C) D}\n"
+   t and select and pat-query subcommands.\n\nThis document explains the semantics of\
+  \ query expressions, whose\nsyntax is as follows:\n\n    E ::=\n        -- selection \
+   -------------\n        | (index NUM)\n        | (field STRING)\n        | each\n    \
+  \    | smash\n        -- composition -----------\n        | (pipe E E ...)\n        \
+   | (cat E E ...)\n        | this\n        | none\n        -- tests/conditionals ----\
+   \n        | atomic\n        | (variant TAG NUM)\n        | (equals SEXP ...)\n      \
+  \  | (regex R)\n        | (test E E ...)\n        | (not E)\n        | (and E E ...)\
+   \n        | (or E E ...)\n        | (if E E E)\n        | (branch E E E)\n        --\
+  \ formatting ------------\n        | (wrap E)\n        | (quote T[0])\n        -- tr\
+   ansformations -------\n        | (change C)\n        | restructure\n\nThe meaning of\
+  \ an expression is a function from an input s-expression to a\n(possibly empty) se\
+   quence of output s-expressions.  The toplevel command is\napplied to each express\
+   ion in the input.  We will look at five categories\nof expressions: selection, co\
+   mposition, conditionals, formatting, and\ntransformation.\n\nSelection\n---------\n\nA\
+  \ `(index N)` expression picks out the Nth element of a list s-expression.\nIt suc\
+   ceeds if N is a proper index (i.e., 0 <= N < list length) and fails\notherwise.  \
+   Upon success, it returns the single-element sequence containing\nthe selected sub\
+   -expressions.  Upon failure, it returns an empty list.\n\n    (index 2) : (one two\
+  \ three four) => {three}\n    (index 8) : (one two three four) => {}\n\nA `(field F)\
+   ` expression is like `(index N)` except that it projects\nthe field named F out o\
+   f a record.  If more than one field of that\nname exists, they will all be select\
+   ed.\n\n    (field foo) : ((bar 1) (foo 2) (baz 3))         => {2}\n    (field foo) \
+   : ((bar 1) (foo 2) (baz 3) (foo 4)) => {2, 4}\n    (field wow) : ((bar 1) (foo 2)\
+  \ (baz 3))         => {}\n\nAn `each` expression selects every element of a list.\n\n\
+  \    each : (one two three four) => {one, two, three, four}\n    each : ()    => {\
+   }\n    each : hello => {}\n\nAn `smash` expression selects every sub-expression of \
+   an s-expression\n\n    smash : (a (b c) (d (e f))) => { (a (b c) (d (e f))),\n     \
+  \                                 a, (b c), (d (e f)),\n                          \
+  \                b, c,  d, (e f),\n                                               \
+  \      e, f }\n\nComposition\n-----------\n\nThe two basic composition operators are `\
+   pipe` and `cat`.  These two\noperators do sequential and parallel composition, re\
+   spectively.  The\ndenotation of\n\n                    (pipe E1 E2 ... En)\n\nis a \"f\
+   anned out\" composition of the denotations D = [E1] and\nD' = [`(pipe E2 ... En)`]\
+  \ in which D' is called on every s-expression\nin the output sequence of D and all\
+  \ the resulting sequences of\ns-expressions are concatenated together into one big\
+  \ sequence.\n\n            (pipe E) = E\n            (pipe E1 E2 ... En) : S => X1 U\
+  \ ... U Xm\n\n            where   E1 : S => {S1, ..., Sm}\n              and   (pipe\
+  \ E2 ... En) : Si => Xi   for i in {1..m}\n\nIn particular, this means that if D re\
+   turns an empty sequence, then\nD' will never be called.  The denotation of\n\n     \
+  \               (cat E1 E2 ... En)\n\nis simply a parallel execution of each Ei on \
+   the input X in which all\n\n            (cat E1 ... En) : S => X1 U ... U Xn\n\n    \
+  \        where   Ei : S => Xi    for i in {i .. n}\n\nThere are two trivial express\
+   ions, `this` and `none`.  A this expression\nsimply selects it input, while a `no\
+   ne` expression selects nothing\n\n                this : S => {S}         none : S\
+  \ => {}\n\nThese are identities for the pipe and cat operators.\n\n                th\
+   is = (pipe)          none = (cat)\n\n(For monad fans -- pipe is Kleisli compositio\
+   n and `this` is Kleisli\nidentity for the list monad.)\n\n\nConditionals\n-----------\
+   -\n\nFor the purpose of conditional execution, we treat an expression returning\na \
+   non-empty sequence as true, and an expression returning an empty sequence\nas fal\
+   se.  With this in mind, one may think of `this` and `none` as the\nconstants true\
+  \ and false, respectively.\n\nA `atomic` expression tests for atomic s-expressions.\
+   \n\n        atomic : foo       => {foo}\n        atomic : (foo bar) => {}\n\nThe most\
+  \ basic non-trivial condition is equality.  The expression\n`(equals S)` selects i\
+   ts input in the case that the (returns true) and\nfails (returns false) otherwise\
+   .\n\n        (equals S) : S' => {S'}    if S = S'\n        (equals S) : S' => {}   \
+  \   otherwise\n\nThere is also a N-ary version of equals that is expands to a disju\
+   nction\n\n        (equals S1 S2 ...) = (or (equals S1) (equals S2) ...)\n\nA `(regex\
+  \ R)` expression tests for the s-expresion to be an ATOM that\nmatches R.  The tru\
+   th value will be the first capturing group of the\nregular expression or the whol\
+   e atom if regular expression has no\ncapturing groups.\n\nA `(variant F N)` express\
+   ion tests for the s-expression form of an element\nof a variant type with constru\
+   ctor F applied to N arguments.  You can leave N off, in\nwhich case it will match\
+  \ a variant with any number of arguments.\n\n    (variant foo 5) : (foo 1 2 3 4 5) \
+   => {(foo 1 2 3 4 5)}\n    (variant foo 3) : (foo 1 2 3 4 5) => {}\n    (variant fo\
+   o 8) : (foo 1 2 3 4 5) => {}\n    (variant bar 5) : (foo 1 2 3 4 5) => {}\n    (va\
+   riant foo 0) : foo => {foo}\n    (variant foo 0) : (foo) => {(foo)}\n    (variant \
+   foo)   : (foo 1 2 3 4 5) => {(foo 1 2 3 4 5)}\n    (variant foo)   : foo => {foo}\
+   \n    (variant foo)   : (foo) => {(foo)}\n\nA `(test E)` expression proceeds by eva\
+   luating E on the current s-expression\nS and selecting S only in the case that E \
+   succeeds.\n\n        (test E) : S => {}    if X empty      where  E : S => X\n     \
+  \   (test E) : S => {S}   otherwise\n\nWe also provide `(test E1 E2 ...)` as syntac\
+   tic sugar for the common\nidiom `(test (pipe E1 E2 ...))`.\n\nA `(not E)` expressio\
+   n proceeds by evaluating E on the current s-expression\nS and selecting S only in\
+  \ the case that E fails.\n\n        (not E) : S => {S}    if X empty      where  E \
+   : S => X\n        (not E) : S => {}     otherwise\n\nNote that X is is discarded fr\
+   om the output of both (test E) and (not E).\nFor this reason, these two operators\
+  \ are useful for \"looking down\" into an\ns-expression while remembering your place\
+  \ at some point above where you will\nreturn later.\n\nAn `(and E1 ... En)` expressi\
+   on does short-circuit evaluation based on whether\nor not E1 succeeds.  Upon succ\
+   ess, it returns the results of En.\n\n    (and) = this\n\n    (and E) = E\n\n    (and \
+   E1 E2 ... En) : S => {}        if  E1 : S => {}\n    (and E1 E2 ... En) : S => Y \
+  \        if  E1 : S => X  (nonempty)\n                                        and \
+   (and E2 ... En) : S => Y\n\nAn `(or E1 ... En)` expression does short-circuit eval\
+   uation based on whether\nor not E1 succeeds.  It returns the results of the first\
+  \ Ei that succeeds.\n\n    (or) = none\n\n    (or E) = E\n\n    (or E1 E2 ... En) : S =\
+   > X         if  E1 : S => X  (nonempty)\n    (or E1 E2 ... En) : S => Y         i\
+   f  E1 : S => {}\n                                       and (or E2 ... En) : S =>\
+  \ Y\n\nAn `(if E1 E2 E3)` expression does conditional execution of E2 or E3 based\no\
+   n whether or not E1 succeeds.\n\n    (if E1 E2 E3) : S => X2      if E1 : S => X (\
+   non-empty) and\n    (if E1 E2 E3) : S => X3      if E1 : S => {}\n\n       where   \
+   Ei : Si => Xi    for i in {2,3}\n\nAn `(branch E1 E2 E3)` expression does conditio\
+   nal execution like `if`, but\nalso pipes the output of the condition into the `th\
+   en' branch.\n\n    (branch E1 E2 E3) : S => X1 U ... U Xn\n\n                       \
+  \             if E1 : S => {S1, ... , Sn} (non-empty)\n                           \
+  \         and E2 : Si => Xi  for i in {1..n}\n\n    (branch E1 E2 E3) : S => X3\n   \
+  \                                 if E1 : S => {}\n                               \
+  \     and E3 : S3 => X3\n\nThe following equations relating the behavior of `if` an\
+   d `branch` are true:\n\n    (if E1 E2 E3) = (branch (test E1) E2 E3)\n\n    (branch \
+   E1 E2 E3) = (if E1 (pipe E1 E2) E3)\n\n\nFormatting\n----------\n\nUsing the commands \
+   so far, one may only output sub-expressions of the input\nexpression itself.  How\
+   ever, we may also want to impose additional structure\non the output.\n\nA `(wrap E\
+   )` expression runs E and gathers up the resulting sequence into a\nsingle list s-\
+   expression that becomes the (single) overall result.\n\n    (wrap E) : S => {(S1 .\
+   .. S2)}  where  E : S => {S1, ... , S2}\n\nNote that the final output sequence has\
+  \ exactly one element that is a list.\n\nA `(quote S)` expression adds the provided\
+  \ s-expression to the manifest.\n\n    (quote S') : S => {S'}\n\nNote that S is disca\
+   rded here.  For this reason, quote is often used in\nconjunction with a parallel \
+   composition operator like `cat`, `and`, or `or`.\n\n    (quote (a b c))           \
+  \   : (1 2 3) => {(a b c)}\n    (quote (a (unquote each) c)) : (1 2 3) => {(a 1 c)\
+   , (a 2 c), (a 3 c)}\n    (quote (a (splice each) c))  : (1 2 3) => {(a 1 2 3 c)}\n\
+   \n    (quote (a (splice each) c (unquote each)))\n        : (1 2 3) => {(a 1 2 3 c\
+  \ 1), (a 1 2 3 c 2), (a 1 2 3 c 3)}\n\nMultiple unquotes in a single quoted templat\
+   e yield a cartesian product.\n\n    (quote (a (unquote (pipe (index 0) each))\n    \
+  \        b (unquote (pipe (index 1) each))))\n        : ((1 2 3) (x y z)) => {(a 1\
+  \ b x), (a 1 b y), (a 1 b z),\n                                (a 2 b x), (a 2 b y\
+   ), (a 2 b z),\n                                (a 3 b x), (a 3 b y), (a 3 b z)}\n\n\
+   Furthermore, nested quotes increase the \"degree\" of quotation.  Splice and\nunquo\
+   te only have their effect at the degree zero.  This feature is intended\nto facil\
+   itate sexpquery expressions that manipulate other sexpquery expressions.\n\n--- gr\
+   ammar for sexpquery templates ---\n\n          T[0] ::= ATOM               T[n+1] \
+   ::= ATOM\n                 | (T[0] ... T[0])             | (T[n+1] ... T[n+1])\n  \
+  \               | (quote T[1])                | (quote T[n+2])\n                 |\
+  \ (unquote E)                 | (unquote T[n])\n                 | (splice E)     \
+  \             | (splice T[n])\n\nTransformations\n---------------\n\nFinally, we have \
+   a way to call the change language from the query\nlanguage.  The semantics of (ch\
+   ange C) are to return the transformed\nexpression as a singleton sequence and pro\
+   pagate failure.\n\n    (change C) : S => {S'}    if C : S => S'\n    (change C) : S\
+  \ => {}      if C : S => _|_\n\n(see the change subcommand's internal documentation\
+  \ for information on\nchange semantics).\n\nSometimes the contents of an atom will b\
+   e the string representation of\na sequence of sexps. `restructure` will do this i\
+   nterpretation for you:\n\n    restructure : \"A (B C) D\" => {A (B C) D}\n"
 ;;
 
 let change_by_example_dot_md =
