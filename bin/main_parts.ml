@@ -1,4 +1,5 @@
 open Core
+open Poly
 open Sexp_app
 
 let rec flatten () =

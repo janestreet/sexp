@@ -1,4 +1,5 @@
 open Core
+open Poly
 
 let%test_unit _ =
   let change_tests =

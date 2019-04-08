@@ -1,4 +1,5 @@
 open Core
+open Poly
 
 let simple_query query sexp = Lazy_list.to_list (Semantics.query query sexp)
 

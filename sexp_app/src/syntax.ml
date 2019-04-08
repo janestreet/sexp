@@ -1,4 +1,5 @@
 open Core
+open Poly
 
 type regex = Re2.t
 

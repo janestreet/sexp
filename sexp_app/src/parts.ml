@@ -1,4 +1,5 @@
 open Core
+open Poly
 
 module Path = struct
   include Sexplib.Path

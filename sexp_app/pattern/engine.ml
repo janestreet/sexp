@@ -1,4 +1,5 @@
 open Core
+open Poly
 
 (* This module type is so that we can write the code for a single engine that works both
    on plain Sexp.t and a version of Sexp.t where the nodes are labeled with an integer, by

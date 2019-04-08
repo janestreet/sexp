@@ -1,4 +1,5 @@
 open Core
+open Poly
 open Lazy_list.Let_syntax
 
 include struct

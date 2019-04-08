@@ -1,4 +1,5 @@
 open Core
+open Poly
 
 (* Given a function to get the next char of the input, returns a function to get the next
    block of transformed input. Strings returned via `Ok always have nonzero length. *)
