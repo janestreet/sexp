@@ -1,5 +1,4 @@
 open Core
-open Poly
 
 let simple_query query sexp = Lazy_list.to_list (Semantics.query query sexp)
 
@@ -84,7 +83,7 @@ let replace_field ~field ~value sexp immediate_or_recursive =
   | `Immediate -> replace_immediate_field ~field ~value sexp
   | `Recursive ->
     let result = replace_field_recursively ~field ~value sexp in
-    if result = sexp
+    if Sexp.( = ) result sexp
     then Or_error.error "field not found" field String.sexp_of_t
     else Ok result
 ;;
@@ -96,50 +95,65 @@ let%test_module "Utils" =
         "((first (a b c)) (second 123) (third ()) (fourth ((foo a) (boo b))))"
     ;;
 
-    let%test _ = get_one_field sexp "second" = Ok (Sexp.Atom "123")
+    let%test _ =
+      [%compare.equal: Sexp.t Or_error.t]
+        (get_one_field sexp "second")
+        (Ok (Sexp.Atom "123"))
+    ;;
+
     let%test _ = Result.is_error (get_one_field sexp "zoo")
-    let%test _ = get_one_field sexp "boo" = Ok (Sexp.Atom "b")
+
+    let%test _ =
+      [%compare.equal: Sexp.t Or_error.t] (get_one_field sexp "boo") (Ok (Sexp.Atom "b"))
+    ;;
+
     let%test _ = Result.is_error (immediate_fields (Sexp.of_string "zoo"))
     let%test _ = Result.is_error (immediate_fields (Sexp.of_string "(zoo)"))
     let%test _ = Result.is_error (immediate_fields (Sexp.of_string "(zoo boo)"))
     let%test _ = Result.is_error (immediate_fields (Sexp.of_string "((good true)(bad))"))
 
     let%test _ =
-      List.Assoc.find_exn
-        (Or_error.ok_exn (immediate_fields sexp))
-        ~equal:String.equal
-        "second"
-      = Sexp.Atom "123"
+      [%equal: Sexp.t]
+        (List.Assoc.find_exn
+           (Or_error.ok_exn (immediate_fields sexp))
+           ~equal:String.equal
+           "second")
+        (Atom "123")
     ;;
 
     let%test _ =
-      List.Assoc.find_exn
-        (Or_error.ok_exn (immediate_fields sexp))
-        ~equal:String.equal
-        "third"
-      = Sexp.List []
+      [%equal: Sexp.t]
+        (List.Assoc.find_exn
+           (Or_error.ok_exn (immediate_fields sexp))
+           ~equal:String.equal
+           "third")
+        (List [])
     ;;
 
     let%test _ =
-      List.Assoc.find_exn
-        (Or_error.ok_exn (immediate_fields sexp))
-        ~equal:String.equal
-        "fourth"
-      = Sexp.of_string "((foo a) (boo b))"
+      [%equal: Sexp.t]
+        (List.Assoc.find_exn
+           (Or_error.ok_exn (immediate_fields sexp))
+           ~equal:String.equal
+           "fourth")
+        (Sexp.of_string "((foo a) (boo b))")
     ;;
 
-    let%test _ = to_record_sexp (Or_error.ok_exn (immediate_fields sexp)) = sexp
+    let%test _ =
+      [%equal: Sexp.t] (to_record_sexp (Or_error.ok_exn (immediate_fields sexp))) sexp
+    ;;
 
     let%test _ =
       let value = Sexp.Atom "my-new-value" in
       let sexp =
         Or_error.ok_exn (replace_field ~field:"second" ~value sexp `Immediate)
       in
-      List.Assoc.find_exn
-        (Or_error.ok_exn (immediate_fields sexp))
-        ~equal:String.equal
-        "second"
-      = value
+      [%equal: Sexp.t]
+        (List.Assoc.find_exn
+           (Or_error.ok_exn (immediate_fields sexp))
+           ~equal:String.equal
+           "second")
+        value
     ;;
 
     let%test _ =
@@ -151,11 +165,12 @@ let%test_module "Utils" =
           ~equal:String.equal
           "fourth"
       in
-      List.Assoc.find_exn
-        (Or_error.ok_exn (immediate_fields fourth_value))
-        ~equal:String.equal
-        "foo"
-      = value
+      [%equal: Sexp.t]
+        (List.Assoc.find_exn
+           (Or_error.ok_exn (immediate_fields fourth_value))
+           ~equal:String.equal
+           "foo")
+        value
     ;;
   end)
 ;;

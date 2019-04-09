@@ -1,5 +1,4 @@
 open Core
-open Poly
 
 type regex = Re2.t
 
@@ -122,7 +121,7 @@ module Var = struct
       (* Special case to allow "$$100" as an escaped version of "$100". *)
       if invariant x
       then
-        if String.length x > 1 && x.[0] = x.[1]
+        if String.length x > 1 && Char.( = ) x.[0] x.[1]
         then raise (Escaped_literal (String.drop_prefix x 1))
         else x
       else
@@ -264,7 +263,7 @@ module Pattern = struct
       | Template.Hole v, s ->
         assign v s;
         succ ()
-      | Template.Atom a, Atom b -> if a = b then succ () else fail ()
+      | Template.Atom a, Atom b -> if String.( = ) a b then succ () else fail ()
       | Template.List ts, List xs ->
         let rec gather_all txs ~rev ~fail ~succ =
           match txs with
@@ -341,7 +340,7 @@ module Pattern_record = struct
         else (
           assign env v s;
           true)
-      | Template.Atom a, Atom b -> if a = b then true else false
+      | Template.Atom a, Atom b -> if String.( = ) a b then true else false
       | Template.List ts, List xs ->
         (* Each of the ts should match first x from xs which it can match.  If there's a
            list variable among ts, all the unmatched xs will be stored in it. *)
@@ -354,7 +353,7 @@ module Pattern_record = struct
          | None -> false
          | Some xs ->
            (match list_vars with
-            | [] -> xs = []
+            | [] -> List.is_empty xs
             | [ Template.Hole list_var ] ->
               assign env list_var (List xs);
               true

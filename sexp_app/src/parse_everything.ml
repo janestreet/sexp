@@ -1,5 +1,4 @@
 open Core
-open Poly
 
 (* Given a function to get the next char of the input, returns a function to get the next
    block of transformed input. Strings returned via `Ok always have nonzero length. *)
@@ -27,7 +26,7 @@ let read_of_next_char
       match c with
       | '(' | '"' | ' ' | '\t' | '\012' | '\n' | '\r' -> true
       | ')'
-        when !paren_depth > 0 -> true
+        when Int.( > ) !paren_depth 0 -> true
       | _ -> false
     in
     (* State variables *)
@@ -66,7 +65,7 @@ let read_of_next_char
               (* Any other character gets added to the string, and if it's an escape
                  character, we remember this *)
               | c ->
-                if c = '\\' then follows_escape_in_string := true;
+                if Char.equal c '\\' then follows_escape_in_string := true;
                 Buffer.add_char atom_so_far c;
                 `Ok "" (* Not inside string *)))
           else if (* Chars that don't terminate the atom just get appended and we continue *)
@@ -193,6 +192,8 @@ let transform_string s =
   in
   loop ()
 ;;
+
+open String.Replace_polymorphic_compare
 
 let unchanged s = transform_string s = s
 

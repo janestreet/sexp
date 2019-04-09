@@ -1,5 +1,4 @@
 open Core
-open Poly
 
 let%test_unit _ =
   let change_tests =
@@ -60,7 +59,7 @@ let%test_unit _ =
       let syntax = Syntax.Change.t_of_sexp (Sexp.of_string program) in
       let output = Semantics.change syntax (Sexp.of_string input) in
       let expected_output = Option.map expected_output ~f:Sexp.of_string in
-      if output = expected_output
+      if [%compare.equal: Sexp.t option] output expected_output
       then None
       else Some { Bug.program; syntax; input; output; expected_output })
   in

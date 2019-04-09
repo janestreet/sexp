@@ -1,5 +1,4 @@
 open Core
-open Poly
 open Async
 open Sexplib.Type
 
@@ -17,7 +16,7 @@ end
 module Eval = struct
   let matches atom = function
     | `star -> true
-    | `string s -> atom = s
+    | `string s -> String.( = ) atom s
     | `one_of set -> Set.mem set atom
   ;;
 

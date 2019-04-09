@@ -1,5 +1,4 @@
 open Core
-open Poly
 open Sexp_app
 
 let rec flatten () =
@@ -15,7 +14,7 @@ let rec flatten () =
 
 let rec assemble () =
   let flattened = Parts.input In_channel.stdin in
-  if flattened = []
+  if List.is_empty flattened
   then ()
   else (
     Sexp.output_mach stdout (Parts.assemble flattened);

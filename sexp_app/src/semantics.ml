@@ -1,5 +1,4 @@
 open Core
-open Poly
 open Lazy_list.Let_syntax
 
 include struct
@@ -112,19 +111,19 @@ module Vanilla : S = struct
     | List ss ->
       (match%bind Lazy_list.of_list ss with
        | List [ Atom fname; fvalue ]
-         when fname = name -> one fvalue
+         when String.( = ) fname name -> one fvalue
        | _ -> nil)
   ;;
 
   let variant name n_opt s =
     match s with
     | Atom cname
-      when cname = name ->
+      when String.( = ) cname name ->
       (match n_opt with
        | None -> one s
        | Some n -> if n = 0 then one s else nil)
     | List (Atom cname :: args)
-      when cname = name ->
+      when String.( = ) cname name ->
       (match n_opt with
        | None -> one s
        | Some n -> if n = List.length args then one s else nil)
@@ -419,7 +418,7 @@ module Cont : S = struct
           ~f:(fun s k ->
             match s with
             | List [ Atom fname; fvalue ]
-              when fname = name -> one fvalue k
+              when String.( = ) fname name -> one fvalue k
             | _ -> nil k)
           k
     ;;
@@ -427,12 +426,12 @@ module Cont : S = struct
     let variant name n_opt s k =
       match s with
       | Atom cname
-        when cname = name ->
+        when String.( = ) cname name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = 0 then one s k else nil k)
       | List (Atom cname :: args)
-        when cname = name ->
+        when String.( = ) cname name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = List.length args then one s k else nil k)
@@ -779,7 +778,7 @@ module Mono : S = struct
           ~f:(fun s k ->
             match s with
             | List [ Atom fname; fvalue ]
-              when fname = name -> one fvalue k
+              when String.( = ) fname name -> one fvalue k
             | _ -> nil k)
           k
     ;;
@@ -787,12 +786,12 @@ module Mono : S = struct
     let variant name n_opt s k =
       match s with
       | Atom cname
-        when cname = name ->
+        when String.( = ) cname name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = 0 then one s k else nil k)
       | List (Atom cname :: args)
-        when cname = name ->
+        when String.( = ) cname name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = List.length args then one s k else nil k)
@@ -1196,7 +1195,7 @@ module Nofun : S = struct
       | Extract_field name ->
         (match x with
          | List [ Atom fname; fvalue ]
-           when fname = name -> one fvalue k
+           when String.( = ) fname name -> one fvalue k
          | _ -> nil k)
 
     and apply_bindf'_ code row k =
@@ -1298,12 +1297,12 @@ module Nofun : S = struct
     and variant name n_opt s k =
       match s with
       | Atom cname
-        when cname = name ->
+        when String.( = ) cname name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = 0 then one s k else nil k)
       | List (Atom cname :: args)
-        when cname = name ->
+        when String.( = ) cname name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = List.length args then one s k else nil k)

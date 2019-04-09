@@ -1,5 +1,4 @@
 open Core
-open Poly
 
 (* This module type is so that we can write the code for a single engine that works both
    on plain Sexp.t and a version of Sexp.t where the nodes are labeled with an integer, by
@@ -105,7 +104,7 @@ module Make_engine (S : Sexplike) = struct
          | head :: tail ->
            (match S.unwrap head with
             | S.Atom a
-              when a = str -> f 1 [ head ] tail
+              when String.( = ) a str -> f 1 [ head ] tail
             | _ -> ()))
       | Atom_regex regex ->
         (match sexps with

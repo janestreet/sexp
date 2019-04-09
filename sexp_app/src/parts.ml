@@ -1,8 +1,19 @@
 open Core
-open Poly
 
 module Path = struct
   include Sexplib.Path
+
+  module X : sig
+    val compare_el : el -> el -> int
+  end = struct
+    type nonrec el = el =
+      | Pos of int
+      | Match of string * int
+      | Rec of string
+    [@@deriving compare]
+  end
+
+  include X
 
   let to_string l =
     match l with
@@ -53,7 +64,10 @@ let rec flatten path t =
 let flatten t = flatten [] t
 
 let rec assemble (l : (Path.t * Sexp.t) list) =
-  let group l = List.group l ~break:(fun (p1, _) (p2, _) -> List.hd p1 <> List.hd p2) in
+  let group l =
+    List.group l ~break:(fun (p1, _) (p2, _) ->
+      not ([%compare.equal: Path.el option] (List.hd p1) (List.hd p2)))
+  in
   let one_deeper l =
     List.map l ~f:(fun (p, v) ->
       match p with
