@@ -1,4 +1,4 @@
 (executables (names main) (public_names sexp)
  (libraries async core sexp_app sexp_diff_kernel sexp_app_pattern sexp_macro
-  sexp_pretty sexplib csvfields.xml-light)
+  sexp_pretty sexp_select sexplib csvfields.xml-light)
  (flags :standard -g) (preprocess (pps ppx_jane)))

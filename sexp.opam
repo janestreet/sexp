@@ -10,7 +10,7 @@ build: [
   ["dune" "build" "-p" name "-j" jobs]
 ]
 depends: [
-  "ocaml" {>= "4.07.0" & < "4.08.0"}
+  "ocaml" {>= "4.07.0"}
   "async"
   "core"
   "core_kernel"
@@ -20,6 +20,7 @@ depends: [
   "sexp_diff_kernel"
   "sexp_macro"
   "sexp_pretty"
+  "sexp_select"
   "sexplib"
   "dune"             {build & >= "1.5.1"}
 ]

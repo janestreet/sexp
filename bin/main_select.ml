@@ -1,96 +1,5 @@
 open Core
 open Async
-open Sexplib.Type
-
-module Action = struct
-  type ident =
-    [ `star
-    | `string of string
-    | `one_of of String.Set.t ]
-
-  type t =
-    [ `descendants of ident (* All descendants matching [ident] *)
-    | `children of ident (* All direct children matching [ident] *) ]
-end
-
-module Eval = struct
-  let matches atom = function
-    | `star -> true
-    | `string s -> String.( = ) atom s
-    | `one_of set -> Set.mem set atom
-  ;;
-
-  let rec descendants name = function
-    | List [ Atom key; value ]
-      when matches key name -> value :: descendants name value
-    | List l -> List.bind l ~f:(descendants name)
-    | _ -> []
-  ;;
-
-  let children name = function
-    | Atom _ -> []
-    | List l ->
-      List.filter_map l ~f:(function
-        | List [ Atom key; value ]
-          when matches key name -> Some value
-        | _ -> None)
-  ;;
-end
-
-module Parse = struct
-  let parse_ident tokens =
-    match tokens with
-    | "*" :: rest -> `star, rest
-    | "(" :: rest ->
-      let idents, rest =
-        List.split_while rest ~f:(function
-          | "(" | ")" -> false
-          | _ -> true)
-      in
-      (match rest with
-       | ")" :: rest -> `one_of (String.Set.of_list idents), rest
-       | "(" :: _ ->
-         failwithf
-           "nested parens are not supported: '%s'"
-           (String.concat ~sep:" " tokens)
-           ()
-       | _ -> failwithf "unterminated ( in '%s'" (String.concat ~sep:" " tokens) ())
-    | ident :: rest -> `string ident, rest
-    | [] -> assert false
-  ;;
-
-  let parse_one = function
-    (* This actually needn't return option, since we always have a valid parse. But we
-       leave it as-is for future language extensions that might be more restrictive. *)
-    | [] -> None
-    | ">" :: rest ->
-      let ident, rest = parse_ident rest in
-      Some (`children ident, rest)
-    | rest ->
-      let ident, rest = parse_ident rest in
-      Some (`descendants ident, rest)
-  ;;
-
-  let parse s =
-    let rec loop tokens =
-      match parse_one tokens with
-      | Some (action, rest) -> action :: loop rest
-      | None -> []
-    in
-    loop (String.split s ~on:' ')
-  ;;
-end
-
-let go program_string sexp =
-  let rec loop actions sexp =
-    match (actions : Action.t list) with
-    | [] -> [ sexp ]
-    | `descendants ident :: rest ->
-      List.bind (Eval.descendants ident sexp) ~f:(loop rest)
-    | `children ident :: rest -> List.bind (Eval.children ident sexp) ~f:(loop rest)
-  in
-  loop (Parse.parse program_string) sexp
-;;
 
 module Test_and_doc = struct
   let test_sexp_string =
@@ -138,7 +47,7 @@ module Test_and_doc = struct
   let () =
     List.iter tests ~f:(fun (program, expected) ->
       [%test_result: Sexp.t list]
-        (go program test_sexp)
+        (Sexp_select.select program test_sexp)
         ~expect:(List.map ~f:Sexp.of_string expected))
   ;;
 
@@ -214,7 +123,7 @@ let command =
          | Some x -> Pipe.singleton (Sexp.of_string x)
        in
        Pipe.iter_without_pushback sexp_pipe ~f:(fun sexp ->
-         List.iter (go program sexp) ~f:(fun answer ->
+         List.iter (Sexp_select.select program sexp) ~f:(fun answer ->
            printf "%s\n%!" (Sexp.to_string_hum answer))))
 ;;
 
@@ -241,7 +150,7 @@ let multi_command =
        |> Pipe.iter_without_pushback ~f:(fun sexp ->
          match
            List.concat_map programs ~f:(fun program ->
-             List.map (go program sexp) ~f:(fun answer ->
+             List.map (Sexp_select.select program sexp) ~f:(fun answer ->
                if labeled
                then [%sexp_of: string * Sexp.t] (program, answer)
                else answer))
