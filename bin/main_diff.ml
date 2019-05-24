@@ -2,15 +2,25 @@ open Core
 open Async
 
 
-let load file ~expand_macros =
+let load file ~expand_macros ~multiple_sexps_in_each_file =
   if expand_macros
   then Sexp_macro.Blocking.load_sexp file |> return
+  else if multiple_sexps_in_each_file
+  then Reader.file_contents file >>| sprintf "( %s )" >>| Sexp.of_string
   else Reader.file_contents file >>| Sexp.of_string
 ;;
 
 let expand_macros_flag =
   let open Command.Param in
   flag "expand-macros" no_arg ~doc:" expand macros in input files"
+;;
+
+let multiple_sexps_in_each_file_flag =
+  let open Command.Param in
+  flag
+    "multiple-sexps-in-each-file"
+    no_arg
+    ~doc:" multiple sexps in each input file (incompatible with -expand-macros)"
 ;;
 
 module Display_function = struct
@@ -98,11 +108,14 @@ It also exists non-zero (with exit code 1) if either sexp is malformed.
      let%map_open file1, file2 =
        anon (t2 ("FILE1" %: Filename.arg_type) ("FILE2" %: Filename.arg_type))
      and mode = Diff_mode.flags
-     and expand_macros = expand_macros_flag in
+     and expand_macros = expand_macros_flag
+     and multiple_sexps_in_each_file = multiple_sexps_in_each_file_flag in
      fun () ->
+       if expand_macros && multiple_sexps_in_each_file
+       then failwith "Incompatible flags -expand-macros and -multiple-sexps-in-each-file";
        let open Deferred.Let_syntax in
-       let%bind original = load file1 ~expand_macros in
-       let%bind updated = load file2 ~expand_macros in
+       let%bind original = load file1 ~expand_macros ~multiple_sexps_in_each_file in
+       let%bind updated = load file2 ~expand_macros ~multiple_sexps_in_each_file in
        let diff = Sexp_diff_kernel.Algo.diff ~original ~updated () in
        (* emit output *)
        (match mode with
@@ -140,8 +153,9 @@ DIFF-FILE should have the same format as that produced by [sexp diff -for-patch]
      fun () ->
        let open Deferred.Let_syntax in
        let%bind diff =
-         load diff_file ~expand_macros >>| Sexp_diff_kernel.Diff.t_of_sexp
+         load diff_file ~expand_macros ~multiple_sexps_in_each_file:false
+         >>| Sexp_diff_kernel.Diff.t_of_sexp
        in
-       let%map file = load file ~expand_macros in
+       let%map file = load file ~expand_macros ~multiple_sexps_in_each_file:false in
        Sexp_diff_kernel.Diff.apply_exn diff file |> print_s)
 ;;
