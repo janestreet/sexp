@@ -76,7 +76,7 @@ module Diff_mode = struct
   let flags =
     let open Command.Param in
     choose_one
-      ~if_nothing_chosen:(`Default_to (Emit_diff (Display_function.create ())))
+      ~if_nothing_chosen:(Default_to (Emit_diff (Display_function.create ())))
       [ flag
           "for-patch"
           no_arg

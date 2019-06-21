@@ -15,7 +15,7 @@ let command =
      [%map_open
        let kind =
          choose_one
-           ~if_nothing_chosen:(`Default_to Kind.Exactly_stdin)
+           ~if_nothing_chosen:(Default_to Kind.Exactly_stdin)
            [ flag
                "-strip-trailing-newlines"
                (no_arg_some Kind.Strip_trailing_newlines)
