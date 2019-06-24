@@ -57,7 +57,7 @@ module Record_field : sig
   type 'change t =
     { change : 'change
     ; new_name : string option
-    ; presence : [`Present | `Optional | `Absent]
+    ; presence : [ `Present | `Optional | `Absent ]
     }
 end
 

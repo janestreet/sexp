@@ -20,7 +20,7 @@ val to_record_sexp : (string, Sexp.t) List.Assoc.t -> Sexp.t
 
 (** [ sexp_rewrite sexp ~f ] returns the rewritten sexp where f is applied
     to sexp and its descendents. *)
-val sexp_rewrite : Sexp.t -> f:(Sexp.t -> [`Unchanged | `Changed of Sexp.t]) -> Sexp.t
+val sexp_rewrite : Sexp.t -> f:(Sexp.t -> [ `Unchanged | `Changed of Sexp.t ]) -> Sexp.t
 
 (** [ replace_field ~field ~value sexp scope ] replaces either the field with the
     given value, or returns an error if no match is found in the designated scope.
@@ -30,5 +30,5 @@ val replace_field
   :  field:string
   -> value:Sexp.t
   -> Sexp.t
-  -> [`Immediate | `Recursive]
+  -> [ `Immediate | `Recursive ]
   -> Sexp.t Or_error.t

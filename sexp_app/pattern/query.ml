@@ -33,9 +33,6 @@ let rec iter t ~f =
   | Plus sub
   | Maybe sub
   | List sub -> iter sub ~f
-  | Sequence subs
-  | And subs
-  | Or_shortcircuiting subs
-  | Or_all subs
-  | Set subs -> List.iter subs ~f:(fun sub -> iter sub ~f)
+  | Sequence subs | And subs | Or_shortcircuiting subs | Or_all subs | Set subs ->
+    List.iter subs ~f:(fun sub -> iter sub ~f)
 ;;

@@ -43,7 +43,8 @@ let sexp_to_record = function
     with_return (fun r ->
       match
         String.Map.of_alist
-          (List.mapi fields ~f:(fun i -> function
+          (List.mapi fields ~f:(fun i ->
+             function
              | List [ Atom field; s ] -> field, (i, s)
              | _ -> r.return None))
       with
@@ -110,20 +111,17 @@ module Vanilla : S = struct
     | Atom _ -> nil
     | List ss ->
       (match%bind Lazy_list.of_list ss with
-       | List [ Atom fname; fvalue ]
-         when String.( = ) fname name -> one fvalue
+       | List [ Atom fname; fvalue ] when String.( = ) fname name -> one fvalue
        | _ -> nil)
   ;;
 
   let variant name n_opt s =
     match s with
-    | Atom cname
-      when String.( = ) cname name ->
+    | Atom cname when String.( = ) cname name ->
       (match n_opt with
        | None -> one s
        | Some n -> if n = 0 then one s else nil)
-    | List (Atom cname :: args)
-      when String.( = ) cname name ->
+    | List (Atom cname :: args) when String.( = ) cname name ->
       (match n_opt with
        | None -> one s
        | Some n -> if n = List.length args then one s else nil)
@@ -214,17 +212,17 @@ module Vanilla : S = struct
     | Template.Hole (Syntax.Splice q) -> Row (Lazy_list.to_list (query q s))
     | Template.List ts ->
       let rec rows
-        : Syntax.Query.t Syntax.anti_quote Template.t list -> Sexp.t list Lazy_list.t =
-        function
-        | [] -> cons [] (Lazy_list.empty ())
-        | t :: ts ->
-          let blocks = rows ts in
-          (match quote t s with
-           | One x -> Lazy_list.map blocks ~f:(fun ys -> x :: ys)
-           | Row xs -> Lazy_list.map blocks ~f:(fun ys -> xs @ ys)
-           | Col xs ->
-             let%bind x = xs in
-             Lazy_list.map blocks ~f:(fun ys -> x :: ys))
+        : Syntax.Query.t Syntax.anti_quote Template.t list -> Sexp.t list Lazy_list.t
+        = function
+          | [] -> cons [] (Lazy_list.empty ())
+          | t :: ts ->
+            let blocks = rows ts in
+            (match quote t s with
+             | One x -> Lazy_list.map blocks ~f:(fun ys -> x :: ys)
+             | Row xs -> Lazy_list.map blocks ~f:(fun ys -> xs @ ys)
+             | Col xs ->
+               let%bind x = xs in
+               Lazy_list.map blocks ~f:(fun ys -> x :: ys))
       in
       Col
         (let%bind row = rows ts in
@@ -263,7 +261,8 @@ module Vanilla : S = struct
           | Fail -> Fail
           | Same -> Same
           | Diff ss -> Diff (List ss)))
-    | Syntax.Record _ -> (* Only implemented in [Nofun]. *)
+    | Syntax.Record _ ->
+      (* Only implemented in [Nofun]. *)
       assert false
     | Syntax.Rewrite (lhs, rhs) ->
       Pattern.pmatch
@@ -417,21 +416,18 @@ module Cont : S = struct
           (fun k -> of_list ss k)
           ~f:(fun s k ->
             match s with
-            | List [ Atom fname; fvalue ]
-              when String.( = ) fname name -> one fvalue k
+            | List [ Atom fname; fvalue ] when String.( = ) fname name -> one fvalue k
             | _ -> nil k)
           k
     ;;
 
     let variant name n_opt s k =
       match s with
-      | Atom cname
-        when String.( = ) cname name ->
+      | Atom cname when String.( = ) cname name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = 0 then one s k else nil k)
-      | List (Atom cname :: args)
-        when String.( = ) cname name ->
+      | List (Atom cname :: args) when String.( = ) cname name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = List.length args then one s k else nil k)
@@ -544,7 +540,8 @@ module Cont : S = struct
       | Template.List ts ->
         let rec rows
           :  Syntax.Query.t Syntax.anti_quote Template.t list
-            -> ((Sexp.t list, 'r) node -> 'r) -> 'r =
+            -> ((Sexp.t list, 'r) node -> 'r) -> 'r
+          =
           fun ts k ->
             match ts with
             | [] -> k (Cons ([], nil))
@@ -588,7 +585,8 @@ module Cont : S = struct
         (match s with
          | Atom _ -> same ()
          | List ss -> children c ss ~fail ~same ~diff:(fun ss -> diff (List ss)))
-      | Syntax.Record _ -> (* Only implemented in [Nofun]. *)
+      | Syntax.Record _ ->
+        (* Only implemented in [Nofun]. *)
         assert false
       | Syntax.Rewrite (lhs, rhs) ->
         Pattern.pmatch lhs s ~fail ~succ:(fun env -> Pattern.instantiate rhs env diff)
@@ -777,21 +775,18 @@ module Mono : S = struct
           (fun k -> of_list ss k)
           ~f:(fun s k ->
             match s with
-            | List [ Atom fname; fvalue ]
-              when String.( = ) fname name -> one fvalue k
+            | List [ Atom fname; fvalue ] when String.( = ) fname name -> one fvalue k
             | _ -> nil k)
           k
     ;;
 
     let variant name n_opt s k =
       match s with
-      | Atom cname
-        when String.( = ) cname name ->
+      | Atom cname when String.( = ) cname name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = 0 then one s k else nil k)
-      | List (Atom cname :: args)
-        when String.( = ) cname name ->
+      | List (Atom cname :: args) when String.( = ) cname name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = List.length args then one s k else nil k)
@@ -905,7 +900,8 @@ module Mono : S = struct
         let rec rows
                   (ts : Syntax.Query.t Syntax.anti_quote Template.t list)
                   (k : 'r cont')
-          : 'r =
+          : 'r
+          =
           match ts with
           | [] -> k (Cons' ([], nil'))
           | t :: ts ->
@@ -948,7 +944,8 @@ module Mono : S = struct
         (match s with
          | Atom _ -> same ()
          | List ss -> children c ss ~fail ~same ~diff:(fun ss -> diff (List ss)))
-      | Syntax.Record _ -> (* Only implemented in [Nofun]. *)
+      | Syntax.Record _ ->
+        (* Only implemented in [Nofun]. *)
         assert false
       | Syntax.Rewrite (lhs, rhs) ->
         Pattern.pmatch lhs s ~fail ~succ:(fun env -> Pattern.instantiate rhs env diff)
@@ -1194,8 +1191,7 @@ module Nofun : S = struct
       | Query q -> query q x k
       | Extract_field name ->
         (match x with
-         | List [ Atom fname; fvalue ]
-           when String.( = ) fname name -> one fvalue k
+         | List [ Atom fname; fvalue ] when String.( = ) fname name -> one fvalue k
          | _ -> nil k)
 
     and apply_bindf'_ code row k =
@@ -1296,13 +1292,11 @@ module Nofun : S = struct
 
     and variant name n_opt s k =
       match s with
-      | Atom cname
-        when String.( = ) cname name ->
+      | Atom cname when String.( = ) cname name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = 0 then one s k else nil k)
-      | List (Atom cname :: args)
-        when String.( = ) cname name ->
+      | List (Atom cname :: args) when String.( = ) cname name ->
         (match n_opt with
          | None -> one s k
          | Some n -> if n = List.length args then one s k else nil k)
@@ -1439,8 +1433,7 @@ module Nofun : S = struct
                          | `Both (f, iv) -> f, Some iv
                        in
                        (match presence, is_some iv with
-                        | `Present, false
-                        | `Absent, true -> r.return None
+                        | `Present, false | `Absent, true -> r.return None
                         | (`Present | `Optional | `Absent), _ -> ());
                        let index, value =
                          match iv with

@@ -295,8 +295,7 @@ module Pattern = struct
           | _ -> fail ()
         in
         gather_all (ts, xs) ~rev:false ~fail ~succ
-      | Template.List _, Atom _
-      | Template.Atom _, List _ -> fail ()
+      | Template.List _, Atom _ | Template.Atom _, List _ -> fail ()
     in
     gather (t, s) ~fail ~succ:(fun () -> succ env)
   ;;
@@ -359,8 +358,7 @@ module Pattern_record = struct
               true
             | _ -> assert false))
       (* error in [Syntax.check_duplicate_list_vars] *)
-      | Template.List _, Atom _
-      | Template.Atom _, List _ -> false
+      | Template.List _, Atom _ | Template.Atom _, List _ -> false
     in
     let env = Var.Table.create ~size:10 () in
     if gather (t, s) env then succ env else fail ()
@@ -371,7 +369,7 @@ module Record_field = struct
   type 'change t =
     { change : 'change
     ; new_name : string option
-    ; presence : [`Present | `Optional | `Absent]
+    ; presence : [ `Present | `Optional | `Absent ]
     }
   [@@deriving sexp]
 end
@@ -494,7 +492,8 @@ let rec query_of_sexp = function
   | List (Atom "cat" :: xs) -> cat (List.map ~f:query_of_sexp xs)
   | List (Atom "and" :: xs) -> and_ (List.map ~f:query_of_sexp xs)
   | List (Atom "or" :: xs) -> or_ (List.map ~f:query_of_sexp xs)
-  | List (Atom "test" :: xs) -> (* sugar *)
+  | List (Atom "test" :: xs) ->
+    (* sugar *)
     Test (pipe (List.map ~f:query_of_sexp xs))
   | List [ Atom "not"; x ] -> Not (query_of_sexp x)
   | List [ Atom "wrap"; x ] -> Wrap (query_of_sexp x)
@@ -502,7 +501,8 @@ let rec query_of_sexp = function
   | List [ Atom "if"; x; y; z ] -> If (query_of_sexp x, query_of_sexp y, query_of_sexp z)
   | List [ Atom "branch"; x; y; z ] ->
     Branch (query_of_sexp x, query_of_sexp y, query_of_sexp z)
-  | List [ Atom "variant"; Atom name ] -> (* sugar *)
+  | List [ Atom "variant"; Atom name ] ->
+    (* sugar *)
     Variant (name, None)
   | List [ Atom "variant"; Atom name; Atom arity ] ->
     Variant (name, Some (Int.of_string arity))

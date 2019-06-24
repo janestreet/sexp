@@ -25,8 +25,9 @@ val create
   :  Query.t
   -> Output.t option
   -> t
-     * [`Names_of_captures of string array]
+     * [ `Names_of_captures of string array ]
      * [ `Output of Output.t
        | `Output_as_list
        | `Output_as_record
-       | `Output_single_capture ]
+       | `Output_single_capture
+       ]

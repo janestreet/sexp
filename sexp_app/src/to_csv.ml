@@ -55,8 +55,7 @@ end = struct
       match results with
       | Sexp.List [ x ] ->
         (match x with
-         | Sexp.Atom str
-           when view_atoms_as_strings -> str
+         | Sexp.Atom str when view_atoms_as_strings -> str
          | _ -> Sexp.to_string x)
       | Sexp.List (x :: _) ->
         eprintf "multiple values for field %s. Arbitrarily picking the first one.\n" f;

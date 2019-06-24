@@ -3,7 +3,8 @@ open Core
 (* Given a function to get the next char of the input, returns a function to get the next
    block of transformed input. Strings returned via `Ok always have nonzero length. *)
 let read_of_next_char
-  : next_char:(unit -> char option) -> (unit -> [`Ok of string | `Eof]) Staged.t =
+  : next_char:(unit -> char option) -> (unit -> [ `Ok of string | `Eof ]) Staged.t
+  =
   fun ~next_char ->
   (* These are string that could trigger comment-mode in the sexp lexer OR lead to parse
      errors - we make sure they get quoted so that they get interpreted as atoms instead *)
@@ -25,8 +26,7 @@ let read_of_next_char
   let terminates_atom c ~paren_depth =
     match c with
     | '(' | '"' | ' ' | '\t' | '\012' | '\n' | '\r' -> true
-    | ')'
-      when Int.( > ) !paren_depth 0 -> true
+    | ')' when Int.( > ) !paren_depth 0 -> true
     | _ -> false
   in
   (* State variables *)

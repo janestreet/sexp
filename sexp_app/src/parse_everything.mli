@@ -19,4 +19,4 @@ val transform_string : string -> string
 
 val read_of_next_char
   :  next_char:(unit -> char option)
-  -> (unit -> [`Ok of string | `Eof]) Staged.t
+  -> (unit -> [ `Ok of string | `Eof ]) Staged.t

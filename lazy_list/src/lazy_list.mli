@@ -52,7 +52,7 @@ val unify
   :  cmp:('a -> 'b -> int)
   -> 'a t
   -> 'b t
-  -> [`Left of 'a | `Right of 'b | `Both of 'a * 'b] t
+  -> [ `Left of 'a | `Right of 'b | `Both of 'a * 'b ] t
 
 val sort : cmp:('a -> 'a -> int) -> 'a t -> 'a t
 val lazy_sort : cmp:('a -> 'a -> int) -> 'a t -> 'a t

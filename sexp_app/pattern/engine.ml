@@ -83,17 +83,17 @@ module Make_engine (S : Sexplike) = struct
       match query with
       | Capture (subquery, capture_idx) ->
         let prev_contents = capturebuf.(capture_idx) in
-        (try
-           (* Try catch makes sure that we properly restore [capturebuf]
-              upon an exception, such as the one involved in With_return *)
-           iter_matches subquery sexps ~f:(fun nconsumed rev_consumed tail ->
-             capturebuf.(capture_idx) <- rev_consumed;
-             f nconsumed rev_consumed tail;
-             capturebuf.(capture_idx) <- prev_contents)
-         with
-         | exn ->
-           capturebuf.(capture_idx) <- prev_contents;
-           raise exn)
+        ((* Try catch makes sure that we properly restore [capturebuf]
+            upon an exception, such as the one involved in With_return *)
+          try
+            iter_matches subquery sexps ~f:(fun nconsumed rev_consumed tail ->
+              capturebuf.(capture_idx) <- rev_consumed;
+              f nconsumed rev_consumed tail;
+              capturebuf.(capture_idx) <- prev_contents)
+          with
+          | exn ->
+            capturebuf.(capture_idx) <- prev_contents;
+            raise exn)
       | Any ->
         (match sexps with
          | [] -> ()
@@ -103,16 +103,14 @@ module Make_engine (S : Sexplike) = struct
          | [] -> ()
          | head :: tail ->
            (match S.unwrap head with
-            | S.Atom a
-              when String.( = ) a str -> f 1 [ head ] tail
+            | S.Atom a when String.( = ) a str -> f 1 [ head ] tail
             | _ -> ()))
       | Atom_regex regex ->
         (match sexps with
          | [] -> ()
          | head :: tail ->
            (match S.unwrap head with
-            | S.Atom a
-              when Re2.matches regex a -> f 1 [ head ] tail
+            | S.Atom a when Re2.matches regex a -> f 1 [ head ] tail
             | _ -> ()))
       | Sequence subqueries ->
         let rec loop_subsexps subqueries nconsumed rev_consumed sexps ~f =

@@ -28,8 +28,7 @@ let scan lexbuf ~fail_on_parse_error =
       | None -> None
       | Some sexp -> Some (Sexp_ext.t_of_sexp sexp, ())
     with
-    | _ignored_exn
-      when not fail_on_parse_error -> None)
+    | _ignored_exn when not fail_on_parse_error -> None)
 ;;
 
 module Transform : sig
@@ -99,10 +98,9 @@ end = struct
     in
     let initialize_source =
       if t.labeled
-      then (
-        fun label ->
-          ();
-          fun sexp -> process_sexp (with_label label sexp))
+      then (fun label ->
+        ();
+        fun sexp -> process_sexp (with_label label sexp))
       else fun _ -> process_sexp
     in
     { initialize_source; process_sexp; finalize_source; finalize_all; any_output }

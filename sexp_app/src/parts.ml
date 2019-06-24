@@ -104,8 +104,7 @@ let output t out =
 let input inch =
   let rec loop res =
     match In_channel.input_line ~fix_win_eol:true inch with
-    | None
-    | Some "" -> List.rev res
+    | None | Some "" -> List.rev res
     | Some l ->
       let a, b = String.lsplit2_exn l ~on:'\t' in
       let path = Sexplib.Path.parse a in

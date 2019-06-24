@@ -14,16 +14,14 @@ let read lexbuf =
        | _ -> return ())
     | Some this ->
       (match prev, this with
-       | Newline, Field x
-       | Comma, Field x ->
+       | Newline, Field x | Comma, Field x ->
          Manifest.add fields x;
          loop this
        | Field x, Field y -> failwithf "adjacent fields (%s) and (%s)" x y ()
        | Field _, Comma -> loop this
        | Field _, Newline -> return ()
        | Newline, Newline -> loop this
-       | Newline, Comma
-       | Comma, Comma ->
+       | Newline, Comma | Comma, Comma ->
          Manifest.add fields "";
          loop Comma
        | Comma, Newline ->

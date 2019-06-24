@@ -18,8 +18,7 @@ end
 let get_one_field sexp field =
   let results = get_fields sexp field in
   match results with
-  | []
-  | _ :: _ :: _ ->
+  | [] | _ :: _ :: _ ->
     Or_error.error
       "non-unique field"
       { Non_unique_field.field; sexp; matches = results }
@@ -73,8 +72,8 @@ let replace_immediate_field ~field ~value sexp =
 
 let replace_field_recursively ~field ~value sexp =
   sexp_rewrite sexp ~f:(function
-    | Sexp.List [ Sexp.Atom f; _ ]
-      when String.equal field f -> `Changed (Sexp.List [ Sexp.Atom f; value ])
+    | Sexp.List [ Sexp.Atom f; _ ] when String.equal field f ->
+      `Changed (Sexp.List [ Sexp.Atom f; value ])
     | _ -> `Unchanged)
 ;;
 

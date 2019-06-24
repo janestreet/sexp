@@ -17,7 +17,7 @@ module Base : sig
 
   val empty : unit -> 'a t
   val return : 'a -> 'a t
-  val map : [> `Custom of 'a t -> f:('a -> 'b) -> 'b t]
+  val map : [> `Custom of 'a t -> f:('a -> 'b) -> 'b t ]
   val append : 'a t -> 'a t -> 'a t
   val concat : 'a t t -> 'a t
   val bind : 'a t -> f:('a -> 'b t) -> 'b t
@@ -307,7 +307,8 @@ let sort ~cmp zlst =
       | Invalid_argument _ -> None
     in
     (match ary_opt with
-     | None -> (* Array was too large- abort to lazy_sort *)
+     | None ->
+       (* Array was too large- abort to lazy_sort *)
        lazy_sort ~cmp zlst
      | Some ary ->
        (* Fill the array *)

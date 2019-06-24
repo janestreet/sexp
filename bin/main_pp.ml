@@ -45,7 +45,9 @@ let command =
        then (
          let config_for_output =
            { config with
-             atom_coloring = Color_none; paren_coloring = false; atom_printing = Escaped
+             atom_coloring = Color_none
+           ; paren_coloring = false
+           ; atom_printing = Escaped
            }
          in
          let fmt = Format.formatter_of_out_channel Caml.stdout in
