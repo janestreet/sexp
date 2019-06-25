@@ -41,7 +41,8 @@ type t =
   | List of t
   (* Consumes a sexp if it is a list, recursively applying each subquery [t] iteratively
      one by one to each element of the sublist where that element is wrapped as a
-     singleton list. *)
+     singleton list. Recursion on elements is WITH-replacement, and the cartesian
+     product of all possible matches over the subqueries will be the result. *)
   | Set of t list
   (* Consumes any number of sexps, iteratively applying [t] to all sublists of the
      consumed sexps or any of their subsexps. Additionally consumes and discards

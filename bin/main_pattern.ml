@@ -38,7 +38,7 @@ let pat_query_examples =
   {|
 HOW TO USE:
 
-Write a sexp-like expression for in the pattern you're trying match and use "%." to
+Write a sexp-like expression for the pattern you're trying to match and use "%." to
 capture a value you want.
 
 Example pattern: (a b %.)
@@ -270,19 +270,30 @@ Replace parts of sexps via regex-like patterns. Basic usage:
 
 ./sexp pat-change PATTERN -replace %CAPTURE -with REPLACEMENT
 
-See -help for the 'pat-query' command for an explanation of how patterns and
-capturing works. Other than that, if you understand pat-query, then some examples
-should hopefully illustrate how replace works. See -examples for a few examples.
+For each sexp and each possible way that PATTERN can match that sexp, replace the subsexp
+that %CAPTURE corresponded to in that match with REPLACEMENT, where REPLACEMENT can be
+in terms of captured values.
+
+%CAPTURE should be the named capture that exists within PATTERN to be replaced, and
+pat-change will fail if PATTERN has no such named capture.
+
+See -help or -examples for the 'pat-query' command for a general explanation of how
+patterns and capturing works. Other than that, if you understand pat-query, then some
+examples should hopefully illustrate how pat-change works. So see -examples for a few
+examples.
 
 |}
 ;;
 
 let pat_change_examples =
   {|
-A few examples of sexp pat-change
+A few examples of sexp pat-change!
 
-./sexp pat-change ".. %0=(%foo %bar)" \
--pat-change "%0" \
+----------------------------------------------
+Reverse the order of all pairs.
+
+sexp pat-change ".. %0=(%foo %bar)" \
+-replace %0 \
 -with "(%bar %foo)"
 
 Effect:
@@ -290,25 +301,45 @@ Effect:
 ->
 ((1 a)(2 b)(3 c))
 
-Effect (pat-change does not recurse through a subsexp itself already being replaced):
+Effect (pat-change does NOT recurse through a subsexp itself already being replaced):
 ((a 1)(b 2))
 ->
 ((b 2)(a 1))
 
----
+----------------------------------------------
+Replace all instances of a record with a particular field "foo" with a tuple that
+indicates the former value of that field.
 
-./sexp pat-change "{(label %label) .. %a={ (id %id) (counts %counts) }}" \
+sexp pat-change ".. %record={(foo %x)}" \
+-replace %record \
+-with "(got %x)"
+
+(foo a)
+((bar b)(foo c))
+((foo (foo d))(baz e))
+((goo (foo f))(baz g))
+->
+(foo a)          # no replacement
+(got c)          # replacement occurred
+(got (foo d))    # outermost replacement occurred among two possible replacements
+((got f)(baz g)) # inner replacement occurred
+
+---
+Perform some more complex processing where the replacement involves a capture
+outside of the sexp being replaced.
+
+sexp pat-change "{(label %label) .. %a={ (id %id) (counts %counts) }}" \
 -replace "%a" \
 -with "(%label %id %counts)"
 
 Effect:
 ((label B) (
    ((id X) (counts (1 2 3)))
-     ((id Y) (counts (4 5 6))) ))
+   ((id Y) (counts (4 5 6))) ))
 ->
 ((label B) (
    (B X (1 2 3))
-     (B Y (4 5 6)) ))
+   (B Y (4 5 6)) ))
 |}
 ;;
 

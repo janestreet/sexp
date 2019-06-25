@@ -170,6 +170,12 @@ let%expect_test _ =
   show_parse_fail "a && b";
   show_parse "a | b";
   show_parse "a & b";
+  show_parse ".. a & b";
+  show_parse ".. a | b";
+  show_parse "[.. a & b]";
+  show_parse "[.. a | b]";
+  show_parse ".. [a & b]";
+  show_parse ".. [a | b]";
   show_parse_fail "a && b";
   show_parse "(a b & c d)";
   show_parse "(a & b & c | d)";
@@ -351,6 +357,12 @@ let%expect_test _ =
       Failure "Parsing match query failed at line 1 char 3 in query a && b"))
     a | b : (Or_all((Atom a)(Atom b)))
     a & b : (And((Atom a)(Atom b)))
+    .. a & b : (And((Subsearch(Atom a))(Atom b)))
+    .. a | b : (Or_all((Subsearch(Atom a))(Atom b)))
+    [.. a & b] : (And((Subsearch(Atom a))(Atom b)))
+    [.. a | b] : (Or_all((Subsearch(Atom a))(Atom b)))
+    .. [a & b] : (Subsearch(And((Atom a)(Atom b))))
+    .. [a | b] : (Subsearch(Or_all((Atom a)(Atom b))))
     a && b : (raised (
       Failure "Parsing match query failed at line 1 char 3 in query a && b"))
     (a b & c d) : (List(And((Sequence((Atom a)(Atom b)))(Sequence((Atom c)(Atom d))))))
@@ -1182,6 +1194,24 @@ let%expect_test _ =
   [%expect {|
     :((a b c))
     ((a d c)) |}]
+;;
+
+let%expect_test _ =
+  run
+    "{(foo %foo)(bar %bar)?}"
+    [ "((foo 1) (bar 2))"
+    ; "((bar 3) (foo 4))"
+    ; "((foo 5))"
+    ; "((foo 6) (baz 7))"
+    ; "((foo 8) (bar 9) (baz 10))"
+    ];
+  [%expect
+    {|
+    :((foo 1)(bar())) ((foo 1)(bar())) ((foo 1)(bar 2))
+    :((foo 4)(bar())) ((foo 4)(bar 3)) ((foo 4)(bar()))
+    :((foo 5)(bar()))
+    :((foo 6)(bar())) ((foo 6)(bar()))
+    :((foo 8)(bar())) ((foo 8)(bar())) ((foo 8)(bar 9)) ((foo 8)(bar())) |}]
 ;;
 
 let%expect_test _ =
