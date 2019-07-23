@@ -3,7 +3,7 @@ open! Core
 type t =
   | Capture_unlabeled of t
   | Capture_to_number of int * t
-  | Capture_to_field of string * t
+  | Capture_to_name of string * t
   | Any
   | Atom of string
   | Atom_regex of string
@@ -26,7 +26,7 @@ let rec iter t ~f =
   | Any | Atom _ | Atom_regex _ -> ()
   | Capture_unlabeled sub
   | Capture_to_number (_, sub)
-  | Capture_to_field (_, sub)
+  | Capture_to_name (_, sub)
   | Subsearch sub
   | First_match_only sub
   | Star sub

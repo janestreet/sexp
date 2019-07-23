@@ -242,15 +242,27 @@ let pat_query_command =
      fun () ->
        let pattern = load_pattern source in
        let query = Sexp_app_pattern.Parser.parse_exn pattern in
-       let format = Option.map format ~f:Sexp_app_pattern.Output.t_of_sexp in
-       let perform_query sexp_ext ~on_result =
+       let perform_query'
+             output_method
+             process_output
+             sexp_ext
+             ~(on_result : Sexp.t -> unit)
+         =
          let sexp = Sexp_app.Sexp_ext.sexp_of_t sexp_ext in
          Sexp_app_pattern.Engine.iter_matches
            ~query
-           ~output:format
+           ~output_method
            sexp
            ~wrap_singletons
-           ~f:(fun sexp -> on_result sexp)
+           ~f:(fun output -> process_output on_result output)
+       in
+       let perform_query =
+         match format with
+         | None -> perform_query' Default (fun on_result sexp -> on_result sexp)
+         | Some format ->
+           perform_query'
+             ([ Sexp_app_pattern.Output_method.Format.t_of_sexp format ] |> Formats)
+             (fun on_result sexps -> List.iter ~f:on_result sexps)
        in
        Query.execute
          { inputs
@@ -389,10 +401,19 @@ let pat_change_command =
          (required string)
          ~doc:"%foo what named capture location to replace"
      and format =
-       flag
-         "with"
-         (required sexp)
-         ~doc:"SEXPLIKE what to replace with, in terms of captures"
+       choose_one
+         ~if_nothing_chosen:Raise
+         [ flag
+             "with"
+             (optional string)
+             ~doc:"SEXPLIKES what to replace with, in terms of captures"
+           |> map ~f:(Option.map ~f:(fun format -> `Format format))
+         ; flag
+             "with-nothing"
+             ~full_flag_required:()
+             (no_arg_some `Delete)
+             ~doc:"Delete the capture; equivalent to -with ''"
+         ]
      in
      fun () ->
        let inputs, labeled =
@@ -403,18 +424,22 @@ let pat_change_command =
        in
        let pattern = load_pattern source in
        let query = Sexp_app_pattern.Parser.parse_exn pattern in
-       let format = Sexp_app_pattern.Output.t_of_sexp format in
+       let formats =
+         match format with
+         | `Format format -> Sexp_app_pattern.Output_method.Format.ts_of_string format
+         | `Delete -> []
+       in
        let perform_query sexp_ext ~on_result =
          let sexp = Sexp_app.Sexp_ext.sexp_of_t sexp_ext in
-         let sexp =
+         let sexps =
            Sexp_app_pattern.Engine.replace
              ~query
              ~replace
-             ~with_:format
+             ~with_:formats
              sexp
              ~wrap_singletons
          in
-         on_result sexp
+         List.iter ~f:on_result sexps
        in
        Query.execute
          { inputs

@@ -58,13 +58,14 @@ module Labeled_sexp = struct
     | List list -> Sexp.List (List.map list ~f:to_sexp)
   ;;
 
-  let rec to_sexp_with_replacements t ~f =
+  let rec to_sexp_with_replacements t ~f : Sexp.t list =
     match f t.node_id with
-    | Some replacement -> replacement
-    | None ->
+    | `Replace replacements -> replacements
+    | `Preserve_and_recurse ->
       (match t.unwrapped with
-       | Atom s -> Sexp.Atom s
-       | List list -> Sexp.List (List.map list ~f:(to_sexp_with_replacements ~f)))
+       | Atom s -> [ Sexp.Atom s ]
+       | List list ->
+         [ Sexp.List (List.concat_map list ~f:(to_sexp_with_replacements ~f)) ])
   ;;
 end
 
@@ -72,27 +73,29 @@ module Make_engine (S : Sexplike) = struct
   (**
      Iterates over all ways that [query] can match the singleton list [sexp].
 
-     For each match, calls [f], and for the duration of that call to [f], [capturebuf]
-     will be filled with the resulting captures. For any index that failed to capture
-     during a match, [capturebuf] will simply contain its original contents.
+     For each match, calls [f], and for the duration of that call to [f], [revcapture_buf]
+     will be filled with the resulting captures, where each entry of [revcapture_buf]
+     contains the captured sequence for that index in reverse order. For any index that
+     failed to capture during a match, [revcapture_buf] will simply contain its original
+     contents.
 
-     Finally, restores all the original contents of [capturebuf].
+     Finally, restores all the original contents of [revcapture_buf].
   *)
-  let iter_matches ~capturebuf ~f (query : Compiled_query.t) (sexp : S.t) =
+  let iter_matches ~revcapture_buf ~f (query : Compiled_query.t) (sexp : S.t) =
     let rec iter_matches (query : Compiled_query.t) (sexps : S.t list) ~f =
       match query with
       | Capture (subquery, capture_idx) ->
-        let prev_contents = capturebuf.(capture_idx) in
-        ((* Try catch makes sure that we properly restore [capturebuf]
+        let prev_contents = revcapture_buf.(capture_idx) in
+        ((* Try catch makes sure that we properly restore [revcapture_buf]
             upon an exception, such as the one involved in With_return *)
           try
             iter_matches subquery sexps ~f:(fun nconsumed rev_consumed tail ->
-              capturebuf.(capture_idx) <- rev_consumed;
+              revcapture_buf.(capture_idx) <- rev_consumed;
               f nconsumed rev_consumed tail;
-              capturebuf.(capture_idx) <- prev_contents)
+              revcapture_buf.(capture_idx) <- prev_contents)
           with
           | exn ->
-            capturebuf.(capture_idx) <- prev_contents;
+            revcapture_buf.(capture_idx) <- prev_contents;
             raise exn)
       | Any ->
         (match sexps with
@@ -257,100 +260,203 @@ end
 module Sexp_engine = Make_engine (Sexp)
 module Labeled_sexp_engine = Make_engine (Labeled_sexp)
 
-let combine_results results ~wrap_singletons : Sexp.t =
-  match results with
+let combine_results ~revcapture ~wrap_singletons : Sexp.t =
+  match revcapture with
   | [] -> List []
   | [ x ] -> if wrap_singletons then List [ x ] else x
-  | _ -> List (List.rev results)
+  | _ -> List (List.rev revcapture)
 ;;
 
-let iter_matches ~query ~output ~wrap_singletons sexp ~f =
-  let query, `Names_of_captures names_of_captures, output_type =
-    Compiled_query.create query output
+let iter_matches
+      (type a)
+      ~query
+      ~(output_method : a Output_method.Desired.t)
+      ~wrap_singletons
+      sexp
+      ~(f : a -> unit)
+  =
+  let query, `Labels_of_captures labels_of_captures, output_type =
+    Compiled_query.create query output_method
   in
-  let capturebuf = Array.map names_of_captures ~f:(fun _ -> []) in
+  let revcapture_buf = Array.map labels_of_captures ~f:(fun _ -> []) in
   match output_type with
-  | `Output_single_capture ->
-    Sexp_engine.iter_matches ~capturebuf query sexp ~f:(fun () ->
-      f (combine_results capturebuf.(0) ~wrap_singletons))
-  | `Output_as_list ->
-    Sexp_engine.iter_matches ~capturebuf query sexp ~f:(fun () ->
+  | Single_capture ->
+    Sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
+      f (combine_results ~revcapture:revcapture_buf.(0) ~wrap_singletons))
+  | List ->
+    Sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
       f
         (Sexp.List
-           (Array.to_list (Array.map capturebuf ~f:(combine_results ~wrap_singletons)))))
-  | `Output_as_record ->
-    Sexp_engine.iter_matches ~capturebuf query sexp ~f:(fun () ->
+           (Array.to_list
+              (Array.map revcapture_buf ~f:(fun revcapture ->
+                 combine_results ~revcapture ~wrap_singletons)))))
+  | Record ->
+    Sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
       f
         (Sexp.List
            (Array.map2_exn
-              names_of_captures
-              capturebuf
-              ~f:(fun capture_name captured ->
+              labels_of_captures
+              revcapture_buf
+              ~f:(fun capture_label revcapture ->
                 Sexp.List
-                  [ Sexp.Atom capture_name; combine_results captured ~wrap_singletons ])
+                  [ Sexp.Atom capture_label
+                  ; combine_results ~revcapture ~wrap_singletons
+                  ])
             |> Array.to_list)))
-  | `Output output ->
-    let capture_name_to_idx_map =
-      Array.mapi names_of_captures ~f:(fun i capture_name -> capture_name, i)
+  | Formats formats ->
+    let capture_label_to_idx_map =
+      Array.mapi labels_of_captures ~f:(fun i capture_label -> capture_label, i)
       |> Array.to_list
       |> String.Table.of_alist_exn
     in
-    Sexp_engine.iter_matches ~capturebuf query sexp ~f:(fun () ->
+    Sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
       f
-        (Output.embed_captures output ~f:(fun capture_name ->
-           combine_results
-             ~wrap_singletons
-             capturebuf.(Hashtbl.find_exn capture_name_to_idx_map capture_name))))
+        (List.map formats ~f:(fun format ->
+           Output_method.Format.embed_captures format ~f:(fun capture_label ->
+             combine_results
+               ~wrap_singletons
+               ~revcapture:
+                 revcapture_buf.(Hashtbl.find_exn
+                                   capture_label_to_idx_map
+                                   capture_label)))))
+  | Map ->
+    Sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
+      f
+        (Array.map2_exn labels_of_captures revcapture_buf ~f:(fun label revcaptures ->
+           label, List.rev revcaptures)
+         |> Array.to_list
+         |> String.Map.of_alist_exn))
 ;;
 
-let replace ~query ~replace ~with_:output ~wrap_singletons sexp =
-  let query, `Names_of_captures names_of_captures, _output_type =
-    Compiled_query.create query (Some output)
+let no_planned_replacements_yet ~planned_replacements ~targets =
+  List.for_all targets ~f:(fun target ->
+    not (Hashtbl.mem planned_replacements target.Labeled_sexp.node_id))
+;;
+
+(* [planned_replcements] is a map from id to the list of sexps to splice
+
+   To replace the sequence [foo bar baz] with [whizz wang], we set planned_replacements to
+   splice in [whizz wang] where [foo] is and to remove [bar] and [baz]. Before calling
+   this function we check that none of the targets are due to be replaced using
+   [no_planned_replacements_yet]. *)
+let replace_sequence_with ~planned_replacements ~targets ~desired =
+  assert (not (List.is_empty targets));
+  (* Replace the sequence of targets with the desired results sequence.
+     Do this by first replacing the first sexp with the desired sequence... *)
+  Hashtbl.set
+    planned_replacements
+    ~key:(List.hd_exn targets).Labeled_sexp.node_id
+    ~data:desired;
+  (* ... then deleting all the rest  *)
+  List.iter (List.tl_exn targets) ~f:(fun target ->
+    Hashtbl.set planned_replacements ~key:target.node_id ~data:[])
+;;
+
+let replace ~query ~replace ~with_:formats ~wrap_singletons sexp =
+  let query, `Labels_of_captures labels_of_captures, _output_type =
+    Compiled_query.create query (Formats formats)
   in
-  let replace_capture_name =
+  let replace_capture_label =
     if String.is_prefix replace ~prefix:"%"
     then String.chop_prefix_exn replace ~prefix:"%"
     else failwithf "Replacement target '%s' does not start with '%%'" replace ()
   in
   (* Checked in [Compiled_query.create], assert again here *)
-  assert (Array.mem names_of_captures replace_capture_name ~equal:String.equal);
-  let capturebuf = Array.map names_of_captures ~f:(fun _ -> []) in
+  assert (Array.mem labels_of_captures replace_capture_label ~equal:String.equal);
+  let revcapture_buf = Array.map labels_of_captures ~f:(fun _ -> []) in
   let sexp = Labeled_sexp.of_sexp sexp in
-  let capture_name_to_idx_map =
-    Array.mapi names_of_captures ~f:(fun i capture_name -> capture_name, i)
+  let capture_label_to_idx_map =
+    Array.mapi labels_of_captures ~f:(fun i capture_label -> capture_label, i)
     |> Array.to_list
     |> String.Table.of_alist_exn
   in
-  let replace_idx = Hashtbl.find_exn capture_name_to_idx_map replace_capture_name in
+  let replace_idx = Hashtbl.find_exn capture_label_to_idx_map replace_capture_label in
   (* Two-pass algorithm, first iterate over all matches and record the labeled sexp id
      of the subsexp that the [replace] target hit along with the captures at that time. *)
   let planned_replacements = Int.Table.create () in
-  Labeled_sexp_engine.iter_matches ~capturebuf query sexp ~f:(fun () ->
-    match capturebuf.(replace_idx) with
+  Labeled_sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
+    match List.rev revcapture_buf.(replace_idx) with
     | [] -> ()
-    | _ :: _ :: _ ->
-      failwithf
-        "Replacement target %s captured more than one sexp, currently\n\
-        \          replace only supports patterns where the replacement target \
-         captures a single sexp"
-        replace
-        ()
-    | [ replacement_target ] ->
-      let replacement_target_id = replacement_target.node_id in
-      let result =
-        Output.embed_captures output ~f:(fun capture_name ->
-          let capture =
-            List.map
-              capturebuf.(Hashtbl.find_exn capture_name_to_idx_map capture_name)
-              ~f:Labeled_sexp.to_sexp
-          in
-          combine_results ~wrap_singletons capture)
-      in
-      (* If a particular sexp gets hit for replacement more than once, arbitrarily just
-         choose the first possible one *)
-      if not (Hashtbl.mem planned_replacements replacement_target_id)
-      then Hashtbl.set planned_replacements ~key:replacement_target_id ~data:result);
+    | replacement_targets ->
+      (* Whenever a later replacement would overlap with a prior one, do nothing instead. *)
+      if no_planned_replacements_yet ~planned_replacements ~targets:replacement_targets
+      then (
+        let replacements =
+          List.map formats ~f:(fun format ->
+            Output_method.Format.embed_captures format ~f:(fun capture_label ->
+              let revcapture =
+                List.map
+                  revcapture_buf.(Hashtbl.find_exn
+                                    capture_label_to_idx_map
+                                    capture_label)
+                  ~f:Labeled_sexp.to_sexp
+              in
+              combine_results ~wrap_singletons ~revcapture))
+        in
+        replace_sequence_with
+          ~planned_replacements
+          ~targets:replacement_targets
+          ~desired:replacements));
   (* Second pass, perform all replacements *)
   Labeled_sexp.to_sexp_with_replacements sexp ~f:(fun id ->
-    Hashtbl.find planned_replacements id)
+    match Hashtbl.find planned_replacements id with
+    | None -> `Preserve_and_recurse
+    | Some replacements -> `Replace replacements)
+;;
+
+let replace' ~query ~f sexp =
+  let query, `Labels_of_captures labels_of_captures, _output_type =
+    Compiled_query.create query Map
+  in
+  let sexp = Labeled_sexp.of_sexp sexp in
+  let revcapture_buf = Array.map labels_of_captures ~f:(fun _ -> []) in
+  let capture_label_to_idx_map =
+    Array.mapi labels_of_captures ~f:(fun i capture_label -> capture_label, i)
+    |> Array.to_list
+    |> String.Map.of_alist_exn
+  in
+  (* Two-pass algorithm, first iterate over all matches and record the labeled sexp id
+     of the subsexp that the [replace] target hit along with the captures at that time. *)
+  let planned_replacements = Int.Table.create () in
+  Labeled_sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
+    let captures_by_label =
+      String.Map.map capture_label_to_idx_map ~f:(fun idx ->
+        let revcapture = revcapture_buf.(idx) in
+        List.rev_map revcapture ~f:Labeled_sexp.to_sexp)
+    in
+    let replacements = f captures_by_label in
+    let replacement_targets_and_replacements =
+      String.Map.to_alist replacements
+      |> List.map ~f:(fun (label, replacements) ->
+        match Map.find capture_label_to_idx_map label with
+        | None ->
+          failwithf
+            "In [Pattern.Engine.replace'], [f] returned a map of replacements \
+             that contains a key that is not the label of a capture: %s"
+            label
+            ()
+        | Some idx ->
+          let targets = List.rev revcapture_buf.(idx) in
+          if List.is_empty targets && not (List.is_empty replacements)
+          then
+            failwithf
+              "In [Pattern.Engine.replace'], [f] returned a map of replacements \
+               that contains a key that for a label with zero captures: %s"
+              label
+              ();
+          targets, replacements)
+    in
+    (* Whenever a later replacement would overlap with a prior one, do nothing instead. *)
+    if List.for_all replacement_targets_and_replacements ~f:(fun (targets, _) ->
+      no_planned_replacements_yet ~planned_replacements ~targets)
+    then
+      List.iter replacement_targets_and_replacements ~f:(fun (targets, replacements) ->
+        if not (List.is_empty targets)
+        then
+          replace_sequence_with ~planned_replacements ~targets ~desired:replacements));
+  (* Second pass, perform all replacements *)
+  Labeled_sexp.to_sexp_with_replacements sexp ~f:(fun id ->
+    match Hashtbl.find planned_replacements id with
+    | None -> `Preserve_and_recurse
+    | Some replacements -> `Replace replacements)
 ;;

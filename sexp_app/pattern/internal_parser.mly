@@ -63,13 +63,13 @@ Query_base:
 Query_capture:
 | Query_base { $1 }
 | NUMBERCAPTURE { Q.Capture_to_number (Int.of_string $1,Any) }
-| FIELDCAPTURE { Q.Capture_to_field ($1,Any) }
+| FIELDCAPTURE { Q.Capture_to_name ($1,Any) }
 | UNNAMEDCAPTURE Query_base { Q.Capture_unlabeled $2 }
 
 Query_equals_capture:
 | Query_capture { $1 }
 | NUMBERCAPTURE EQUAL Query_capture { Q.Capture_to_number (Int.of_string $1, $3) }
-| FIELDCAPTURE EQUAL Query_capture { Q.Capture_to_field ($1, $3) }
+| FIELDCAPTURE EQUAL Query_capture { Q.Capture_to_name ($1, $3) }
 
 Query_star_question_no_space:
 | Query_equals_capture { $1 }

@@ -9,15 +9,24 @@ open! Core
 
    Each match may also capture also capture various subsexplists of the consumed sexps,
    returning those captures to the user.
+
+   Captures do NOT need to be uniquely numbered or named within a given query, since with
+   the [Or_*] variants, one can legitimately write branched queries where each branch
+   might capture into the same label, but only one branch at a time is expected to
+   actually match.
+
+   However, if a given single match of the pattern captures two different expressions into
+   the same label simultaneously, it is unspecified which of the two expressions
+   will actually be returned for that label.
 *)
 type t =
   (* All apply [t] and for each match, also captures the sexps that [t] consumes.
      Capture_unlabeled - indexes the resulting capture with an incrementing integer.
      Capture_to_number - indexes the resulting capture with the specified integer.
-     Capture_to_field - indexes the resulting capture with the specified field name. *)
+     Capture_to_named - indexes the resulting capture with the specified name. *)
   | Capture_unlabeled of t
   | Capture_to_number of int * t
-  | Capture_to_field of string * t
+  | Capture_to_name of string * t
   (* Consume a single sexp if possible *)
   | Any
   (* Consumes an atom if it matches this exact string *)

@@ -18,7 +18,7 @@ type t =
   | First_match_only of t
 [@@deriving sexp_of]
 
-let of_query query ~idx_of_unlabeled_capture ~idx_of_number_capture ~idx_of_field_capture
+let of_query query ~idx_of_unlabeled_capture ~idx_of_number_capture ~idx_of_named_capture
   =
   let rec compile_list = List.map ~f:compile
   and compile query : t =
@@ -26,7 +26,7 @@ let of_query query ~idx_of_unlabeled_capture ~idx_of_number_capture ~idx_of_fiel
     (* capture lookup *)
     | Capture_unlabeled sub -> Capture (compile sub, idx_of_unlabeled_capture ())
     | Capture_to_number (i, sub) -> Capture (compile sub, idx_of_number_capture i)
-    | Capture_to_field (field, sub) -> Capture (compile sub, idx_of_field_capture field)
+    | Capture_to_name (name, sub) -> Capture (compile sub, idx_of_named_capture name)
     (* regex compilation *)
     | Atom_regex s -> Atom_regex (Re2.create_exn s)
     (* traversal *)
@@ -47,75 +47,78 @@ let of_query query ~idx_of_unlabeled_capture ~idx_of_number_capture ~idx_of_fiel
   compile query
 ;;
 
-let create (uncompiled_query : Query.t) output =
+let create
+      (type a)
+      (uncompiled_query : Query.t)
+      (output_method : a Output_method.Desired.t)
+  =
   let number_captures = Queue.create () in
-  let field_captures = Queue.create () in
+  let named_captures = Queue.create () in
   let num_unlabeled_captures = ref 0 in
   Query.iter uncompiled_query ~f:(function
     | Capture_unlabeled _ -> incr num_unlabeled_captures
     | Capture_to_number (i, _) -> Queue.enqueue number_captures i
-    | Capture_to_field (field, _) -> Queue.enqueue field_captures field
+    | Capture_to_name (name, _) -> Queue.enqueue named_captures name
     | _ -> ());
-  if Queue.length number_captures > 0 || Queue.length field_captures > 0
+  if Queue.length number_captures > 0 || Queue.length named_captures > 0
   then
     if !num_unlabeled_captures > 0
     then
       failwith
         "Cannot mix unlabeled captures with named or numbered captures in the same \
          pattern";
-  let output_type =
-    match output with
-    | Some output -> `Output output
-    | None ->
-      if Queue.length field_captures > 0
-      then `Output_as_record
-      else if Queue.length number_captures > 0 || !num_unlabeled_captures > 1
-      then `Output_as_list
-      else if !num_unlabeled_captures = 1
-      then `Output_single_capture
-      else failwith "No captures % were specified in pattern"
+  let output_method =
+    Output_method.Compiled.of_desired
+      output_method
+      ~has_named_captures:(Queue.length named_captures > 0)
+      ~has_number_captures:(Queue.length number_captures > 0)
+      ~num_unlabeled_captures:!num_unlabeled_captures
   in
-  let compiled_query, names_of_captures =
-    match output_type with
-    | (`Output_as_record | `Output _) as output_type ->
+  let pick_indices_for_named_and_number_captures () =
+    let last_idx = ref (-1) in
+    let get_idx () =
+      incr last_idx;
+      !last_idx
+    in
+    let idx_of_label = String.Table.create () in
+    let compiled_query =
+      of_query
+        uncompiled_query
+        ~idx_of_unlabeled_capture:(fun () -> assert false)
+        ~idx_of_number_capture:(fun n ->
+          Hashtbl.find_or_add idx_of_label (Int.to_string n) ~default:get_idx)
+        ~idx_of_named_capture:(fun name ->
+          Hashtbl.find_or_add idx_of_label name ~default:get_idx)
+    in
+    let label_of_idx =
+      Hashtbl.to_alist idx_of_label
+      |> List.map ~f:(fun (label, idx) -> idx, label)
+      |> List.sort ~compare:(fun (idx0, _) (idx1, _) -> Int.compare idx0 idx1)
+    in
+    List.iteri label_of_idx ~f:(fun i (idx, _) -> assert (i = idx));
+    compiled_query, Array.of_list (List.map label_of_idx ~f:snd)
+  in
+  let compiled_query, labels_of_captures =
+    match output_method with
+    | Formats formats ->
       let used_labels = String.Hash_set.create () in
-      Queue.iter field_captures ~f:(fun field -> Hash_set.add used_labels field);
+      Queue.iter named_captures ~f:(fun name -> Hash_set.add used_labels name);
       Queue.iter number_captures ~f:(fun number ->
         Hash_set.add used_labels (Int.to_string number));
-      let last_idx = ref (-1) in
-      let get_idx () =
-        incr last_idx;
-        !last_idx
-      in
-      let idx_of_label = String.Table.create () in
-      let compiled_query =
-        of_query
-          uncompiled_query
-          ~idx_of_unlabeled_capture:(fun () -> assert false)
-          ~idx_of_number_capture:(fun n ->
-            Hashtbl.find_or_add idx_of_label (Int.to_string n) ~default:get_idx)
-          ~idx_of_field_capture:(fun field ->
-            Hashtbl.find_or_add idx_of_label field ~default:get_idx)
-      in
-      let label_of_idx =
-        Hashtbl.to_alist idx_of_label
-        |> List.map ~f:(fun (label, idx) -> idx, label)
-        |> List.sort ~compare:(fun (idx0, _) (idx1, _) -> Int.compare idx0 idx1)
-      in
-      List.iteri label_of_idx ~f:(fun i (idx, _) -> assert (i = idx));
-      (match output_type with
-       | `Output_as_record -> ()
-       | `Output output ->
-         List.iter (Output.all_captures output) ~f:(fun c ->
-           if not (Hash_set.mem used_labels c)
-           then
-             failwithf
-               "Output or replacement expression uses capture not present in pattern: %s"
-               c
-               ()));
-      compiled_query, Array.of_list (List.map label_of_idx ~f:snd)
-    | `Output_as_list ->
-      assert (Queue.is_empty field_captures);
+      List.iter formats ~f:(fun format ->
+        List.iter (Output_method.Format.all_captures format) ~f:(fun c ->
+          if not (Hash_set.mem used_labels c)
+          then
+            failwithf
+              "Output or replacement expression uses capture not present in \
+               pattern: %s"
+              c
+              ()));
+      pick_indices_for_named_and_number_captures ()
+    | Record -> pick_indices_for_named_and_number_captures ()
+    | Map -> pick_indices_for_named_and_number_captures ()
+    | List ->
+      assert (Queue.is_empty named_captures);
       if Queue.length number_captures > 0
       then (
         let used_idxs = Int.Hash_set.create () in
@@ -146,7 +149,7 @@ let create (uncompiled_query : Query.t) output =
             uncompiled_query
             ~idx_of_unlabeled_capture:(fun () -> assert false)
             ~idx_of_number_capture:(fun n -> n)
-            ~idx_of_field_capture:(fun _ -> assert false)
+            ~idx_of_named_capture:(fun _ -> assert false)
         in
         compiled_query, Array.init (max_used_idx + 1) ~f:Int.to_string)
       else (
@@ -160,11 +163,11 @@ let create (uncompiled_query : Query.t) output =
               incr num_used_idxs;
               idx)
             ~idx_of_number_capture:(fun _ -> assert false)
-            ~idx_of_field_capture:(fun _ -> assert false)
+            ~idx_of_named_capture:(fun _ -> assert false)
         in
         compiled_query, Array.init !num_used_idxs ~f:Int.to_string)
-    | `Output_single_capture ->
-      assert (Queue.is_empty field_captures);
+    | Single_capture ->
+      assert (Queue.is_empty named_captures);
       assert (Queue.is_empty number_captures);
       assert (!num_unlabeled_captures = 1);
       let compiled_query =
@@ -172,9 +175,9 @@ let create (uncompiled_query : Query.t) output =
           uncompiled_query
           ~idx_of_unlabeled_capture:(fun () -> 0)
           ~idx_of_number_capture:(fun _ -> assert false)
-          ~idx_of_field_capture:(fun _ -> assert false)
+          ~idx_of_named_capture:(fun _ -> assert false)
       in
       compiled_query, [| "0" |]
   in
-  compiled_query, `Names_of_captures names_of_captures, output_type
+  compiled_query, `Labels_of_captures labels_of_captures, output_method
 ;;

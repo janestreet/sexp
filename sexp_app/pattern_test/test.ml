@@ -12,33 +12,46 @@ let show_parse_fail querystr =
   show_raise ~hide_positions:true (fun () -> Parser.parse_exn querystr)
 ;;
 
-let run ?output querystr sexpstrs =
-  let output = Option.map output ~f:(fun s -> Output.t_of_sexp (Sexp.of_string s)) in
+let run querystr sexpstrs =
+  let output_method = Output_method.Desired.Default in
   let query = Parser.parse_exn querystr in
   List.iter sexpstrs ~f:(fun sexpstr ->
     let sexp = Sexp.of_string sexpstr in
     printf ":";
-    Engine.iter_matches ~query ~output sexp ~wrap_singletons:false ~f:(fun s ->
+    Engine.iter_matches ~query ~output_method sexp ~wrap_singletons:false ~f:(fun s ->
       printf !"%{Sexp} " s);
     printf "\n")
 ;;
 
-let run_single ?output ?(wrap_singletons = false) querystr sexpstr =
-  let output = Option.map output ~f:(fun s -> Output.t_of_sexp (Sexp.of_string s)) in
+let run_format ~format querystr sexpstrs =
+  let output_method =
+    Output_method.Format.ts_of_string format |> Output_method.Desired.Formats
+  in
+  let query = Parser.parse_exn querystr in
+  List.iter sexpstrs ~f:(fun sexpstr ->
+    let sexp = Sexp.of_string sexpstr in
+    printf ":";
+    Engine.iter_matches ~query ~output_method sexp ~wrap_singletons:false ~f:(fun s ->
+      List.iter s ~f:(fun s -> printf !"%{Sexp} " s));
+    printf "\n")
+;;
+
+let run_single ?(wrap_singletons = false) querystr sexpstr =
+  let output_method = Output_method.Desired.Default in
   let query = Parser.parse_exn querystr in
   let sexp = Sexp.of_string sexpstr in
   printf ":";
-  Engine.iter_matches ~query ~output sexp ~wrap_singletons ~f:(fun s ->
+  Engine.iter_matches ~query ~output_method sexp ~wrap_singletons ~f:(fun s ->
     printf !"%{Sexp}\n" s)
 ;;
 
 let replace_single querystr ~replace ~with_ sexpstr =
-  let with_ = Output.t_of_sexp (Sexp.of_string with_) in
+  let with_ = Output_method.Format.ts_of_string with_ in
   let query = Parser.parse_exn querystr in
   let sexp = Sexp.of_string sexpstr in
   printf ":";
   let result = Engine.replace ~query ~replace ~with_ sexp ~wrap_singletons:false in
-  printf !"%{Sexp}\n" result
+  List.iter result ~f:(fun result -> printf !"%{Sexp}\n" result)
 ;;
 
 let%expect_test _ =
@@ -307,29 +320,29 @@ let%expect_test _ =
     {*} : (raised (Failure "Parsing match query failed at line 1 char 1 in query {*}"))
     %1 : (Capture_to_number 1 Any)
     %012 : (Capture_to_number 12 Any)
-    %-2 : (Capture_to_field -2 Any)
-    %abc : (Capture_to_field abc Any)
-    %a bc : (Sequence((Capture_to_field a Any)(Atom bc)))
-    %a%bc : (Sequence((Capture_to_field a Any)(Capture_to_field bc Any)))
+    %-2 : (Capture_to_name -2 Any)
+    %abc : (Capture_to_name abc Any)
+    %a bc : (Sequence((Capture_to_name a Any)(Atom bc)))
+    %a%bc : (Sequence((Capture_to_name a Any)(Capture_to_name bc Any)))
     % : (raised (Failure "Parsing match query failed at line 1 char 1 in query %"))
     %% : (raised (Failure "Parsing match query failed at line 1 char 1 in query %%"))
     %%a : (raised (Failure "Parsing match query failed at line 1 char 1 in query %%a"))
     % a : (raised (Failure "Parsing match query failed at line 1 char 1 in query % a"))
     %. : (Capture_unlabeled Any)
-    %.a : (Capture_to_field .a Any)
+    %.a : (Capture_to_name .a Any)
     % . : (raised (Failure "Parsing match query failed at line 1 char 1 in query % ."))
     %.. : (raised (Failure "Parsing match query failed at line 1 char 1 in query %.."))
     a%1 : (Sequence((Atom a)(Capture_to_number 1 Any)))
     %1* : (Star(Capture_to_number 1 Any))
-    %a* : (Star(Capture_to_field a Any))
+    %a* : (Star(Capture_to_name a Any))
     %[a]* : (Star(Capture_unlabeled(Atom a)))
-    %a+ : (Plus(Capture_to_field a Any))
+    %a+ : (Plus(Capture_to_name a Any))
     %[a]+ : (Plus(Capture_unlabeled(Atom a)))
-    %a? : (Maybe(Capture_to_field a Any))
+    %a? : (Maybe(Capture_to_name a Any))
     %() : (Capture_unlabeled(List(Sequence())))
     %%() : (raised (Failure "Parsing match query failed at line 1 char 1 in query %%()"))
-    %(%a) : (Capture_unlabeled(List(Capture_to_field a Any)))
-    %[%a] : (Capture_unlabeled(Capture_to_field a Any))
+    %(%a) : (Capture_unlabeled(List(Capture_to_name a Any)))
+    %[%a] : (Capture_unlabeled(Capture_to_name a Any))
     %{%.} : (Capture_unlabeled(Set((Capture_unlabeled Any))))
     %/abc/ : (Capture_unlabeled(Atom_regex abc))
     .. a : (Subsearch(Atom a))
@@ -348,9 +361,9 @@ let%expect_test _ =
     ([a .. b] .. c ) : (List(Sequence((Sequence((Atom a)(Subsearch(Atom b))))(Subsearch(Atom c)))))
     { a .. b } : (Set((Atom a)(Subsearch(Atom b))))
     {a .. b .. c} : (Set((Atom a)(Subsearch(Sequence((Atom b)(Subsearch(Atom c)))))))
-    a .. %b : (Sequence((Atom a)(Subsearch(Capture_to_field b Any))))
+    a .. %b : (Sequence((Atom a)(Subsearch(Capture_to_name b Any))))
     a .. b* : (Sequence((Atom a)(Subsearch(Star(Atom b)))))
-    %a? .. b : (Sequence((Maybe(Capture_to_field a Any))(Subsearch(Atom b))))
+    %a? .. b : (Sequence((Maybe(Capture_to_name a Any))(Subsearch(Atom b))))
     %[a .. b] : (Capture_unlabeled(Sequence((Atom a)(Subsearch(Atom b)))))
     a & b : (And((Atom a)(Atom b)))
     a && b : (raised (
@@ -373,23 +386,23 @@ let%expect_test _ =
     {a | b} : (raised (
       Failure "Parsing match query failed at line 1 char 3 in query {a | b}"))
     {[a | b]} : (Set((Or_all((Atom a)(Atom b)))))
-    %a=b&c : (And((Capture_to_field a(Atom b))(Atom c)))
-    %a=() : (Capture_to_field a(List(Sequence())))
+    %a=b&c : (And((Capture_to_name a(Atom b))(Atom c)))
+    %a=() : (Capture_to_name a(List(Sequence())))
     %a = b : (raised (
       Failure "Parsing match query failed at line 1 char 3 in query %a = b"))
     %()=b : (raised (Failure "Parsing match query failed at line 1 char 3 in query %()=b"))
-    %a=b* : (Star(Capture_to_field a(Atom b)))
-    %abc=()* : (Star(Capture_to_field abc(List(Sequence()))))
+    %a=b* : (Star(Capture_to_name a(Atom b)))
+    %abc=()* : (Star(Capture_to_name abc(List(Sequence()))))
     %1=()* : (Star(Capture_to_number 1(List(Sequence()))))
     %1=a..b : (Capture_to_number 1(Atom a..b))
     %1=a .. b : (Sequence((Capture_to_number 1(Atom a))(Subsearch(Atom b))))
     %a=.. b : (raised (
       Failure "Parsing match query failed at line 1 char 3 in query %a=.. b"))
-    %a=[.. b] : (Capture_to_field a(Subsearch(Atom b)))
+    %a=[.. b] : (Capture_to_name a(Subsearch(Atom b)))
     %a=* : (raised (Failure "Parsing match query failed at line 1 char 3 in query %a=*"))
     %"a=*" : (Capture_unlabeled(Atom a=*))
-    ( %a=b c d ) : (List(Sequence((Capture_to_field a(Atom b))(Atom c)(Atom d))))
-    { %a=b c d } : (Set((Capture_to_field a(Atom b))(Atom c)(Atom d)))
+    ( %a=b c d ) : (List(Sequence((Capture_to_name a(Atom b))(Atom c)(Atom d))))
+    { %a=b c d } : (Set((Capture_to_name a(Atom b))(Atom c)(Atom d)))
     !(a) : (First_match_only(List(Atom a)))
     !{a} : (First_match_only(Set((Atom a))))
     ![a] : (First_match_only(Atom a))
@@ -588,7 +601,10 @@ let%expect_test _ =
 ;;
 
 let%expect_test _ =
-  run ~output:"(%foo ((%baz)) (barr (%bar)))" ".. (%foo %bar %baz)" standard_test_cases;
+  run_format
+    ~format:"(%foo ((%baz)) (barr (%bar)))"
+    ".. (%foo %bar %baz)"
+    standard_test_cases;
   [%expect
     {|
     :
@@ -1251,6 +1267,16 @@ let%expect_test _ =
 ;;
 
 let%expect_test _ =
+  replace_single
+    "{(label %label) .. %a={ (id %id) (counts %counts) }}"
+    ~replace:"%a"
+    ~with_:"(%label %id %counts)"
+    "((label B) ( ((id X) (counts (1 2 3))) ((id Y) (counts (4 5 6))) ) )";
+  [%expect {|
+    :((label B)((B X(1 2 3))(B Y(4 5 6)))) |}]
+;;
+
+let%expect_test _ =
   replace_single ".. %0=[a]" ~replace:"%0" ~with_:"()" "(a b a a b c c a d c)";
   [%expect {|
     :(()b()()b c c()d c) |}]
@@ -1259,11 +1285,9 @@ let%expect_test _ =
 let%expect_test _ =
   show_raise (fun () ->
     replace_single ".. %0=[a . c]" ~replace:"%0" ~with_:"()" "(a b a a b c c a d c)");
-  [%expect
-    {|
-    :(raised (
-      Failure
-      "Replacement target %0 captured more than one sexp, currently\n          replace only supports patterns where the replacement target captures a single sexp")) |}]
+  [%expect {|
+    :(a b a()c())
+    "did not raise" |}]
 ;;
 
 let%expect_test _ =
@@ -1288,4 +1312,80 @@ let%expect_test _ =
   [%expect
     {|
     :(foo 100(bar 25((1 a 100 25)(2 b 100 25)(3 c 100 25)))((d 4)(e 5)(f 6))(bar 30(aa((7 g 100 30)(8 h 100 30)(9 i 100 30))((10 j 100 30)(11 k 100 30)(12 l 100 30))))) |}]
+;;
+
+let%expect_test "maps come out like records" =
+  let query = Parser.parse_exn {|((foo %foo) %bar %baz*) | (%alt)|} in
+  let test ~wrap_singletons =
+    let test_one sexp =
+      Engine.iter_matches ~query ~output_method:Map ~wrap_singletons sexp ~f:(fun s ->
+        [%sexp_of: Sexp.t list String.Map.t] s |> Sexp.to_string_mach |> print_endline)
+    in
+    [ "((foo x) y)"; "((foo a) b c)"; "((foo 1) 2 3 4)"; "(one)"; "(a b)" ]
+    |> List.map ~f:Sexp.of_string
+    |> List.iter ~f:test_one
+  in
+  test ~wrap_singletons:true;
+  [%expect
+    {|
+    ((alt())(bar(y))(baz())(foo(x)))
+    ((alt())(bar(b))(baz(c))(foo(a)))
+    ((alt())(bar(2))(baz(4))(foo(1)))
+    ((alt(one))(bar())(baz())(foo())) |}];
+  test ~wrap_singletons:false;
+  [%expect
+    {|
+    ((alt())(bar(y))(baz())(foo(x)))
+    ((alt())(bar(b))(baz(c))(foo(a)))
+    ((alt())(bar(2))(baz(4))(foo(1)))
+    ((alt(one))(bar())(baz())(foo())) |}]
+;;
+
+let%expect_test "replace with function" =
+  let query = Parser.parse_exn {|(%a=[[foo | bar]*])|} in
+  Engine.replace'
+    ~query
+    ~f:(fun captured_sequences ->
+      Map.map captured_sequences ~f:(fun captured_sequence ->
+        print_s ([%sexp_of: Sexp.t list] captured_sequence);
+        List.filter_map captured_sequence ~f:(fun sexp ->
+          match sexp with
+          | Atom "foo" -> Some (Sexp.Atom "was foo")
+          | Atom "bar" -> Some (Sexp.Atom "was bar")
+          | _ -> None)))
+    (Sexp.of_string {|(foo bar bar foo foo)|})
+  |> List.iter ~f:print_s;
+  [%expect
+    {|
+    (foo bar bar foo foo)
+    ("was foo" "was bar" "was bar" "was foo" "was foo") |}]
+;;
+
+let%expect_test "replace with function highly path-dependent" =
+  let query = Parser.parse_exn {|.. %a=[[foo | bar][foo | bar]+]|} in
+  Engine.replace'
+    ~query
+    ~f:(fun captured_sequences ->
+      Map.map captured_sequences ~f:(fun captured_sequence ->
+        print_s ([%sexp_of: Sexp.t list] captured_sequence);
+        if List.is_empty captured_sequence
+        then []
+        else
+          [ Sexp.Atom "!"
+          ; Sexp.List
+              (List.filter_map captured_sequence ~f:(fun sexp ->
+                 match sexp with
+                 | Atom "foo" -> Some (Sexp.Atom "was foo")
+                 | Atom "bar" -> Some (Sexp.Atom "was bar")
+                 | _ -> None))
+          ]))
+    (Sexp.of_string {|(foo bar bar goo foo (foo bar))|})
+  |> List.iter ~f:print_s;
+  [%expect
+    {|
+    (foo bar)
+    (foo bar bar)
+    (bar bar)
+    (foo bar)
+    (! ("was foo" "was bar") bar goo foo (! ("was foo" "was bar"))) |}]
 ;;

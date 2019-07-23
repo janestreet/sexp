@@ -1,6 +1,6 @@
 open! Core
 
-(** Same as Query_types.Query, except that Re2 regexes have been compiled and captures
+(** Same as Query.t, except that Re2 regexes have been compiled and captures
     have been boiled down into simply an index into an array where that capture should be
     stored. *)
 type t =
@@ -21,13 +21,18 @@ type t =
   | First_match_only of t
 [@@deriving sexp_of]
 
+(** Compiles a query. Returns [t, `Labels_of_captures labels, output_method].
+
+    [labels] is the list of all unique keys that expect to receive a capture, a
+    stringified integer in the case of a numbered capture, the string name in the case of
+    a named capture, and unique default-created labels in the case of captures that the
+    user did not themselves label.
+
+    The array indices of [labels] correspond one-to-one with the integers returned in
+    the [Capture] variant of [t].
+
+    [output_method] is the method to be used for postprocessing and returning captures. *)
 val create
   :  Query.t
-  -> Output.t option
-  -> t
-     * [ `Names_of_captures of string array ]
-     * [ `Output of Output.t
-       | `Output_as_list
-       | `Output_as_record
-       | `Output_single_capture
-       ]
+  -> 'output_type Output_method.Desired.t
+  -> t * [ `Labels_of_captures of string array ] * 'output_type Output_method.Compiled.t
