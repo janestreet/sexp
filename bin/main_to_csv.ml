@@ -24,8 +24,7 @@ let command =
   Command.basic
     ~summary:"converts a list of record s-expressions into CSV format"
     ~readme:(fun () ->
-      String.strip
-        {|
+      {|
 Example
 
     COMMAND

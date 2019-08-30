@@ -93,8 +93,7 @@ let diff_command =
   Command.async
     ~summary:"print the diff of two sexp files (expanding macros)"
     ~readme:(fun () ->
-      String.strip
-        {|
+      {|
 Whenever there is a sequence of [collapse_threshold] or more unchanged lines, we collapse
 them and only show the first [num_shown] and the last [num_shown] of these lines.
 
@@ -137,8 +136,7 @@ let patch_command =
   Command.async
     ~summary:"apply a diff to a sexp file (expanding macros)"
     ~readme:(fun () ->
-      String.strip
-        {|
+      {|
 The resulting sexp is printed to stdout.
 
 DIFF-FILE should have the same format as that produced by [sexp diff -for-patch].

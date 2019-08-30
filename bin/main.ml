@@ -6,7 +6,7 @@ let command =
   Command.group
     ~summary
     [ "assemble", Main_parts.assemble_command
-    ; "atomize", Main_atomize.command
+    ; "atom", Main_atom.command
     ; "change", Main_query.change_command
     ; "diff", Main_diff.diff_command
     ; "flatten", Main_parts.flatten_command
