@@ -125,26 +125,48 @@ module Make_engine (S : Sexplike) = struct
         in
         loop_subsexps subqueries 0 [] sexps ~f
       | Star subquery ->
+        (* [Star q] is equivalent to [Or_all [Sequence []; Sequence [q; Star q]]] (modulo
+           numbering of unlabeled captures), *)
         let rec loop nconsumed rev_consumed sexps =
-          (* First try consuming zero things *)
+          (* so first try consuming zero things *)
           f nconsumed rev_consumed sexps;
+          (* then try consuming q followed by [Star q]. *)
           iter_matches subquery sexps ~f:(fun n rc tail ->
             (* If it consumed zero things, then we're done, break and fail since we
                already tried consuming zero ourselves. Avoids infinite loops *)
             if n = 0 then () else loop (nconsumed + n) (rc @ rev_consumed) tail)
         in
         loop 0 [] sexps
-      (* Note: Q.Plus x is NOT equivalent to Q.Sequence [ x; Q.Star x ] because if x
-         contains an unnamed capture, in the former x will only get assigned one capture
-         index, in the latter the two copies of that unnamed capture will get different
-         assigned indices *)
+      | Star_greedy subquery ->
+        (* [Star_greedy q] is equivalent to [Or_all [Sequence [q; Star_greedy q]; Sequence []]]
+           (modulo numbering of unlabeled captures), *)
+        let rec loop nconsumed rev_consumed sexps =
+          (* so first try consuming q followed by [Star_greedy q] *)
+          iter_matches subquery sexps ~f:(fun n rc tail ->
+            (* If it consumed zero things, skip it since we will try consuming zero
+               ourselves. Avoids infinite loops *)
+            if n = 0 then () else loop (nconsumed + n) (rc @ rev_consumed) tail);
+          (* then, try consuming zero things *)
+          f nconsumed rev_consumed sexps
+        in
+        loop 0 [] sexps
       | Plus subquery ->
         let rec loop nconsumed rev_consumed sexps =
           iter_matches subquery sexps ~f:(fun n rc tail ->
             let nconsumed = nconsumed + n in
             let rev_consumed = rc @ rev_consumed in
             f nconsumed rev_consumed tail;
-            loop nconsumed rev_consumed tail)
+            (* If it consumed zero things, then we're done. Avoids infinite loops. *)
+            if n = 0 then () else loop nconsumed rev_consumed tail)
+        in
+        loop 0 [] sexps
+      | Plus_greedy subquery ->
+        let rec loop nconsumed rev_consumed sexps =
+          iter_matches subquery sexps ~f:(fun n rc tail ->
+            let nconsumed = nconsumed + n in
+            let rev_consumed = rc @ rev_consumed in
+            if n = 0 then () else loop nconsumed rev_consumed tail;
+            f nconsumed rev_consumed tail)
         in
         loop 0 [] sexps
       | Maybe subquery ->
@@ -154,6 +176,13 @@ module Make_engine (S : Sexplike) = struct
           (* If it consumed zero things, then we're done, break and fail since we
              already tried consuming zero ourselves. *)
           if n = 0 then () else f n rc tail)
+      | Maybe_greedy subquery ->
+        iter_matches subquery sexps ~f:(fun n rc tail ->
+          (* If it consumed zero things, skip it since we will try consuming zero
+             ourselves. Avoids duplicate null matches. *)
+          if n = 0 then () else f n rc tail);
+        (* Lastly, try consuming zero things *)
+        f 0 [] sexps
       | List subquery ->
         (match sexps with
          | [] -> ()
@@ -173,13 +202,24 @@ module Make_engine (S : Sexplike) = struct
               let rec loop_subqueries subqueries subsexps ~f =
                 match subqueries with
                 | [] -> f 1 [ head ] tail
-                | subquery :: subquery_tail ->
-                  List.iter subsexps ~f:(fun subsexp ->
-                    iter_matches
-                      subquery
-                      [ subsexp ]
-                      ~f:(fun _nconsumed _rev_consumed _subtail ->
-                        loop_subqueries subquery_tail subsexps ~f))
+                | (subquery, { Query.Set_kind.first_only; optional }) :: subquery_tail ->
+                  With_return.with_return (fun { return = stop_trying_to_find_a_match } ->
+                    let found_a_match = ref false in
+                    List.iter subsexps ~f:(fun subsexp ->
+                      iter_matches
+                        subquery
+                        [ subsexp ]
+                        ~f:(fun nconsumed _rev_consumed _subtail ->
+                          (* If the subquery didn't actually consume the subsexp, it doesn't count *)
+                          if nconsumed = 0
+                          then ()
+                          else (
+                            found_a_match := true;
+                            loop_subqueries subquery_tail subsexps ~f));
+                      if first_only && !found_a_match
+                      then stop_trying_to_find_a_match ());
+                    if optional && not !found_a_match
+                    then loop_subqueries subquery_tail subsexps ~f)
               in
               loop_subqueries subqueries subsexps ~f))
       | Subsearch subquery ->
@@ -260,65 +300,90 @@ end
 module Sexp_engine = Make_engine (Sexp)
 module Labeled_sexp_engine = Make_engine (Labeled_sexp)
 
-let combine_results ~revcapture ~wrap_singletons : Sexp.t =
-  match revcapture with
-  | [] -> List []
-  | [ x ] -> if wrap_singletons then List [ x ] else x
-  | _ -> List (List.rev revcapture)
+let maybe_wrap_results
+      (type query_result)
+      ~(revcapture : Sexp.t list)
+      ~(wrap_mode : query_result Output_method.Wrap_mode.t)
+  : query_result
+  =
+  match wrap_mode with
+  | Unwrap_always -> List.rev revcapture
+  | Wrap_non_singletons ->
+    (match revcapture with
+     | [] -> List []
+     | [ x ] -> x
+     | _ -> List (List.rev revcapture))
+  | Wrap_always -> List (List.rev revcapture)
 ;;
 
 let iter_matches
       (type a)
       ~query
-      ~(output_method : a Output_method.Desired.t)
-      ~wrap_singletons
+      ~(output_method : a Output_method.t)
       sexp
       ~(f : a -> unit)
   =
-  let query, `Labels_of_captures labels_of_captures, output_type =
+  let query, `Labels_of_captures labels_of_captures =
     Compiled_query.create query output_method
   in
   let revcapture_buf = Array.map labels_of_captures ~f:(fun _ -> []) in
-  match output_type with
-  | Single_capture ->
+  match output_method with
+  | Single_capture wrap_mode ->
     Sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
-      f (combine_results ~revcapture:revcapture_buf.(0) ~wrap_singletons))
-  | List ->
+      f (maybe_wrap_results ~revcapture:revcapture_buf.(0) ~wrap_mode))
+  | List wrap_mode ->
     Sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
-      f
-        (Sexp.List
-           (Array.to_list
-              (Array.map revcapture_buf ~f:(fun revcapture ->
-                 combine_results ~revcapture ~wrap_singletons)))))
-  | Record ->
+      let results =
+        List.map (Array.to_list revcapture_buf) ~f:(fun revcapture ->
+          maybe_wrap_results ~revcapture ~wrap_mode)
+      in
+      let results =
+        match wrap_mode with
+        | Unwrap_always -> List.concat results
+        | Wrap_non_singletons -> results
+        | Wrap_always -> results
+      in
+      f (Sexp.List results))
+  | Record wrap_mode ->
     Sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
-      f
-        (Sexp.List
-           (Array.map2_exn
-              labels_of_captures
-              revcapture_buf
-              ~f:(fun capture_label revcapture ->
-                Sexp.List
-                  [ Sexp.Atom capture_label
-                  ; combine_results ~revcapture ~wrap_singletons
-                  ])
-            |> Array.to_list)))
-  | Formats formats ->
+      let results =
+        Array.map2_exn
+          labels_of_captures
+          revcapture_buf
+          ~f:(fun capture_label revcapture ->
+            let field_name = Sexp.Atom capture_label in
+            let capture_result = maybe_wrap_results ~revcapture ~wrap_mode in
+            match wrap_mode with
+            | Unwrap_always -> Sexp.List (field_name :: capture_result)
+            | Wrap_non_singletons -> Sexp.List [ field_name; capture_result ]
+            | Wrap_always -> Sexp.List [ field_name; capture_result ])
+        |> Array.to_list
+      in
+      f (Sexp.List results))
+  | Formats (wrap_mode, formats) ->
     let capture_label_to_idx_map =
       Array.mapi labels_of_captures ~f:(fun i capture_label -> capture_label, i)
       |> Array.to_list
       |> String.Table.of_alist_exn
     in
     Sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
-      f
-        (List.map formats ~f:(fun format ->
-           Output_method.Format.embed_captures format ~f:(fun capture_label ->
-             combine_results
-               ~wrap_singletons
-               ~revcapture:
-                 revcapture_buf.(Hashtbl.find_exn
-                                   capture_label_to_idx_map
-                                   capture_label)))))
+      let format_results =
+        List.concat_map formats ~f:(fun format ->
+          Output_method.Format.embed_captures format ~f:(fun capture_label ->
+            let capture_idx =
+              Hashtbl.find_exn capture_label_to_idx_map capture_label
+            in
+            let capture_result =
+              maybe_wrap_results
+                ~wrap_mode
+                ~revcapture:revcapture_buf.(capture_idx)
+            in
+            match wrap_mode with
+            | Unwrap_always -> capture_result
+            | Wrap_non_singletons -> [ capture_result ]
+            | Wrap_always -> [ capture_result ]))
+      in
+      f format_results)
   | Map ->
     Sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
       f
@@ -352,9 +417,16 @@ let replace_sequence_with ~planned_replacements ~targets ~desired =
     Hashtbl.set planned_replacements ~key:target.node_id ~data:[])
 ;;
 
-let replace ~query ~replace ~with_:formats ~wrap_singletons sexp =
-  let query, `Labels_of_captures labels_of_captures, _output_type =
-    Compiled_query.create query (Formats formats)
+let replace
+      (type a)
+      ~query
+      ~replace
+      ~with_:formats
+      ~(wrap_mode : a Output_method.Wrap_mode.t)
+      sexp
+  =
+  let query, `Labels_of_captures labels_of_captures =
+    Compiled_query.create query (Formats (wrap_mode, formats))
   in
   let replace_capture_label =
     if String.is_prefix replace ~prefix:"%"
@@ -382,16 +454,19 @@ let replace ~query ~replace ~with_:formats ~wrap_singletons sexp =
       if no_planned_replacements_yet ~planned_replacements ~targets:replacement_targets
       then (
         let replacements =
-          List.map formats ~f:(fun format ->
+          List.concat_map formats ~f:(fun format ->
             Output_method.Format.embed_captures format ~f:(fun capture_label ->
-              let revcapture =
-                List.map
-                  revcapture_buf.(Hashtbl.find_exn
-                                    capture_label_to_idx_map
-                                    capture_label)
-                  ~f:Labeled_sexp.to_sexp
+              let capture_idx =
+                Hashtbl.find_exn capture_label_to_idx_map capture_label
               in
-              combine_results ~wrap_singletons ~revcapture))
+              let revcapture =
+                List.map revcapture_buf.(capture_idx) ~f:Labeled_sexp.to_sexp
+              in
+              let capture_result = maybe_wrap_results ~wrap_mode ~revcapture in
+              match wrap_mode with
+              | Unwrap_always -> capture_result
+              | Wrap_non_singletons -> [ capture_result ]
+              | Wrap_always -> [ capture_result ]))
         in
         replace_sequence_with
           ~planned_replacements
@@ -405,9 +480,7 @@ let replace ~query ~replace ~with_:formats ~wrap_singletons sexp =
 ;;
 
 let replace' ~query ~f sexp =
-  let query, `Labels_of_captures labels_of_captures, _output_type =
-    Compiled_query.create query Map
-  in
+  let query, `Labels_of_captures labels_of_captures = Compiled_query.create query Map in
   let sexp = Labeled_sexp.of_sexp sexp in
   let revcapture_buf = Array.map labels_of_captures ~f:(fun _ -> []) in
   let capture_label_to_idx_map =

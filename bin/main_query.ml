@@ -123,42 +123,8 @@ let query_command =
          "group"
          no_arg
          ~doc:" Group incoming sequence of sexps into a single list sexp"
-     and machine =
-       flag "machine" no_arg ~doc:" Use machine style for output (one sexp per line)"
-     and output_mode =
-       let%map_open quiet =
-         flag
-           "quiet"
-           no_arg
-           ~doc:" Produce no output (useful when running for exit status alone)"
-       and count = flag "count" no_arg ~doc:" Produce only a count of returned sexps" in
-       match quiet, count with
-       | true, false -> Query.Silent
-       | false, true -> Query.Count
-       | false, false -> Query.Sexp
-       | true, true -> failwith "can't pass both -quiet and -count"
-     and allow_empty_output =
-       flag "allow-empty-output" no_arg ~doc:" Do not fail even if no match is found"
-     and labeled =
-       let%map_open label =
-         flag "label" no_arg ~doc:" pair with filenames (override default behavior)"
-       and no_label =
-         flag
-           "no-label"
-           no_arg
-           ~doc:" do not pair with filenames (override default behavior)"
-       in
-       match label, no_label with
-       | true, false -> Some true
-       | false, true -> Some false
-       | false, false -> None
-       | true, true -> failwith "can't pass both -label and -no-label flags"
-     and fail_on_parse_error =
-       flag
-         "fail-on-parse-error"
-         no_arg
-         ~doc:" raise exception on bad input (override default behavior)"
-     in
+     and { machine; fail_on_parse_error } = Shared_params.machine_and_fail_on_parse_error
+     and { output_mode; allow_empty_output; labeled } = Shared_params.query_args in
      fun () ->
        let perform_query = create_perform_query_f ~source ~is_change:false in
        Query.execute
@@ -200,13 +166,7 @@ let change_command =
             Grammar.print ();
             exit 0))
          ~doc:" Show grammar for change expressions"
-     and machine =
-       flag "machine" no_arg ~doc:" Use machine style for output (one sexp per line)"
-     and fail_on_parse_error =
-       flag
-         "fail-on-parse-error"
-         no_arg
-         ~doc:" raise exception on bad input (override default behavior)"
+     and { machine; fail_on_parse_error } = Shared_params.machine_and_fail_on_parse_error
      and source, files =
        let%map_open x =
          anon

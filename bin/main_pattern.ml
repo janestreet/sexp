@@ -1,143 +1,5 @@
 open Core
 
-let pat_query_readme =
-  {|
-=== Pattern syntax summary ===
-For a longer explanation with examples, run with -examples.
-
-.             : Matches any sexp
-abc           : Matches atom 'abc'
-/regex/       : Matches atom via regular expression
-foo*          : Matches foo zero or more times
-foo+          : Matches foo one or more times
-foo?          : Matches foo zero or one times
-( )           : Matches a sexp list as a list, enforcing order and exact length
-{ }           : Matches a sexp list as a set, not enforcing order AND allowing extra elements.
-[ ]           : Limit the scope of things (see examples below)
-
-.. foo        : Searches for foo anywhere within any subexpression of the sexp.
-              : This is a lot like sexp query's "smash".
-
-%.            : Simple capture
-%(a %. c)     : Simple captures can also be put on other subpatterns, or nested.
-%0 %1         : Numbered captures
-%abc %def     : Named captures
-%abc=(a %. c) : Named or numbered captures can also be used on subpatterns or nested.
-
-a bc | de f   : Matches 'a bc' OR 'de f'. Shortcircuiting.
-a [bc | de] f : Matches 'a', then 'bc' OR 'de', then 'f'.
-a b & c d     : Matches any sexp that matches both 'a b' AND 'c d'.
-
-[.. a & .. b] : Matches any sexp that has 'a' anywhere within, AND has 'b' anywhere within.
-
-!foo          : Stop matching after the first match that foo finds.
-|}
-;;
-
-let pat_query_examples =
-  {|
-HOW TO USE:
-
-Write a sexp-like expression for the pattern you're trying to match and use "%." to
-capture a value you want.
-
-Example pattern: (a b %.)
-Effect:
-(a b c)      -> c
-(a b ())     -> ()
-(a b (c d))  -> (c d)
-(a b c d)    ->  <<no match>>
-(a b)        ->  <<no match>>
-
-To capture multiple values into a list, you can use numbered captures (zero-indexed).
-Example pattern: (%0 b %1)
-Effect:
-(a b c) -> (a c)
-
-Or you can capture them into records by using named captures.
-Example pattern: (%foo b %bar)
-Effect:
-(a b c) -> ((foo a) (bar c))
-
-You can also use -format to specify an explicit output format, like:
-Example pattern: (%foo b %bar), with -format (%foo (abc %bar))
-Effect:
-(a b c) -> (a (abc c))
-
-Regular parens require an exact match in order and length, but you can use curly brackets
-if you need to be robust to the order that things appear in something like a record, and
-you don't care if there are other fields:
-Example pattern: { (name %0) (time %1) }
-Effect:
-((name Alice) (time 9:00) (qty 3)) -> (Alice 9:00)
-((time 10:00) (name Bob))          -> (Bob 10:00)
-
-Most of the time, if you have a big sexp and you only want some deep piece of it,
-you can use '..', which will descend deep into any subsexp and return all matches.
-Example pattern:  .. (sym %.)
-Effect:
-(my giant sexp ... (( more stuff ... (sym foo)...)) ... (sym bar) ... )
-->
-foo            <---- Two separate matches
-bar            <---/
-
-'..' also works within subexpressions. For example, the following would search for a
-subrecord with a field "id", and anywhere deeper in it for a field "routes", and capture
-all the routes by id:
-
-Example pattern: .. { (id %0) .. (routes { %1 }) }
-Effect:
-(some giant sexp... ( ((id FOO) ((... (routes (A B)))))
-                      ((id BAR) ((... (routes (A E))))) ))
-->
-(FOO A)
-(FOO B)
-(BAR A)
-(BAR E)
-
-You can use '.' to match any value, and * to match something zero or more times.
-For example, the following would grab the second element out of any subsexp:
-Example pattern: .. (. %. .*)
-Effect:
-(a (b c) (d e f))
-->
-(b c)
-c
-e
-
-You can use '?' to express that a value might or might not be there. For example,
-if you have two fields that are both optional:
-Example pattern: { (start (%0?)) (stop (%1?)) }
-Effect:
-((start (3)) (stop (4))) -> (3 4)
-((start ()) (stop (4)))  -> (() 4)
-((start (3)) (stop ()))  -> (3 ())
-((start ()) (stop ()))   -> (() ())
-
-You can use '&' for AND and '|' for OR.
-Use square brackets to delimit the scope of things where needed.
-Examples:
-
-Search anywhere for a triple of a, then b OR c, then d, and capture the b OR c:
-.. (a %[b | c] d)
-
-Search separately anywhere for a field "foo" and anywhere for a field "bar", and return
-the cross product of all the things they match:
-.. (foo %foo) & .. (bar %bar)
-
-You can use % on whole sexps as well. For example, to capture all records that have
-the field "count" anywhere ("." matches any sexp):
-
-.. %{(count .)}
-
-Or to capture it in a named or numbered fashion:
-.. %foo={(count .)}
-
-That's most of the basic things you can do!
-
-|}
-;;
-
 type source =
   | Anon of string
   | File of string
@@ -148,17 +10,38 @@ let load_pattern source =
   | File file -> In_channel.read_all file
 ;;
 
+let wrap_mode_param =
+  let open Command.Let_syntax in
+  let%map_open wrap_singletons =
+    flag
+      "wrap-singletons"
+      no_arg
+      ~doc:"when capturing lists, also wrap single sexps as alist"
+  and unwrap_sequence_captures =
+    flag
+      "unwrap-sequence-captures"
+      no_arg
+      ~doc:"when capturing a sequence, unwrap into multiple distinct sexps"
+  in
+  match wrap_singletons, unwrap_sequence_captures with
+  | false, false -> Sexp_app_pattern.Output_method.Wrap_mode.T Wrap_non_singletons
+  | true, false -> Sexp_app_pattern.Output_method.Wrap_mode.T Wrap_always
+  | false, true -> Sexp_app_pattern.Output_method.Wrap_mode.T Unwrap_always
+  | true, true ->
+    failwith "Cannot specify both -wrap-singletons and -unwrap-sequence-captures"
+;;
+
 let pat_query_command =
   let open Command.Let_syntax in
   Command.basic
     ~summary:"query for parts of an s-expression via regex-like pattern"
-    ~readme:(fun () -> pat_query_readme)
+    ~readme:(fun () -> Sexp_app_pattern.Help.pat_query_readme)
     (let%map_open () = return ()
      and () =
        flag
          "examples"
          (no_arg_abort ~exit:(fun () ->
-            Core.print_endline pat_query_examples;
+            Core.print_endline Sexp_app_pattern.Help.pat_query_examples;
             Core.exit 0))
          ~doc:" Print a longer explanation with examples"
      and source, inputs, labeled_default =
@@ -193,46 +76,9 @@ let pat_query_command =
          | _ -> failwith "must pass exactly one of PATTERN or -pattern-file"
        in
        source, inputs, labeled_default
-     and wrap_singletons =
-       flag
-         "wrap-singletons"
-         no_arg
-         ~doc:"when capturing lists, also wrap single sexps as a list"
-     and output_mode =
-       let%map_open quiet =
-         flag
-           "quiet"
-           no_arg
-           ~doc:" Produce no output (useful when running for exit status alone)"
-       and count = flag "count" no_arg ~doc:" Produce only a count of returned sexps" in
-       match quiet, count with
-       | true, false -> Query.Silent
-       | false, true -> Query.Count
-       | false, false -> Query.Sexp
-       | true, true -> failwith "can't pass both -quiet and -count"
-     and allow_empty_output =
-       flag "allow-empty-output" no_arg ~doc:" Do not fail even if no match is found"
-     and labeled =
-       let%map_open label =
-         flag "label" no_arg ~doc:" pair with filenames (override default behavior)"
-       and no_label =
-         flag
-           "no-label"
-           no_arg
-           ~doc:" do not pair with filenames (override default behavior)"
-       in
-       match label, no_label with
-       | true, false -> Some true
-       | false, true -> Some false
-       | false, false -> None
-       | true, true -> failwith "can't pass both -label and -no-label flags"
-     and machine =
-       flag "machine" no_arg ~doc:" Use machine style for output (one sexp per line)"
-     and fail_on_parse_error =
-       flag
-         "fail-on-parse-error"
-         no_arg
-         ~doc:" raise exception on bad input (override default behavior)"
+     and wrap_mode = wrap_mode_param
+     and { output_mode; allow_empty_output; labeled } = Shared_params.query_args
+     and { machine; fail_on_parse_error } = Shared_params.machine_and_fail_on_parse_error
      and format =
        flag
          "format"
@@ -242,9 +88,17 @@ let pat_query_command =
      fun () ->
        let pattern = load_pattern source in
        let query = Sexp_app_pattern.Parser.parse_exn pattern in
-       let perform_query'
-             output_method
-             process_output
+       let output_method =
+         let (Sexp_app_pattern.Output_method.Wrap_mode.T wrap_mode) = wrap_mode in
+         match format with
+         | None -> Sexp_app_pattern.Output_method.default_method query ~wrap_mode
+         | Some format ->
+           Sexp_app_pattern.Output_method.T
+             (Sexp_app_pattern.Output_method.Formats
+                (wrap_mode, [ Sexp_app_pattern.Output_method.Format.t_of_sexp format ]))
+       in
+       let perform_query_returning_sexps
+             ~(output_method : Sexp.t Sexp_app_pattern.Output_method.t)
              sexp_ext
              ~(on_result : Sexp.t -> unit)
          =
@@ -253,16 +107,34 @@ let pat_query_command =
            ~query
            ~output_method
            sexp
-           ~wrap_singletons
-           ~f:(fun output -> process_output on_result output)
+           ~f:(fun output -> on_result output)
+       in
+       let perform_query_returning_sexp_lists
+             ~(output_method : Sexp.t list Sexp_app_pattern.Output_method.t)
+             sexp_ext
+             ~(on_result : Sexp.t -> unit)
+         =
+         let sexp = Sexp_app.Sexp_ext.sexp_of_t sexp_ext in
+         Sexp_app_pattern.Engine.iter_matches
+           ~query
+           ~output_method
+           sexp
+           ~f:(fun output -> List.iter ~f:on_result output)
        in
        let perform_query =
-         match format with
-         | None -> perform_query' Default (fun on_result sexp -> on_result sexp)
-         | Some format ->
-           perform_query'
-             ([ Sexp_app_pattern.Output_method.Format.t_of_sexp format ] |> Formats)
-             (fun on_result sexps -> List.iter ~f:on_result sexps)
+         let (Sexp_app_pattern.Output_method.T output_method) = output_method in
+         match output_method with
+         | Formats _ as output_method ->
+           perform_query_returning_sexp_lists ~output_method
+         | List _ as output_method -> perform_query_returning_sexps ~output_method
+         | Record _ as output_method -> perform_query_returning_sexps ~output_method
+         | Single_capture Unwrap_always as output_method ->
+           perform_query_returning_sexp_lists ~output_method
+         | Single_capture Wrap_non_singletons as output_method ->
+           perform_query_returning_sexps ~output_method
+         | Single_capture Wrap_always as output_method ->
+           perform_query_returning_sexps ~output_method
+         | Map -> assert false
        in
        Query.execute
          { inputs
@@ -293,6 +165,10 @@ See -help or -examples for the 'pat-query' command for a general explanation of 
 patterns and capturing works. Other than that, if you understand pat-query, then some
 examples should hopefully illustrate how pat-change works. So see -examples for a few
 examples.
+
+And for more precise specification of the semantics of query patterns and the underlying
+type that corresponds to the grammar, see:
+https://ocaml.janestreet.com/ocaml-core/latest/doc/sexp_app_pattern/Sexp_app_pattern/Query/index.html
 
 |}
 ;;
@@ -368,13 +244,7 @@ let pat_change_command =
             Core.print_endline pat_change_examples;
             Core.exit 0))
          ~doc:" Print a longer explanation with examples"
-     and machine =
-       flag "machine" no_arg ~doc:" Use machine style for output (one sexp per line)"
-     and fail_on_parse_error =
-       flag
-         "fail-on-parse-error"
-         no_arg
-         ~doc:" raise exception on bad input (override default behavior)"
+     and { machine; fail_on_parse_error } = Shared_params.machine_and_fail_on_parse_error
      and source, files =
        let%map_open x =
          anon (maybe (t2 ("PATTERN" %: string) (sequence ("FILE" %: Filename.arg_type))))
@@ -390,11 +260,7 @@ let pat_change_command =
        | _ -> failwith "must pass exactly one of -pattern-file and PATTERN"
      and stdin_label =
        flag "stdin-label" (optional string) ~doc:"LABEL override default label for stdin"
-     and wrap_singletons =
-       flag
-         "wrap-singletons"
-         no_arg
-         ~doc:"when capturing lists, also wrap single sexps as alist"
+     and wrap_mode = wrap_mode_param
      and replace =
        flag
          "replace"
@@ -430,14 +296,10 @@ let pat_change_command =
          | `Delete -> []
        in
        let perform_query sexp_ext ~on_result =
+         let (Sexp_app_pattern.Output_method.Wrap_mode.T wrap_mode) = wrap_mode in
          let sexp = Sexp_app.Sexp_ext.sexp_of_t sexp_ext in
          let sexps =
-           Sexp_app_pattern.Engine.replace
-             ~query
-             ~replace
-             ~with_:formats
-             sexp
-             ~wrap_singletons
+           Sexp_app_pattern.Engine.replace ~query ~replace ~with_:formats sexp ~wrap_mode
          in
          List.iter ~f:on_result sexps
        in

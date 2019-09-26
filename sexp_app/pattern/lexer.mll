@@ -27,6 +27,9 @@ module Token = struct
     | BANG
     | SEMI
     | PLUS
+    | STARPLUS
+    | QUESTIONPLUS
+    | PLUSPLUS
 
     | AND_
     | OR_
@@ -126,6 +129,9 @@ rule next_token = parse
 | "&"   { Token.AND_ }
 | "|"   { Token.OR_ }
 | "*"   { Token.STAR }
+| "?+"  { Token.QUESTIONPLUS }
+| "*+"  { Token.STARPLUS }
+| "++"  { Token.PLUSPLUS }
 | "?"   { Token.QUESTION }
 | "+"   { Token.PLUS }
 | "!"   { Token.BANG }

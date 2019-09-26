@@ -39,49 +39,47 @@ module Format = struct
 
   let all_captures t = all_captures_aux t []
 
-  let rec embed_captures t ~f : Sexp.t =
+  let rec embed_captures t ~f : Sexp.t list =
     match t with
-    | Atom s -> Atom s
+    | Atom s -> [ Atom s ]
     | Capture s -> f s
-    | List list -> List (List.map list ~f:(embed_captures ~f))
+    | List list -> [ List (List.concat_map list ~f:(embed_captures ~f)) ]
   ;;
 end
 
-module Desired = struct
-  type _ t =
-    | Formats : Format.t list -> Sexp.t list t
-    | Default : Sexp.t t
-    | Map : Sexp.t list String.Map.t t
+module Wrap_mode = struct
+  type 'query_result t =
+    | Wrap_always : Sexp.t t
+    | Wrap_non_singletons : Sexp.t t
+    | Unwrap_always : Sexp.t list t
   [@@deriving sexp_of]
+
+  type some_wrap_mode = T : _ t -> some_wrap_mode
 end
 
-module Compiled = struct
-  type 'a t =
-    | Formats : Format.t list -> Sexp.t list t
-    | List : Sexp.t t
-    | Record : Sexp.t t
-    | Single_capture : Sexp.t t
-    | Map : Sexp.t list String.Map.t t
-  [@@deriving sexp_of]
+type 'query_result t =
+  | Formats : _ Wrap_mode.t * Format.t list -> Sexp.t list t
+  | List : 'query_result Wrap_mode.t -> Sexp.t t
+  | Record : 'query_result Wrap_mode.t -> Sexp.t t
+  | Single_capture : 'query_result Wrap_mode.t -> 'query_result t
+  | Map : Sexp.t list String.Map.t t (** Return a map from capture name to captures *)
+[@@deriving sexp_of]
 
-  let of_desired
-        (type a)
-        (t : a Desired.t)
-        ~has_named_captures
-        ~has_number_captures
-        ~num_unlabeled_captures
-    : a t
+type some_output_method = T : _ t -> some_output_method
+
+let default_method query ~wrap_mode =
+  let { Query.Capture_count.num_number_captures
+      ; num_named_captures
+      ; num_unlabeled_captures
+      }
     =
-    match t with
-    | Formats fs -> Formats fs
-    | Map -> Map
-    | Default ->
-      if has_named_captures
-      then Record
-      else if has_number_captures || num_unlabeled_captures > 1
-      then List
-      else if num_unlabeled_captures = 1
-      then Single_capture
-      else failwith "No captures % were specified in pattern"
-  ;;
-end
+    Query.count_captures query
+  in
+  if num_named_captures > 0
+  then T (Record wrap_mode)
+  else if num_number_captures > 0 || num_unlabeled_captures > 1
+  then T (List wrap_mode)
+  else if num_unlabeled_captures = 1
+  then T (Single_capture wrap_mode)
+  else failwith "No captures % were specified in pattern"
+;;

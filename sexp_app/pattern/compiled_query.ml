@@ -7,10 +7,13 @@ type t =
   | Atom_regex of Re2.t
   | Sequence of t list
   | Star of t
+  | Star_greedy of t
   | Plus of t
+  | Plus_greedy of t
   | Maybe of t
+  | Maybe_greedy of t
   | List of t
-  | Set of t list
+  | Set of (t * Query.Set_kind.t) list
   | Subsearch of t
   | And of t list
   | Or_shortcircuiting of t list
@@ -21,6 +24,7 @@ type t =
 let of_query query ~idx_of_unlabeled_capture ~idx_of_number_capture ~idx_of_named_capture
   =
   let rec compile_list = List.map ~f:compile
+  and compile_set_arg = List.map ~f:(fun (query, mode) -> compile query, mode)
   and compile query : t =
     match (query : Query.t) with
     (* capture lookup *)
@@ -34,10 +38,13 @@ let of_query query ~idx_of_unlabeled_capture ~idx_of_number_capture ~idx_of_name
     | Atom s -> Atom s
     | Sequence subs -> Sequence (compile_list subs)
     | Star sub -> Star (compile sub)
+    | Star_greedy sub -> Star_greedy (compile sub)
     | Plus sub -> Plus (compile sub)
+    | Plus_greedy sub -> Plus_greedy (compile sub)
     | Maybe sub -> Maybe (compile sub)
+    | Maybe_greedy sub -> Maybe_greedy (compile sub)
     | List sub -> List (compile sub)
-    | Set subs -> Set (compile_list subs)
+    | Set subs -> Set (compile_set_arg subs)
     | Subsearch sub -> Subsearch (compile sub)
     | And subs -> And (compile_list subs)
     | Or_shortcircuiting subs -> Or_shortcircuiting (compile_list subs)
@@ -47,11 +54,8 @@ let of_query query ~idx_of_unlabeled_capture ~idx_of_number_capture ~idx_of_name
   compile query
 ;;
 
-let create
-      (type a)
-      (uncompiled_query : Query.t)
-      (output_method : a Output_method.Desired.t)
-  =
+let create (type a) (uncompiled_query : Query.t) (output_method : a Output_method.t) =
+  Query.validate_all_captures_labeled_or_all_unlabeled_exn uncompiled_query;
   let number_captures = Queue.create () in
   let named_captures = Queue.create () in
   let num_unlabeled_captures = ref 0 in
@@ -60,20 +64,6 @@ let create
     | Capture_to_number (i, _) -> Queue.enqueue number_captures i
     | Capture_to_name (name, _) -> Queue.enqueue named_captures name
     | _ -> ());
-  if Queue.length number_captures > 0 || Queue.length named_captures > 0
-  then
-    if !num_unlabeled_captures > 0
-    then
-      failwith
-        "Cannot mix unlabeled captures with named or numbered captures in the same \
-         pattern";
-  let output_method =
-    Output_method.Compiled.of_desired
-      output_method
-      ~has_named_captures:(Queue.length named_captures > 0)
-      ~has_number_captures:(Queue.length number_captures > 0)
-      ~num_unlabeled_captures:!num_unlabeled_captures
-  in
   let pick_indices_for_named_and_number_captures () =
     let last_idx = ref (-1) in
     let get_idx () =
@@ -100,7 +90,7 @@ let create
   in
   let compiled_query, labels_of_captures =
     match output_method with
-    | Formats formats ->
+    | Formats (_, formats) ->
       let used_labels = String.Hash_set.create () in
       Queue.iter named_captures ~f:(fun name -> Hash_set.add used_labels name);
       Queue.iter number_captures ~f:(fun number ->
@@ -115,9 +105,9 @@ let create
               c
               ()));
       pick_indices_for_named_and_number_captures ()
-    | Record -> pick_indices_for_named_and_number_captures ()
+    | Record _ -> pick_indices_for_named_and_number_captures ()
     | Map -> pick_indices_for_named_and_number_captures ()
-    | List ->
+    | List _ ->
       assert (Queue.is_empty named_captures);
       if Queue.length number_captures > 0
       then (
@@ -166,7 +156,7 @@ let create
             ~idx_of_named_capture:(fun _ -> assert false)
         in
         compiled_query, Array.init !num_used_idxs ~f:Int.to_string)
-    | Single_capture ->
+    | Single_capture _ ->
       assert (Queue.is_empty named_captures);
       assert (Queue.is_empty number_captures);
       assert (!num_unlabeled_captures = 1);
@@ -179,5 +169,5 @@ let create
       in
       compiled_query, [| "0" |]
   in
-  compiled_query, `Labels_of_captures labels_of_captures, output_method
+  compiled_query, `Labels_of_captures labels_of_captures
 ;;
