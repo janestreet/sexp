@@ -58,7 +58,7 @@ let rec flatten path t =
         (List.map l ~f:(function
            | List [ Atom n; v ] -> flatten (Rec n :: path) v
            | _ -> assert false))
-    else List.concat (List.mapi l ~f:(fun p e -> flatten (Pos (p + 1) :: path) e))
+    else List.concat (List.mapi l ~f:(fun p e -> flatten (Pos p :: path) e))
 ;;
 
 let flatten t = flatten [] t
@@ -76,7 +76,6 @@ let rec assemble (l : (Path.t * Sexp.t) list) =
       | _ -> assert false)
   in
   match group l with
-  | [ [ ((Rec _ :: _ as p), v) ] ] -> List [ assemble1 p v ]
   | [ [ (p, v) ] ] -> assemble1 p v
   | [] -> assert false
   | groups ->
@@ -91,7 +90,7 @@ and assemble1 p v =
   match p with
   | [] -> v
   | Pos _ :: p -> List [ assemble1 p v ]
-  | Rec n :: p -> List [ Atom n; assemble1 p v ]
+  | Rec n :: p -> List [ List [ Atom n; assemble1 p v ] ]
   | Match _ :: _ -> assert false
 ;;
 

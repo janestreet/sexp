@@ -141,6 +141,33 @@ let query_command =
 
 let change_arg = Command.Param.sexp_conv Syntax.Change.t_of_sexp
 
+let stdin_label_arg =
+  let open Command.Param in
+  flag "stdin-label" (optional string) ~doc:"LABEL override default label for stdin"
+;;
+
+let create_inputs ~files ~stdin_label =
+  match files with
+  | [] -> Located.stdin stdin_label, Option.is_some stdin_label
+  | [ file ] -> Located.files [ file ], false
+  | files -> Located.files files, true
+;;
+
+let change_command_body ~files ~stdin_label ~source ~machine ~fail_on_parse_error =
+  let inputs, labeled = create_inputs ~files ~stdin_label in
+  let perform_query = create_perform_query_f ~source ~is_change:true in
+  Query.execute
+    { inputs
+    ; output_mode = Sexp
+    ; allow_empty_output = false
+    ; group = false
+    ; machine
+    ; labeled
+    ; fail_on_parse_error
+    ; perform_query
+    }
+;;
+
 let change_command =
   Command.basic
     ~summary:"transform an s-expression"
@@ -181,25 +208,66 @@ let change_command =
        | None, Some x -> File x, []
        | Some (prgm, files), None -> Anon (Syntax.Change prgm), files
        | _ -> failwith "must pass exactly one of -file and QUERY"
-     and stdin_label =
-       flag "stdin-label" (optional string) ~doc:"LABEL override default label for stdin"
-     in
+     and stdin_label = stdin_label_arg in
      fun () ->
-       let inputs, labeled =
-         match files with
-         | [] -> Located.stdin stdin_label, Option.is_some stdin_label
-         | [ file ] -> Located.files [ file ], false
-         | files -> Located.files files, true
-       in
-       let perform_query = create_perform_query_f ~source ~is_change:true in
-       Query.execute
-         { inputs
-         ; output_mode = Sexp
-         ; allow_empty_output = false
-         ; group = false
-         ; machine
-         ; labeled
-         ; fail_on_parse_error
-         ; perform_query
-         })
+       change_command_body ~files ~stdin_label ~source ~machine ~fail_on_parse_error)
+;;
+
+let pattern_arg = Command.Param.sexp_conv Syntax.Pattern.t_of_sexp
+
+let rewrite_command =
+  Command.basic
+    ~summary:"rewrite patterns within an s-expression"
+    ~readme:(fun () ->
+      {|
+rewrite patterns within an s-expression
+
+  main.exe rewrite A B [FILE ...]
+
+is exactly the same as
+
+  sexp change '(topdown (try (rewrite A B)))'
+
+but easier to remember, find, and use.
+
+Say we have this sexp:
+
+$ cat /tmp/sexp
+((laundry true)
+(basket
+  (fruit   Banana)
+  (utensil fork)
+  (utensil knife)
+  (also
+    (fruit Pear)
+    (fruit Lychee))))
+
+We can rewrite the "fruit" fields to "snack" quite easily:
+
+$ cat /tmp/sexp | sexp rewrite '(fruit $FRUIT)' '(snack $FRUIT)'
+((laundry true)
+(basket
+  (snack   Banana)
+  (utensil fork)
+  (utensil knife)
+  (also
+    (snack Pear)
+    (snack Lychee))))
+
+
+See `sexp change -examples` for more information.|})
+    (let open Command.Let_syntax in
+     let%map_open { machine; fail_on_parse_error } =
+       Shared_params.machine_and_fail_on_parse_error
+     and source_a = anon ("A" %: pattern_arg)
+     and source_b = anon ("B" %: pattern_arg)
+     and files = anon (sequence ("FILE" %: Filename.arg_type))
+     and stdin_label = stdin_label_arg in
+     fun () ->
+       change_command_body
+         ~files
+         ~stdin_label
+         ~machine
+         ~fail_on_parse_error
+         ~source:(Anon (Change (Topdown (Syntax.try_ (Rewrite (source_a, source_b)))))))
 ;;

@@ -10,65 +10,66 @@ let change_by_example_dot_md =
    plish\nthis with the following:\n\n```\n(topdown (try (rewrite LHS RHS)))\n```\n\nThe `\
    topdown` keyword ensures you cover the entire file, while `try`\nensures that if \
    you can't apply the rewrite rule to a given expression\nLHS, you leave LHS as it \
-   is.\n\nUsing sexp query and sexp change together\n---------------------------------\
-   --------\n\nHere are a pair of examples making use of sexp query's `index`,\n`pipe`\
-   , `quote` and `unquote` commands, and sexp change's `seq`,\n`rewrite`, and `conca\
-   t` commands.\n\nSuppose your input is something like:\n\n```\n(AMZN ( ... ))\n(MSFT ( \
-   ... ))\n```\n\nand you want to change it to:\n\n```\n(\"AMZN US\" ( ... ))\n(\"MSFT US\" ( \
-   ... ))\n```\n\nHere's how you could do it using the `change` subcommand of `sexp qu\
-   ery`:\n\n```sh\nsexp query '\n(quote (\n  (unquote (pipe (index 0) (change (seq (rewr\
-   ite $X ($X \" US\")) concat))))\n  (unquote (index 1))))\n' <<EOF\n(AMZN (foo bar))\n(\
-   MSFT (foo bar))\nEOF\n```\n\nLet's break down how this works. From\n[the sexp query r\
-   eadme](query_by_example.md) you know how to use\n`quote` to create an S-expressio\
-   n \"template\" that is then filled in\nwith `unquote` statements. Here, that templa\
-   te is going to look like\n`(A B)`, where the `A` part is filled in by the results\
-  \ of:\n\n```sh\n(pipe (index 0) (change (seq (rewrite $X ($X \" US\")) concat)))\n```\n\n\
-   We pipe the results of `(index 0)`, i.e., something like \"AMZN\", to\nthe `change`\
-  \ command, which consists of a `seq`-uence of two\nsubcommands: `(rewrite $X ($X \"\
-  \ US\"))` takes the single S-expression\nlike `AMZN` (an atom) and rewrites it as `\
-   (AMZN \" US\")`. `concat` then\nconcatenates this 2-atom list into the single atom \
-   `\"AMZN US\"`.\n\nFinally, the second half of the `quote` statement plops the result\
-  \ of\n`(unquote (index 1))` into the latter half of the list, creating the\ndesired\
-  \ `(AMZN (foo bar))`.\n\nSuppose we wanted to do this for sexps of more than two it\
-   ems, like\nso:\n\n```\n(AMZN ( ... ) ( ... ))\n(MSFT ( ... ) ( ... ) ( ... ))\n```\n\nTh\
-   en you'd want to use the `query` subcommand of `sexp change`:\n\n```sh\nsexp change\
-  \ '\n(seq\n  (rewrite ($A @B) ($A (@B)))\n  (query (\n    quote (\n      (unquote (pip\
-   e (index 0) (change (seq (rewrite $X ($X \" US\")) concat))))\n      (unquote (inde\
-   x 1)))))\n  (rewrite (($A (@B))) ($A @B)))\n' <<EOF\n(AMZN (foo bar) baz)\n(MSFT (fo\
-   o bar))\nEOF\n```\n\nNotice how the inner part of this command is the exact same `qu\
-   ery`\nwe just did. But that's step 2 of a sequence of three steps, the first\nof w\
-   hich is to wrap the \"tail\" of our list in parens, via:\n\n```sh\n(rewrite ($A @B) (\
-   $A (@B)))\n```\n\nand then, after we're done with the meat of the rewrite, unwrap i\
-   t\nagain via the inverse:\n\n```sh\n(rewrite (($A (@B))) ($A @B))\n```\n\nwhere the ext\
-   ra parens around `(($A (@B)))` are added because we're\ninside a `sexp change`.\n\n\
-   Overwriting all record values with a given key\n---------------------------------\
-   -------------\n\nSee the following little shell command:\n\n```sh\nfunction proxy-iro\
-   n-config-command {\n    no-args \"$@\"\n    host=james\n    sexp change </etc/iron-co\
-   nfig.sexp \\\n         \"(record (host (const $host)))\"\n}\n```\n\nThis operates on a f\
-   ile with S-expressions of the form:\n\n```ocaml\n((host some_host_name)\n (async_rpc\
-   _port (Static 7013))\n (hgrc /path/to/hgrc)\n (serializer_pause_timeout 2m)\n (rpc_\
-   proxy_config\n  ((another_host1 (p1 p2 p3))\n   (another_host2 (p1 p2)))))\n```\n\ni.\
-   e., records with keys `host`, `async_rpc_port`, `hgrc`,\n`serializer_pause_timeou\
-   t`, and so on. By writing\n`(record (host (const $host)))`, the above sexp change\
-  \ program just\ntakes whatever the value of the interpolated `$host` ends up being\
-  \ --\nthis is a shell variable, not a variable in the sexp change language\n-- and \
-   jams it into the place of _every_ `host` record value. So if\n`$host` were \"foo\",\
-  \ the above record would be rewritten as:\n\n```ocaml\n((host foo)\n (async_rpc_port \
-   (Static 7013))\n (hgrc /path/to/hgrc)\n (serializer_pause_timeout 2m)\n (rpc_proxy_\
-   config\n  ((another_host1 (p1 p2 p3))\n   (another_host2 (p1 p2)))))\n```\n\nand so o\
-   n for the rest of the records in the file -- they would all\nbegin `(host foo)`.\n\
-   \nDoing a bottom-up search with alt and try\n-------------------------------------\
-   ----\n\nHere, we use the `alt` keyword for the simple reason that it allows\nus to \
-   apply several different rewrite rules in parallel, in a single\npass through a fi\
-   le:\n\n```\nsexp change '(bottomup (try (alt\n    (rewrite (App $X $Y) ($X $Y))\n    \
-   (rewrite (Name $X) $X)\n    (rewrite (Var (Free $X)) $X)\n  )))'\n```\n\nThe `alt` ke\
-   yword is short-circuiting, in the sense that it returns\nas soon as one of the re\
-   write rules you pass it succeeds. Here, we don't\nreally take advantage of that s\
-   hort-circuiting: no matter what order\nwe put our three rules in, the program wil\
-   l have the same behavior.\n\nIf, however, the LHS of our alternative rewrite rules\
-  \ had the same\nstructure -- like if they all looked like `(Foo $X) RHS` or `(Foo \
-   $X)\nRHS'` -- then there would at least be the chance that the order of\nthe rules\
-  \ could matter.\n"
+   is.\n\nFor convenience, this functionality is exposed with the `sexp rewrite` comm\
+   and.\n\nUsing sexp query and sexp change together\n--------------------------------\
+   ---------\n\nHere are a pair of examples making use of sexp query's `index`,\n`pipe\
+   `, `quote` and `unquote` commands, and sexp change's `seq`,\n`rewrite`, and `conc\
+   at` commands.\n\nSuppose your input is something like:\n\n```\n(AMZN ( ... ))\n(MSFT (\
+  \ ... ))\n```\n\nand you want to change it to:\n\n```\n(\"AMZN US\" ( ... ))\n(\"MSFT US\" (\
+  \ ... ))\n```\n\nHere's how you could do it using the `change` subcommand of `sexp q\
+   uery`:\n\n```sh\nsexp query '\n(quote (\n  (unquote (pipe (index 0) (change (seq (rew\
+   rite $X ($X \" US\")) concat))))\n  (unquote (index 1))))\n' <<EOF\n(AMZN (foo bar))\n\
+   (MSFT (foo bar))\nEOF\n```\n\nLet's break down how this works. From\n[the sexp query \
+   readme](query_by_example.md) you know how to use\n`quote` to create an S-expressi\
+   on \"template\" that is then filled in\nwith `unquote` statements. Here, that templ\
+   ate is going to look like\n`(A B)`, where the `A` part is filled in by the result\
+   s of:\n\n```sh\n(pipe (index 0) (change (seq (rewrite $X ($X \" US\")) concat)))\n```\n\
+   \nWe pipe the results of `(index 0)`, i.e., something like \"AMZN\", to\nthe `change\
+   ` command, which consists of a `seq`-uence of two\nsubcommands: `(rewrite $X ($X \
+   \" US\"))` takes the single S-expression\nlike `AMZN` (an atom) and rewrites it as \
+   `(AMZN \" US\")`. `concat` then\nconcatenates this 2-atom list into the single atom\
+  \ `\"AMZN US\"`.\n\nFinally, the second half of the `quote` statement plops the resul\
+   t of\n`(unquote (index 1))` into the latter half of the list, creating the\ndesire\
+   d `(AMZN (foo bar))`.\n\nSuppose we wanted to do this for sexps of more than two i\
+   tems, like\nso:\n\n```\n(AMZN ( ... ) ( ... ))\n(MSFT ( ... ) ( ... ) ( ... ))\n```\n\nT\
+   hen you'd want to use the `query` subcommand of `sexp change`:\n\n```sh\nsexp chang\
+   e '\n(seq\n  (rewrite ($A @B) ($A (@B)))\n  (query (\n    quote (\n      (unquote (pi\
+   pe (index 0) (change (seq (rewrite $X ($X \" US\")) concat))))\n      (unquote (ind\
+   ex 1)))))\n  (rewrite (($A (@B))) ($A @B)))\n' <<EOF\n(AMZN (foo bar) baz)\n(MSFT (f\
+   oo bar))\nEOF\n```\n\nNotice how the inner part of this command is the exact same `q\
+   uery`\nwe just did. But that's step 2 of a sequence of three steps, the first\nof \
+   which is to wrap the \"tail\" of our list in parens, via:\n\n```sh\n(rewrite ($A @B) \
+   ($A (@B)))\n```\n\nand then, after we're done with the meat of the rewrite, unwrap \
+   it\nagain via the inverse:\n\n```sh\n(rewrite (($A (@B))) ($A @B))\n```\n\nwhere the ex\
+   tra parens around `(($A (@B)))` are added because we're\ninside a `sexp change`.\n\
+   \nOverwriting all record values with a given key\n--------------------------------\
+   --------------\n\nSee the following little shell command:\n\n```sh\nfunction proxy-ir\
+   on-config-command {\n    no-args \"$@\"\n    host=james\n    sexp change </etc/iron-c\
+   onfig.sexp \\\n         \"(record (host (const $host)))\"\n}\n```\n\nThis operates on a \
+   file with S-expressions of the form:\n\n```ocaml\n((host some_host_name)\n (async_rp\
+   c_port (Static 7013))\n (hgrc /path/to/hgrc)\n (serializer_pause_timeout 2m)\n (rpc\
+   _proxy_config\n  ((another_host1 (p1 p2 p3))\n   (another_host2 (p1 p2)))))\n```\n\ni\
+   .e., records with keys `host`, `async_rpc_port`, `hgrc`,\n`serializer_pause_timeo\
+   ut`, and so on. By writing\n`(record (host (const $host)))`, the above sexp chang\
+   e program just\ntakes whatever the value of the interpolated `$host` ends up bein\
+   g --\nthis is a shell variable, not a variable in the sexp change language\n-- and\
+  \ jams it into the place of _every_ `host` record value. So if\n`$host` were \"foo\"\
+   , the above record would be rewritten as:\n\n```ocaml\n((host foo)\n (async_rpc_port\
+  \ (Static 7013))\n (hgrc /path/to/hgrc)\n (serializer_pause_timeout 2m)\n (rpc_proxy\
+   _config\n  ((another_host1 (p1 p2 p3))\n   (another_host2 (p1 p2)))))\n```\n\nand so \
+   on for the rest of the records in the file -- they would all\nbegin `(host foo)`.\
+   \n\nDoing a bottom-up search with alt and try\n------------------------------------\
+   -----\n\nHere, we use the `alt` keyword for the simple reason that it allows\nus to\
+  \ apply several different rewrite rules in parallel, in a single\npass through a f\
+   ile:\n\n```\nsexp change '(bottomup (try (alt\n    (rewrite (App $X $Y) ($X $Y))\n   \
+  \ (rewrite (Name $X) $X)\n    (rewrite (Var (Free $X)) $X)\n  )))'\n```\n\nThe `alt` k\
+   eyword is short-circuiting, in the sense that it returns\nas soon as one of the r\
+   ewrite rules you pass it succeeds. Here, we don't\nreally take advantage of that \
+   short-circuiting: no matter what order\nwe put our three rules in, the program wi\
+   ll have the same behavior.\n\nIf, however, the LHS of our alternative rewrite rule\
+   s had the same\nstructure -- like if they all looked like `(Foo $X) RHS` or `(Foo\
+  \ $X)\nRHS'` -- then there would at least be the chance that the order of\nthe rule\
+   s could matter.\n"
 ;;
 
 let change_semantics_dot_md =
