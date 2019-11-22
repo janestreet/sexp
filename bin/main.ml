@@ -1,4 +1,4 @@
-open Core
+open Async
 
 let summary = "the s-expression toolkit"
 
@@ -29,4 +29,7 @@ let command =
     ]
 ;;
 
-let () = Command.run command
+let () =
+  Writer.behave_nicely_in_pipeline ();
+  Command.run command
+;;
