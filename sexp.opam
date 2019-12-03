@@ -22,7 +22,7 @@ depends: [
   "sexp_pretty"
   "sexp_select"
   "sexplib"
-  "dune"             {>= "1.5.1"}
+  "dune"             {>= "2.0.0"}
 ]
 synopsis: "S-expression swiss knife"
 description: "
