@@ -60,7 +60,7 @@ module Unescape = struct
            |> Pipe.iter_without_pushback ~f:(function
              | Atom atom -> print_endline atom
              | List _ as input ->
-               eprint_s [%message "Non-atom input" (input : Sexp.t)])])
+               Core.eprint_s [%message "Non-atom input" (input : Sexp.t)])])
   ;;
 end
 
