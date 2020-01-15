@@ -41,35 +41,35 @@ let change_by_example_dot_md =
    which is to wrap the \"tail\" of our list in parens, via:\n\n```sh\n(rewrite ($A @B) \
    ($A (@B)))\n```\n\nand then, after we're done with the meat of the rewrite, unwrap \
    it\nagain via the inverse:\n\n```sh\n(rewrite (($A (@B))) ($A @B))\n```\n\nwhere the ex\
-   tra parens around `(($A (@B)))` are added because we're\ninside a `sexp change`.\n\
-   \nOverwriting all record values with a given key\n--------------------------------\
-   --------------\n\nSee the following little shell command:\n\n```sh\nfunction proxy-ir\
-   on-config-command {\n    no-args \"$@\"\n    host=james\n    sexp change </etc/iron-c\
-   onfig.sexp \\\n         \"(record (host (const $host)))\"\n}\n```\n\nThis operates on a \
-   file with S-expressions of the form:\n\n```ocaml\n((host some_host_name)\n (async_rp\
-   c_port (Static 7013))\n (hgrc /path/to/hgrc)\n (serializer_pause_timeout 2m)\n (rpc\
-   _proxy_config\n  ((another_host1 (p1 p2 p3))\n   (another_host2 (p1 p2)))))\n```\n\ni\
-   .e., records with keys `host`, `async_rpc_port`, `hgrc`,\n`serializer_pause_timeo\
-   ut`, and so on. By writing\n`(record (host (const $host)))`, the above sexp chang\
-   e program just\ntakes whatever the value of the interpolated `$host` ends up bein\
-   g --\nthis is a shell variable, not a variable in the sexp change language\n-- and\
-  \ jams it into the place of _every_ `host` record value. So if\n`$host` were \"foo\"\
-   , the above record would be rewritten as:\n\n```ocaml\n((host foo)\n (async_rpc_port\
-  \ (Static 7013))\n (hgrc /path/to/hgrc)\n (serializer_pause_timeout 2m)\n (rpc_proxy\
-   _config\n  ((another_host1 (p1 p2 p3))\n   (another_host2 (p1 p2)))))\n```\n\nand so \
-   on for the rest of the records in the file -- they would all\nbegin `(host foo)`.\
-   \n\nDoing a bottom-up search with alt and try\n------------------------------------\
-   -----\n\nHere, we use the `alt` keyword for the simple reason that it allows\nus to\
-  \ apply several different rewrite rules in parallel, in a single\npass through a f\
-   ile:\n\n```\nsexp change '(bottomup (try (alt\n    (rewrite (App $X $Y) ($X $Y))\n   \
-  \ (rewrite (Name $X) $X)\n    (rewrite (Var (Free $X)) $X)\n  )))'\n```\n\nThe `alt` k\
-   eyword is short-circuiting, in the sense that it returns\nas soon as one of the r\
-   ewrite rules you pass it succeeds. Here, we don't\nreally take advantage of that \
-   short-circuiting: no matter what order\nwe put our three rules in, the program wi\
-   ll have the same behavior.\n\nIf, however, the LHS of our alternative rewrite rule\
-   s had the same\nstructure -- like if they all looked like `(Foo $X) RHS` or `(Foo\
-  \ $X)\nRHS'` -- then there would at least be the chance that the order of\nthe rule\
-   s could matter.\n"
+   tra parens around `(($A (@B)))` are added because the\n`query` subcommand of `sex\
+   p change` wraps its results in a list.\n\nOverwriting all record values with a giv\
+   en key\n----------------------------------------------\n\nSee the following little \
+   shell command:\n\n```sh\nfunction proxy-iron-config-command {\n    no-args \"$@\"\n    \
+   host=james\n    sexp change </etc/iron-config.sexp \\\n         \"(record (host (con\
+   st $host)))\"\n}\n```\n\nThis operates on a file with S-expressions of the form:\n\n```\
+   ocaml\n((host some_host_name)\n (async_rpc_port (Static 7013))\n (hgrc /path/to/hgr\
+   c)\n (serializer_pause_timeout 2m)\n (rpc_proxy_config\n  ((another_host1 (p1 p2 p3\
+   ))\n   (another_host2 (p1 p2)))))\n```\n\ni.e., records with keys `host`, `async_rpc\
+   _port`, `hgrc`,\n`serializer_pause_timeout`, and so on. By writing\n`(record (host\
+  \ (const $host)))`, the above sexp change program just\ntakes whatever the value o\
+   f the interpolated `$host` ends up being --\nthis is a shell variable, not a vari\
+   able in the sexp change language\n-- and jams it into the place of _every_ `host`\
+  \ record value. So if\n`$host` were \"foo\", the above record would be rewritten as:\
+   \n\n```ocaml\n((host foo)\n (async_rpc_port (Static 7013))\n (hgrc /path/to/hgrc)\n (s\
+   erializer_pause_timeout 2m)\n (rpc_proxy_config\n  ((another_host1 (p1 p2 p3))\n   \
+   (another_host2 (p1 p2)))))\n```\n\nand so on for the rest of the records in the fil\
+   e -- they would all\nbegin `(host foo)`.\n\nDoing a bottom-up search with alt and t\
+   ry\n-----------------------------------------\n\nHere, we use the `alt` keyword for\
+  \ the simple reason that it allows\nus to apply several different rewrite rules in\
+  \ parallel, in a single\npass through a file:\n\n```\nsexp change '(bottomup (try (al\
+   t\n    (rewrite (App $X $Y) ($X $Y))\n    (rewrite (Name $X) $X)\n    (rewrite (Var\
+  \ (Free $X)) $X)\n  )))'\n```\n\nThe `alt` keyword is short-circuiting, in the sense \
+   that it returns\nas soon as one of the rewrite rules you pass it succeeds. Here, \
+   we don't\nreally take advantage of that short-circuiting: no matter what order\nwe\
+  \ put our three rules in, the program will have the same behavior.\n\nIf, however, \
+   the LHS of our alternative rewrite rules had the same\nstructure -- like if they \
+   all looked like `(Foo $X) RHS` or `(Foo $X)\nRHS'` -- then there would at least b\
+   e the chance that the order of\nthe rules could matter.\n"
 ;;
 
 let change_semantics_dot_md =
@@ -198,173 +198,174 @@ let query_by_example_dot_md =
    of S-expressions. Really it's a\nmini programming language, and if you want to us\
    e it effectively you'll want to see lots of\nexamples. That's what this README is\
   \ for.\n\nSee also 'sexp pat-query' for a slightly simpler regular-expression-like \
-   language that is \nless powerful but can accomplish almost all of the same common\
-  \ tasks.\n\nTable of contents\n=================\n\n- Basic sexp query commands and ho\
-   w they work\n    - Field\n    - Index\n    - Equals and Test\n    - Pipe\n    - Each\n\
-  \    - Smash\n    - Regex\n    - Cat and Wrap\n- \"sexp select\" and \"sexp multi-selec\
-   t\"\n\nBasic sexp query commands and how they work\n================================\
-   ==============\n\nThe basic building blocks of a sexp query are the commands `fiel\
-   d`, `index`, `equals`,\n`test`, `pipe`, `each`, `smash`, `regex`, `cat`, and `wra\
-   p`. (There are a few other\ncommands but they're less important.) We'll explain e\
-   ach of these in turn before getting\ninto more complicated examples.\n\nField\n-----\
-   \n\n`field` gets the value from a `(key value)` pair. Suppose you've got a record \
-   with two\nfields, `jane_symbol` and `bloomberg`. Well, calling `(field jane_symbo\
-   l)` gets you the\nvalue of that field:\n\n```sh\n  $ echo '((jane_symbol \"AAPL US\") \
-   \\\\\n           (bloomberg \"AAPL UW Equity\"))' | sexp query '(field jane_symbol)'\n\
-  \  # => \"AAPL US\"\n```\n\nIndex\n-----\n\n`index` is a little dumber, in that it just g\
-   ives you the nth element in a list, indexed\nfrom 0:\n\n```sh\n  $ echo \"(one two th\
-   ree four five)\" | sexp query '(index 2)'\n  # => three\n```\n\nIf you've got a singl\
-   e-element list, like `(one)`, calling `(index 0)` on it is a nifty\ntrick for rem\
-   oving the parens.\n\nEquals and Test\n---------------\n\n`equals` and `test` are ofte\
-   n used together, because `equals` alone is rarely what you\nwant. It just returns\
-  \ a value if the value is equal to some string, and nothing otherwise.\nSuppose we\
-  \ had a little corpdir expressed as an S-expression (or really, a series of\nexpre\
-   ssions, each separated by a blank line):\n\n```ocaml\n  ;; ./corpdir.sexp\n\n  ((name\
-  \ ((first Bill) (last Nye)))\n   (role \"Science guy\")\n   (start_date ((year 2012) \
-   (month 3) (day 4))))\n\n  ((name ((first Zadie) (last Smith)))\n   (role \"Author\")\n\
-  \   (start_date ((year 2016) (month 10) (day 21))))\n```\n\nNow we can run some `equ\
-   als` checks against it. Notice below how the `equals` expression\nfollows the `(f\
-   ield role)` expression; that's because it's operating on the output of\n`(field r\
-   ole)`, as if piping the results of the first command into the second. (We'll see\
-   \nhow this works under the hood once we get to the `pipe` command.)\n\n```sh\n  $ ca\
-   t corpdir.sexp | sexp query '(field role) (equals \"Author\")'\n  # => Author\n\n  $ \
-   cat corpdir.sexp | sexp query '(field role) (equals \"Science guy\")'\n  # => \"Scie\
-   nce guy\"\n\n  $ cat corpdir.sexp | sexp query '(field role) (equals \"Foo\")'\n  # =>\
-   \n```\n\nYou can see why this isn't very useful: in general when we test a record f\
-   or something, we\nwant to *do* something with that record. But here we just retur\
-   n the value we're testing\nagainst. This is where `test` comes in:\n\n```sh\n  $ cat\
-  \ corpdir.sexp | sexp query '(test (field role) (equals \"Author\"))'\n  # => ((name\
-  \ ((first Zadie) (last Smith))) (role Author)\n  # => (start_date ((year 2016) (mo\
-   nth 10) (day 21))))\n\n  $ cat corpdir.sexp | sexp query \\\\\n      '(test (field ro\
-   le) (equals \"Author\")) (field start_date)'\n  # => ((year 2016) (month 10) (day 2\
-   1))\n```\n\n`test` wraps around a condition, like `(equals 'foo')`, and if the cond\
-   ition passes, it\nreturns the entire S-expression satisfying the condition. You c\
-   an then pass this to the\nright -- here, to the `(field start_date)` operator -- \
-   to get at some field within that\nreturned value. A lot of sexp queries work this\
-  \ way: first you filter for records\nsatisfying a condition, and then you dig in t\
-   o those looking for specific data.\n\nPipe\n----\n\n`pipe` gets its name from the Uni\
-   x command-line `|` that passes output from one program to\nanother. It's a way of\
-  \ chaining together a sequence of commands, like a\n`Sequence.concat_map` for sexp\
-  \ queries.\n\nIn many cases you don't actually have to write the pipe, because it's\
-  \ already there\nimplicitly. For instance this query:\n\n```sh\n  $ cat corpdir.sexp \
-   | sexp query '(field start_date) (field day)'\n  # => 4\n  # => 21\n```\n\ntakes the \
-   result of the first command, `(field start_date)`, and implicitly pipes it to\nth\
-   e next, `(field day)`. It's as if there's a literal `|` pipe character between t\
-   he two\nstatements. Writing it with the actual pipe command gives:\n\n```sh\n  $ cat\
-  \ corpdir.sexp | sexp query '(pipe (field start_date) (field day))'\n  # => 4\n  # \
-   => 21\n```\n\nOne pipe command can take an arbitrary number of sub-statements, not \
-   just 2, as in the\nfollowing example:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(\
-   pipe (field start_date) (field day) (equals 4))'\n  # => 4\n```\n\nIt's worth asking\
-   : if there's syntactic sugar to get rid of these explicit pipes, do you\never rea\
-   lly need the `pipe` command? In fact you do. While some commands, like `test`, c\
-   an\ntake a series of substatements without requiring a pipe, others, like `cat` a\
-   nd `unquote`,\nwhich we'll see later, require it. So you'll see `pipe` all over, \
-   usually in places where\nyou have a complex sub-query, i.e., a query that involve\
-   s more than a single `(field ...)`\ncommand.\n\nEach\n----\n\n`each` is pretty simple:\
-  \ it takes each element in a list and passes them one by one to\nanother expressio\
-   n. At the top level, you can use it like:\n\n```sh\n  <list> each <expression>\n```\n\
-   \nas in the following example:\n\n```sh\n  $ cat corpdir.sexp | sexp query \\\\\n      \
-   '(test (field role) (equals \"Science guy\")) (field name) each (index 1)'\n  # => \
-   Bill\n  # => Nye\n```\n\nIt's worth dwelling a bit on what's happening here. On the \
-   left-hand side of the `each`,\nyou have an expression that returns the `name` fie\
-   ld of the record where the role field\nhas the value \"Science guy\". So what you'r\
-   e passing to the `each` is the list:\n\n```sh\n  ((first Bill) (last Nye))\n```\n\nwhi\
-   ch has two elements. (Notice how our little command-line program returns two lin\
-   es.)\nThen, the right-hand side of the `each` is just an expression that operates\
-  \ on each\nelement of the list, so on `(first Bill)` and `(last Nye)` in turn. `(i\
-   ndex 1)` returns\nthe second element of whatever it's passed, which is how we end\
-  \ up with \"Bill\" and \"Nye\".\n\n(`each` appears to be an infix operator because of t\
-   he implicit pipe\nat the top level. But if you were to use it inside of a `test`,\
-  \ for\nexample, as in `(test (pipe (field hosts) each)`, you must explicitly\npipe \
-   the output of `field` to the `each`.)\n\nSmash\n-----\n\nsmaaaaasssshhhh!!!! This one\
-  \ has the coolest name, and also, in a way, the coolest\nbehavior: It takes an S-e\
-   xpression and returns every sub-expression of it. Then, like\n`each`, it lets you\
-  \ apply a command to every one of those sub-expressions. So it also uses\nthat inf\
-   ix-style `<expression> smash <expression>` syntax. But let's see what it looks\nl\
-   ike when we operate on the whole _corpdir.sexp_ file, without actually doing any\
-   thing\nwith the smashed contents:\n\n```sh\n  $ cat corpdir.sexp | sexp query 'smash\
-   '\n  # => ((name ((first Bill) (last Nye))) (role \"Science guy\")\n  # =>  (start_d\
-   ate ((year 2012) (month 3) (day 4))))\n  # => (name ((first Bill) (last Nye)))\n  \
-   # => name\n  # => ((first Bill) (last Nye))\n  # => (first Bill)\n  # => first\n  # \
-   => Bill\n  # => (last Nye)\n  # => last\n  # => Nye\n  # => (role \"Science guy\")\n  #\
-  \ => role\n  # => \"Science guy\"\n  # => (start_date ((year 2012) (month 3) (day 4))\
-   )\n  # => start_date\n  # => ((year 2012) (month 3) (day 4))\n  # => (year 2012)\n  \
-   # => year\n  # => 2012\n  # => (month 3)\n  # => month\n  # => 3\n  # => (day 4)\n  # \
-   => day\n  # => 4\n  #\n  # => ((name ((first Zadie) (last Smith))) (role Author)\n  \
-   # =>  (start_date ((year 2016) (month 10) (day 21))))\n  # => (name ((first Zadie\
-   ) (last Smith)))\n  # => name\n  # => ((first Zadie) (last Smith))\n  # => (first Z\
-   adie)\n  # => first\n  # => Zadie\n  # => (last Smith)\n  # => last\n  # => Smith\n  #\
-  \ => (role Author)\n  # => role\n  # => Author\n  # => (start_date ((year 2016) (mon\
-   th 10) (day 21)))\n  # => start_date\n  # => ((year 2016) (month 10) (day 21))\n  #\
-  \ => (year 2016)\n  # => year\n  # => 2016\n  # => (month 10)\n  # => month\n  # => 10\
-   \n  # => (day 21)\n  # => day\n  # => 21\n```\n\nWhat's going on here? Well, since we \
-   passed the whole file to `smash`, rather than just a\nsingle record, we're gettin\
-   g the smashed contents of each of our two records in turn (one\nfor Bill Nye and \
-   one for Zadie Smith). For each of these, the command is coughing up every\nsub-ex\
-   pression of the original record. You can think of it as taking anything of the f\
-   orm\n`<left> <right>` and printing `<left> <right>`, `<left>`, and `<right>`. Sin\
-   ce\nS-expressions can be deeply nested, this can end up printing a lot of stuff.\n\
-   \nSmashing is useful when you don't want to do a million chained tests in order t\
-   o get to\nsome record nested deep in an S-expression. For instance, suppose our d\
-   ay records were\nburied in a lot of other stuff, like so:\n\n```ocaml\n  ;; ./corpdi\
-   r.sexp\n\n  ((name ((first Bill) (last Nye)))\n   (role \"Science guy\")\n   (start_da\
-   te ((year 2012) (month 3) (period ((unit ((kind ((sol 400) (day 4))))))))))\n\n  (\
-   (name ((first Zadie) (last Smith)))\n   (role \"Author\")\n   (start_date ((year 201\
-   6) (month 10) (period ((unit ((kind ((sol 2100) (day 21))))))))))\n```\n\nIf you kn\
-   ew you wanted to get at those `(day <num>)` records, you could write something\nl\
-   ike:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(field start_date) (field period)\
-  \ (field unit) \\\\\n                                     (field kind) each (test (i\
-   ndex 0) (equals day))'\n  # => (day 4)\n  # => (day 21)\n```\n\nor... you could just \
-   smash the input and filter on the field name:\n\n```sh\n  $ cat corpdir.sexp | sexp\
-  \ query 'smash (test (index 0) (equals day))'\n  # => (day 4)\n  # => (day 21)\n```\n\
-   \nKeep in mind that using `smash` isn't free: there's a tradeoff between being co\
-   ncise and\nbeing precise when deciding whether to use it. That is, while it may b\
-   e powerful for\nfinding deeply nested things, that's only because you've given up\
-  \ some control over where\nthe thing is to be found. In a way, `smash` is the sexp\
-  \ query analog of `.*` in regular\nexpressions. It should be used with caution.\n\nR\
-   egex\n-----\n\n`regex` is like `equals`, except that instead of taking a simple str\
-   ing argument, it takes\na regular expression, so that you can do slightly more ve\
-   rsatile searching. Let's say we\nhad a new hire in our corpdir:\n\n```ocaml\n  ;; ./\
-   corpdir.sexp\n\n  ((name ((first Bill) (last Nye)))\n  (role \"Science guy\")\n  (star\
-   t_date ((year 2012) (month 3) (day 4))))\n\n  ((name ((first Zadie) (last Smith)))\
-   \n  (role \"Author\")\n  (start_date ((year 2016) (month 10) (day 21))))\n\n  ((name (\
-   (first David) (last Lynch)))\n  (role \"Auteur\")\n  (start_date ((year 2017) (month\
-  \ 5) (day 20))))\n```\n\nIf we then wanted to get the name records of everyone whose\
-  \ role starts with \"Au\", we\ncould use regex to do it:\n\n```sh\n  $ cat corpdir.sexp\
-  \ | sexp query '(test (field role) (regex \"^Au\")) (field name)'\n  # => ((first Za\
-   die) (last Smith))\n  # => ((first David) (last Lynch))\n```\n\nBy default, `regex` \
-   will return the entire string if there's a match, and nothing if not;\nbut if you\
-  \ use a capture group, as in the following example, it'll return the capture\ngrou\
-   p's contents instead. (If you supply multiple capture groups it'll return the re\
-   sult\nof the first one.) For instance:\n\n```sh\n  $ cat corpdir.sexp | sexp query '\
-   (field role) (regex \"^Au(.*)\")'\n  # => thor\n  # => teur\n```\n\nCat and Wrap\n------\
-   ------\n\n`cat` is how you run multiple commands on a single S-expression at one t\
-   ime,\ncon-`cat`-enating the results. Where `pipe` is a way of combining sub-queri\
-   es in series,\n`cat` combines them in parallel. So for example:\n\n```sh\n  $ cat co\
-   rpdir.sexp | sexp query '(cat (field name) (field role))'\n  # => ((first Bill) (\
-   last Nye))\n  # => \"Science guy\"\n  # => ((first Zadie) (last Smith))\n  # => Autho\
-   r\n  # => ((first David) (last Lynch))\n  # => Auteur\n```\n\nNotice how for each rec\
-   ord we've fetched both the name and the role. But also notice how\nthe results ar\
-   en't wrapped up into a single S-expression. That's where `wrap` comes in --\nit's\
-  \ a command that simply takes some stuff and wraps it in parens, and it's frequen\
-   tly\nused together with `cat`:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(wrap (c\
-   at (field name) (field role)))'\n  # => (((first Bill) (last Nye)) \"Science guy\")\
-   \n  # => (((first Zadie) (last Smith)) Author)\n  # => (((first David) (last Lynch\
-   )) Auteur)\n```\n\nNow the results of our multiple queries are nicely wrapped up in\
-   to a single S-expression\nper record.\n\n`sexp select` and `sexp multi-select`\n====\
-   =================================\n\nA lot of the time, what would be a fairly com\
-   plicated sexp query is more easily expressed\nas a sexp multi-select. Suppose you\
-  \ wanted to pull out the actual day, month, and year of\neach person in our little\
-  \ corpdir. You could do it using sexp query:\n\n```sh\n  $ cat corpdir.sexp | sexp q\
-   uery '(field start_date) \\\\\n                                     (wrap (cat (fie\
-   ld day) (field month) (field year)))'\n  # => (4 3 2012)\n  # => (21 10 2016)\n  # \
-   => (20 5 1999)\n```\n\nBut it's actually much easier when expressed as a multi-sele\
-   ct:\n\n```sh\n  $ cat corpdir.sexp | sexp multi-select day month year\n  # => (4 3 2\
-   012)\n  # => (21 10 2016)\n  # => (20 5 1999)\n```\n\nThis multi-select does a kind o\
-   f `smash`, `cat`, and `wrap` on the fields that you pass to\nit. Notice that you \
-   don't even need to quote your field names!\n\nBecause it's more or less doing a sm\
-   ash, the same caveat applies: multi-select is a\nconcise way to find things, but \
-   at the expense of being somewhat imprecise about where\nyou're looking.\n"
+   language that is\nless powerful but can accomplish almost all of the same common \
+   tasks.\n\nTable of contents\n=================\n\n- Basic sexp query commands and how\
+  \ they work\n    - Field\n    - Index\n    - Equals and Test\n    - Pipe\n    - Each\n \
+  \   - Smash\n    - Regex\n    - Cat and Wrap\n- \"sexp select\" and \"sexp multi-select\
+   \"\n\nBasic sexp query commands and how they work\n=================================\
+   =============\n\nThe basic building blocks of a sexp query are the commands `field\
+   `, `index`, `equals`,\n`test`, `pipe`, `each`, `smash`, `regex`, `cat`, and `wrap\
+   `. (There are a few other\ncommands but they're less important.) We'll explain ea\
+   ch of these in turn before getting\ninto more complicated examples.\n\nField\n-----\n\
+   \n`field` gets the value from a `(key value)` pair. Suppose you've got a record w\
+   ith two\nfields, `jane_symbol` and `bloomberg`. Well, calling `(field jane_symbol\
+   )` gets you the\nvalue of that field:\n\n```sh\n  $ echo '((jane_symbol \"AAPL US\") \\\
+   \\\n           (bloomberg \"AAPL UW Equity\"))' | sexp query '(field jane_symbol)'\n \
+  \ # => \"AAPL US\"\n```\n\nIndex\n-----\n\n`index` is a little dumber, in that it just gi\
+   ves you the nth element in a list, indexed\nfrom 0:\n\n```sh\n  $ echo \"(one two thr\
+   ee four five)\" | sexp query '(index 2)'\n  # => three\n```\n\nIf you've got a single\
+   -element list, like `(one)`, calling `(index 0)` on it is a nifty\ntrick for remo\
+   ving the parens.\n\nEquals and Test\n---------------\n\n`equals` and `test` are often\
+  \ used together, because `equals` alone is rarely what you\nwant. It just returns \
+   a value if the value is equal to some string, and nothing otherwise.\nSuppose we \
+   had a little corporate directory expressed as an S-expression (or really, a\nseri\
+   es of expressions, each separated by a blank line):\n\n```ocaml\n  ;; ./corpdir.sex\
+   p\n\n  ((name ((first Bill) (last Nye)))\n   (role \"Science guy\")\n   (start_date ((\
+   year 2012) (month 3) (day 4))))\n\n  ((name ((first Zadie) (last Smith)))\n   (role\
+  \ \"Author\")\n   (start_date ((year 2016) (month 10) (day 21))))\n```\n\nNow we can ru\
+   n some `equals` checks against it. Notice below how the `equals` expression\nfoll\
+   ows the `(field role)` expression; that's because it's operating on the output o\
+   f\n`(field role)`, as if piping the results of the first command into the second.\
+  \ (We'll see\nhow this works under the hood once we get to the `pipe` command.)\n\n`\
+   ``sh\n  $ cat corpdir.sexp | sexp query '(field role) (equals \"Author\")'\n  # => A\
+   uthor\n\n  $ cat corpdir.sexp | sexp query '(field role) (equals \"Science guy\")'\n \
+  \ # => \"Science guy\"\n\n  $ cat corpdir.sexp | sexp query '(field role) (equals \"Fo\
+   o\")'\n  # =>\n```\n\nYou can see why this isn't very useful: in general when we test\
+  \ a record for something, we\nwant to *do* something with that record. But here we\
+  \ just return the value we're testing\nagainst. This is where `test` comes in:\n\n``\
+   `sh\n  $ cat corpdir.sexp | sexp query '(test (field role) (equals \"Author\"))'\n  \
+   # => ((name ((first Zadie) (last Smith))) (role Author)\n  # => (start_date ((yea\
+   r 2016) (month 10) (day 21))))\n\n  $ cat corpdir.sexp | sexp query \\\\\n      '(tes\
+   t (field role) (equals \"Author\")) (field start_date)'\n  # => ((year 2016) (month\
+  \ 10) (day 21))\n```\n\n`test` wraps around a condition, like `(equals 'foo')`, and \
+   if the condition passes, it\nreturns the entire S-expression satisfying the condi\
+   tion. You can then pass this to the\nright -- here, to the `(field start_date)` o\
+   perator -- to get at some field within that\nreturned value. A lot of sexp querie\
+   s work this way: first you filter for records\nsatisfying a condition, and then y\
+   ou dig in to those looking for specific data.\n\nPipe\n----\n\n`pipe` gets its name f\
+   rom the Unix command-line `|` that passes output from one program to\nanother. It\
+   's a way of chaining together a sequence of commands, like a\n`Sequence.concat_ma\
+   p` for sexp queries.\n\nIn many cases you don't actually have to write the pipe, b\
+   ecause it's already there\nimplicitly. For instance this query:\n\n```sh\n  $ cat co\
+   rpdir.sexp | sexp query '(field start_date) (field day)'\n  # => 4\n  # => 21\n```\n\
+   \ntakes the result of the first command, `(field start_date)`, and implicitly pip\
+   es it to\nthe next, `(field day)`. It's as if there's a literal `|` pipe characte\
+   r between the two\nstatements. Writing it with the actual pipe command gives:\n\n``\
+   `sh\n  $ cat corpdir.sexp | sexp query '(pipe (field start_date) (field day))'\n  \
+   # => 4\n  # => 21\n```\n\nOne pipe command can take an arbitrary number of sub-state\
+   ments, not just 2, as in the\nfollowing example:\n\n```sh\n  $ cat corpdir.sexp | se\
+   xp query '(pipe (field start_date) (field day) (equals 4))'\n  # => 4\n```\n\nIt's w\
+   orth asking: if there's syntactic sugar to get rid of these explicit pipes, do y\
+   ou\never really need the `pipe` command? In fact you do. While some commands, lik\
+   e `test`, can\ntake a series of substatements without requiring a pipe, others, l\
+   ike `cat` and `unquote`,\nwhich we'll see later, require it. So you'll see `pipe`\
+  \ all over, usually in places where\nyou have a complex sub-query, i.e., a query t\
+   hat involves more than a single `(field ...)`\ncommand.\n\nEach\n----\n\n`each` is pre\
+   tty simple: it takes each element in a list and passes them one by one to\nanothe\
+   r expression. At the top level, you can use it like:\n\n```sh\n  <list> each <expre\
+   ssion>\n```\n\nas in the following example:\n\n```sh\n  $ cat corpdir.sexp | sexp quer\
+   y \\\\\n      '(test (field role) (equals \"Science guy\")) (field name) each (index \
+   1)'\n  # => Bill\n  # => Nye\n```\n\nIt's worth dwelling a bit on what's happening he\
+   re. On the left-hand side of the `each`,\nyou have an expression that returns the\
+  \ `name` field of the record where the role field\nhas the value \"Science guy\". So\
+  \ what you're passing to the `each` is the list:\n\n```sh\n  ((first Bill) (last Nye\
+   ))\n```\n\nwhich has two elements. (Notice how our little command-line program retu\
+   rns two lines.)\nThen, the right-hand side of the `each` is just an expression th\
+   at operates on each\nelement of the list, so on `(first Bill)` and `(last Nye)` i\
+   n turn. `(index 1)` returns\nthe second element of whatever it's passed, which is\
+  \ how we end up with \"Bill\" and \"Nye\".\n\n(`each` appears to be an infix operator b\
+   ecause of the implicit pipe\nat the top level. But if you were to use it inside o\
+   f a `test`, for\nexample, as in `(test (pipe (field hosts) each)`, you must expli\
+   citly\npipe the output of `field` to the `each`.)\n\nSmash\n-----\n\nsmaaaaasssshhhh!!\
+   !! This one has the coolest name, and also, in a way, the coolest\nbehavior: It t\
+   akes an S-expression and returns every sub-expression of it. Then, like\n`each`, \
+   it lets you apply a command to every one of those sub-expressions. So it also us\
+   es\nthat infix-style `<expression> smash <expression>` syntax. But let's see what\
+  \ it looks\nlike when we operate on the whole _corpdir.sexp_ file, without actuall\
+   y doing anything\nwith the smashed contents:\n\n```sh\n  $ cat corpdir.sexp | sexp q\
+   uery 'smash'\n  # => ((name ((first Bill) (last Nye))) (role \"Science guy\")\n  # =\
+   >  (start_date ((year 2012) (month 3) (day 4))))\n  # => (name ((first Bill) (las\
+   t Nye)))\n  # => name\n  # => ((first Bill) (last Nye))\n  # => (first Bill)\n  # =>\
+  \ first\n  # => Bill\n  # => (last Nye)\n  # => last\n  # => Nye\n  # => (role \"Scienc\
+   e guy\")\n  # => role\n  # => \"Science guy\"\n  # => (start_date ((year 2012) (month \
+   3) (day 4)))\n  # => start_date\n  # => ((year 2012) (month 3) (day 4))\n  # => (ye\
+   ar 2012)\n  # => year\n  # => 2012\n  # => (month 3)\n  # => month\n  # => 3\n  # => (\
+   day 4)\n  # => day\n  # => 4\n  #\n  # => ((name ((first Zadie) (last Smith))) (role\
+  \ Author)\n  # =>  (start_date ((year 2016) (month 10) (day 21))))\n  # => (name ((\
+   first Zadie) (last Smith)))\n  # => name\n  # => ((first Zadie) (last Smith))\n  # \
+   => (first Zadie)\n  # => first\n  # => Zadie\n  # => (last Smith)\n  # => last\n  # =\
+   > Smith\n  # => (role Author)\n  # => role\n  # => Author\n  # => (start_date ((year\
+  \ 2016) (month 10) (day 21)))\n  # => start_date\n  # => ((year 2016) (month 10) (d\
+   ay 21))\n  # => (year 2016)\n  # => year\n  # => 2016\n  # => (month 10)\n  # => mont\
+   h\n  # => 10\n  # => (day 21)\n  # => day\n  # => 21\n```\n\nWhat's going on here? Well\
+   , since we passed the whole file to `smash`, rather than just a\nsingle record, w\
+   e're getting the smashed contents of each of our two records in turn (one\nfor Bi\
+   ll Nye and one for Zadie Smith). For each of these, the command is coughing up e\
+   very\nsub-expression of the original record. You can think of it as taking anythi\
+   ng of the form\n`<left> <right>` and printing `<left> <right>`, `<left>`, and `<r\
+   ight>`. Since\nS-expressions can be deeply nested, this can end up printing a lot\
+  \ of stuff.\n\nSmashing is useful when you don't want to do a million chained tests\
+  \ in order to get to\nsome record nested deep in an S-expression. For instance, su\
+   ppose our day records were\nburied in a lot of other stuff, like so:\n\n```ocaml\n  \
+   ;; ./corpdir.sexp\n\n  ((name ((first Bill) (last Nye)))\n   (role \"Science guy\")\n \
+  \  (start_date ((year 2012) (month 3) (period ((unit ((kind ((sol 400) (day 4))))\
+   ))))))\n\n  ((name ((first Zadie) (last Smith)))\n   (role \"Author\")\n   (start_date\
+  \ ((year 2016) (month 10) (period ((unit ((kind ((sol 2100) (day 21))))))))))\n```\
+   \n\nIf you knew you wanted to get at those `(day <num>)` records, you could write \
+   something\nlike:\n\n```sh\n  $ cat corpdir.sexp | sexp query '(field start_date) (fi\
+   eld period) (field unit) \\\\\n                                     (field kind) ea\
+   ch (test (index 0) (equals day))'\n  # => (day 4)\n  # => (day 21)\n```\n\nor... you \
+   could just smash the input and filter on the field name:\n\n```sh\n  $ cat corpdir.\
+   sexp | sexp query 'smash (test (index 0) (equals day))'\n  # => (day 4)\n  # => (d\
+   ay 21)\n```\n\nKeep in mind that using `smash` isn't free: there's a tradeoff betwe\
+   en being concise and\nbeing precise when deciding whether to use it. That is, whi\
+   le it may be powerful for\nfinding deeply nested things, that's only because you'\
+   ve given up some control over where\nthe thing is to be found. In a way, `smash` \
+   is the sexp query analog of `.*` in regular\nexpressions. It should be used with \
+   caution.\n\nRegex\n-----\n\n`regex` is like `equals`, except that instead of taking a\
+  \ simple string argument, it takes\na regular expression, so that you can do sligh\
+   tly more versatile searching. Let's say we\nhad a new hire in our corpdir:\n\n```oc\
+   aml\n  ;; ./corpdir.sexp\n\n  ((name ((first Bill) (last Nye)))\n  (role \"Science gu\
+   y\")\n  (start_date ((year 2012) (month 3) (day 4))))\n\n  ((name ((first Zadie) (la\
+   st Smith)))\n  (role \"Author\")\n  (start_date ((year 2016) (month 10) (day 21))))\n\
+   \n  ((name ((first David) (last Lynch)))\n  (role \"Auteur\")\n  (start_date ((year 2\
+   017) (month 5) (day 20))))\n```\n\nIf we then wanted to get the name records of eve\
+   ryone whose role starts with \"Au\", we\ncould use regex to do it:\n\n```sh\n  $ cat c\
+   orpdir.sexp | sexp query '(test (field role) (regex \"^Au\")) (field name)'\n  # =>\
+  \ ((first Zadie) (last Smith))\n  # => ((first David) (last Lynch))\n```\n\nBy defaul\
+   t, `regex` will return the entire string if there's a match, and nothing if not;\
+   \nbut if you use a capture group, as in the following example, it'll return the c\
+   apture\ngroup's contents instead. (If you supply multiple capture groups it'll re\
+   turn the result\nof the first one.) For instance:\n\n```sh\n  $ cat corpdir.sexp | s\
+   exp query '(field role) (regex \"^Au(.*)\")'\n  # => thor\n  # => teur\n```\n\nCat and \
+   Wrap\n------------\n\n`cat` is how you run multiple commands on a single S-expressi\
+   on at one time,\ncon-`cat`-enating the results. Where `pipe` is a way of combinin\
+   g sub-queries in series,\n`cat` combines them in parallel. So for example:\n\n```sh\
+   \n  $ cat corpdir.sexp | sexp query '(cat (field name) (field role))'\n  # => ((fi\
+   rst Bill) (last Nye))\n  # => \"Science guy\"\n  # => ((first Zadie) (last Smith))\n \
+  \ # => Author\n  # => ((first David) (last Lynch))\n  # => Auteur\n```\n\nNotice how f\
+   or each record we've fetched both the name and the role. But also notice how\nthe\
+  \ results aren't wrapped up into a single S-expression. That's where `wrap` comes\
+  \ in --\nit's a command that simply takes some stuff and wraps it in parens, and i\
+   t's frequently\nused together with `cat`:\n\n```sh\n  $ cat corpdir.sexp | sexp quer\
+   y '(wrap (cat (field name) (field role)))'\n  # => (((first Bill) (last Nye)) \"Sc\
+   ience guy\")\n  # => (((first Zadie) (last Smith)) Author)\n  # => (((first David) \
+   (last Lynch)) Auteur)\n```\n\nNow the results of our multiple queries are nicely wr\
+   apped up into a single S-expression\nper record.\n\n`sexp select` and `sexp multi-s\
+   elect`\n=====================================\n\nA lot of the time, what would be a\
+  \ fairly complicated sexp query is more easily expressed\nas a sexp multi-select. \
+   Suppose you wanted to pull out the actual day, month, and year of\neach person in\
+  \ our little corpdir. You could do it using sexp query:\n\n```sh\n  $ cat corpdir.se\
+   xp | sexp query '(field start_date) \\\\\n                                     (wra\
+   p (cat (field day) (field month) (field year)))'\n  # => (4 3 2012)\n  # => (21 10\
+  \ 2016)\n  # => (20 5 1999)\n```\n\nBut it's actually much easier when expressed as a\
+  \ multi-select:\n\n```sh\n  $ cat corpdir.sexp | sexp multi-select day month year\n  \
+   # => (4 3 2012)\n  # => (21 10 2016)\n  # => (20 5 1999)\n```\n\nThis multi-select do\
+   es a kind of `smash`, `cat`, and `wrap` on the fields that you pass to\nit. Notic\
+   e that you don't even need to quote your field names!\n\nBecause it's more or less\
+  \ doing a smash, the same caveat applies: multi-select is a\nconcise way to find t\
+   hings, but at the expense of being somewhat imprecise about where\nyou're looking\
+   .\n"
 ;;
 
 let query_semantics_dot_md =

@@ -11,7 +11,6 @@ See also:
 - [Sexp query formal semantics](doc/query_semantics.md)
 - [Sexp change formal semantics](doc/change_semantics.md)
 - [Sexp change by example](doc/change_by_example.md)
-- [Practice your sexp query foo](doc/practice.md)
 
 ```sh
 $ sexp -help
@@ -89,4 +88,3 @@ $ sexp query -file query.sexp < .jenga/.jenga.debug
 (ocamlc -c foo.ml)
 ...
 ```
-
