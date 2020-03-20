@@ -64,7 +64,7 @@ let%test_unit _ =
       else Some { Bug.program; syntax; input; output; expected_output })
   in
   if not (List.is_empty bugs)
-  then failwiths "bugs in Semantics.change" bugs [%sexp_of: Bug.t list]
+  then failwiths ~here:[%here] "bugs in Semantics.change" bugs [%sexp_of: Bug.t list]
 ;;
 
 let%expect_test _ =
