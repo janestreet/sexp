@@ -433,8 +433,12 @@ let replace
     then String.chop_prefix_exn replace ~prefix:"%"
     else failwithf "Replacement target '%s' does not start with '%%'" replace ()
   in
-  (* Checked in [Compiled_query.create], assert again here *)
-  assert (Array.mem labels_of_captures replace_capture_label ~equal:String.equal);
+  if not (Array.mem labels_of_captures replace_capture_label ~equal:String.equal)
+  then
+    failwithf
+      "Attempting to replace %%%s but it does not occur in the query pattern"
+      replace_capture_label
+      ();
   let revcapture_buf = Array.map labels_of_captures ~f:(fun _ -> []) in
   let sexp = Labeled_sexp.of_sexp sexp in
   let capture_label_to_idx_map =

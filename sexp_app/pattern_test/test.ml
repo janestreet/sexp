@@ -2033,3 +2033,13 @@ let%expect_test "replace with function highly path-dependent" =
     (foo bar)
     (! ("was foo" "was bar") bar goo foo (! ("was foo" "was bar"))) |}]
 ;;
+
+let%expect_test "replace missing target" =
+  show_raise (fun () ->
+    replace_single ".. %abc=()" ~replace:"%def" ~with_:"(ghi)" "((a 1)(b 2)(c 3))");
+  [%expect
+    {|
+    :(raised (
+      Failure
+      "Attempting to replace %def but it does not occur in the query pattern")) |}]
+;;

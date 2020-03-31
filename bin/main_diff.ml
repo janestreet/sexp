@@ -31,7 +31,10 @@ module Display_function = struct
 
   let create ?(display_as_plain_string = false) ?collapse_threshold ?num_shown () =
     let display_options =
-      Sexp_diff_kernel.Display.Display_options.create ?collapse_threshold ?num_shown ()
+      Sexp_diff_kernel.Display.Display_options.create
+        ?collapse_threshold
+        ?num_shown
+        Two_column
     in
     { display_options; display_as_plain_string }
   ;;
@@ -63,7 +66,7 @@ module Display_function = struct
       then Sexp_diff_kernel.Display.display_as_plain_string
       else Sexp_diff_kernel.Display.display_with_ansi_colors
     in
-    display ~display_options diff |> Core.print_endline
+    display display_options diff |> Core.print_endline
   ;;
 end
 
