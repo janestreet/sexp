@@ -1,5 +1,5 @@
 open Core
-open Expect_test_helpers_kernel
+open Expect_test_helpers_core
 open Sexp_app_pattern
 
 let show_parse querystr =
