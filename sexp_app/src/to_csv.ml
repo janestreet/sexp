@@ -21,7 +21,13 @@ let rec has_duplicates = function
 module Query : sig
   val is_a_record : Sexp.t -> bool
   val header : Sexp.t -> string list
-  val record : view_atoms_as_strings:bool -> string list -> Sexp.t -> Csv_record.t
+
+  val record
+    :  view_atoms_as_strings:bool
+    -> warn_on_missing_fields:bool
+    -> string list
+    -> Sexp.t
+    -> Csv_record.t
 end = struct
   open Syntax
 
@@ -49,7 +55,7 @@ end = struct
       | None -> hs
   ;;
 
-  let record ~view_atoms_as_strings fields =
+  let record ~view_atoms_as_strings ~warn_on_missing_fields fields =
     let q = cat (List.map fields ~f:(fun f -> Wrap (Field f))) in
     let coerce (f, results) =
       match results with
@@ -61,7 +67,7 @@ end = struct
         eprintf "multiple values for field %s. Arbitrarily picking the first one.\n" f;
         Sexp.to_string x
       | _ ->
-        eprintf "missing value for field %s\n" f;
+        if warn_on_missing_fields then eprintf "missing value for field %s\n" f;
         ""
     in
     fun sexp ->
@@ -71,12 +77,41 @@ end = struct
   ;;
 end
 
-let csv_of_sexp ~view_atoms_as_strings sexps =
-  match Lazy_list.decons sexps with
-  | None -> Lazy_list.empty ()
-  | Some (x, _) ->
-    if not (Query.is_a_record x) then failwith "first element is not a record\n";
-    let header = Query.header x in
-    let extract = Query.record ~view_atoms_as_strings header in
+let header ~two_pass_processing sexps =
+  if two_pass_processing
+  then (
+    let fields =
+      let q = String.Hash_queue.create () in
+      (* note: this [Lazy_list.iter] call is why two-pass processing uses more memory.
+         It's pulling every input sexp in memory. *)
+      Lazy_list.iter sexps ~f:(fun sexp ->
+        if Query.is_a_record sexp
+        then
+          List.iter (Query.header sexp) ~f:(fun field ->
+            match Hash_queue.enqueue_back q field () with
+            | `Ok | `Key_already_present -> ()));
+      Hash_queue.keys q
+    in
+    if List.is_empty fields then None else Some fields)
+  else (
+    match Lazy_list.decons sexps with
+    | Some (x, _) ->
+      if not (Query.is_a_record x) then failwith "first element is not a record\n";
+      Some (Query.header x)
+    | _ -> None)
+;;
+
+let csv_of_sexp ~view_atoms_as_strings ~two_pass_processing sexps =
+  match header ~two_pass_processing sexps with
+  | Some header ->
+    let warn_on_missing_fields =
+      (* The whole point of two-pass processing is to gather up field names across all
+         records since presumably the first row isn't good enough to consult for this
+         purpose since we not all rows will populate the same columns.  So no point in
+         complaining about that very thing. *)
+      not two_pass_processing
+    in
+    let extract = Query.record ~view_atoms_as_strings ~warn_on_missing_fields header in
     Lazy_list.cons header (Lazy_list.map ~f:extract sexps)
+  | None -> Lazy_list.empty ()
 ;;

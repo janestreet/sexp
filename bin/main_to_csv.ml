@@ -6,7 +6,7 @@ let myprotect f x =
   | _ -> None
 ;;
 
-let main ~view_atoms_as_strings ~delimiter:sep =
+let main ~two_pass_processing ~view_atoms_as_strings ~delimiter:sep =
   let sexps =
     let channel = Lexing.from_channel In_channel.stdin in
     Lazy_list.build ~seed:() ~f:(fun () ->
@@ -16,7 +16,7 @@ let main ~view_atoms_as_strings ~delimiter:sep =
   in
   Csv_file.write
     Out_channel.stdout
-    (To_csv.csv_of_sexp ~view_atoms_as_strings sexps)
+    (To_csv.csv_of_sexp ~two_pass_processing ~view_atoms_as_strings sexps)
     ~sep
 ;;
 
@@ -53,11 +53,25 @@ Example
            " when the extracted CSV value is an atom, dump it as a string rather than as \
             an s-expression (Note: this causes atoms with embedded whitespace to show up \
             triple-quoted)"
+     and two_pass_processing =
+       flag
+         "two-pass-processing"
+         no_arg
+         ~doc:
+           " Uses one pass the gather all columns names for the header and a second to \
+            generate the rows. This ensures that no data will be discarded from any \
+            record, but requires more memory. Without this option, the header is \
+            generated solely by the first record. Any field not found in the first \
+            record---but found in later records---will be dropped."
      and delimiter =
        flag
          "delimiter"
          (optional_with_default ',' char)
          ~doc:(sprintf "CHAR use this delimiter instead of ','")
      in
-     fun () -> main ~delimiter ~view_atoms_as_strings:(not view_atoms_as_sexps))
+     fun () ->
+       main
+         ~delimiter
+         ~two_pass_processing
+         ~view_atoms_as_strings:(not view_atoms_as_sexps))
 ;;
