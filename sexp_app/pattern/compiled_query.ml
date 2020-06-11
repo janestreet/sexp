@@ -61,9 +61,23 @@ let create (type a) (uncompiled_query : Query.t) (output_method : a Output_metho
   let num_unlabeled_captures = ref 0 in
   Query.iter uncompiled_query ~f:(function
     | Capture_unlabeled _ -> incr num_unlabeled_captures
-    | Capture_to_number (i, _) -> Queue.enqueue number_captures i
+    | Capture_to_number (number, _) -> Queue.enqueue number_captures number
     | Capture_to_name (name, _) -> Queue.enqueue named_captures name
     | _ -> ());
+  let fail_unsupported_capture ~kind =
+    raise_s
+      (let query_pattern = uncompiled_query in
+       [%message
+         (sprintf
+            "Query pattern contains %s capture, but they are not allowed when using \
+             this output method"
+            kind)
+           (query_pattern : Query.t)
+           (output_method : _ Output_method.t)])
+  in
+  let fail_unlabeled_capture () = fail_unsupported_capture ~kind:"unlabeled" in
+  let fail_numbered_capture () = fail_unsupported_capture ~kind:"numbered" in
+  let fail_named_capture () = fail_unsupported_capture ~kind:"named" in
   let pick_indices_for_named_and_number_captures () =
     let last_idx = ref (-1) in
     let get_idx () =
@@ -74,7 +88,7 @@ let create (type a) (uncompiled_query : Query.t) (output_method : a Output_metho
     let compiled_query =
       of_query
         uncompiled_query
-        ~idx_of_unlabeled_capture:(fun () -> assert false)
+        ~idx_of_unlabeled_capture:(fun () -> fail_unlabeled_capture ())
         ~idx_of_number_capture:(fun n ->
           Hashtbl.find_or_add idx_of_label (Int.to_string n) ~default:get_idx)
         ~idx_of_named_capture:(fun name ->
@@ -108,12 +122,16 @@ let create (type a) (uncompiled_query : Query.t) (output_method : a Output_metho
     | Record _ -> pick_indices_for_named_and_number_captures ()
     | Map -> pick_indices_for_named_and_number_captures ()
     | List _ ->
-      assert (Queue.is_empty named_captures);
       if Queue.length number_captures > 0
       then (
         let used_idxs = Int.Hash_set.create () in
         Queue.iter number_captures ~f:(fun number ->
-          assert (number >= 0);
+          if number < 0
+          then
+            raise_s
+              [%message
+                "Attempted to use negative number as index for a numbered capture"
+                  (number : int)];
           Hash_set.add used_idxs number);
         let max_used_idx = Hash_set.to_list used_idxs |> List.reduce_exn ~f:Int.max in
         for i = 0 to max_used_idx do
@@ -137,9 +155,9 @@ let create (type a) (uncompiled_query : Query.t) (output_method : a Output_metho
         let compiled_query =
           of_query
             uncompiled_query
-            ~idx_of_unlabeled_capture:(fun () -> assert false)
+            ~idx_of_unlabeled_capture:(fun () -> fail_unlabeled_capture ())
             ~idx_of_number_capture:(fun n -> n)
-            ~idx_of_named_capture:(fun _ -> assert false)
+            ~idx_of_named_capture:(fun _ -> fail_named_capture ())
         in
         compiled_query, Array.init (max_used_idx + 1) ~f:Int.to_string)
       else (
@@ -152,20 +170,26 @@ let create (type a) (uncompiled_query : Query.t) (output_method : a Output_metho
               let idx = !num_used_idxs in
               incr num_used_idxs;
               idx)
-            ~idx_of_number_capture:(fun _ -> assert false)
-            ~idx_of_named_capture:(fun _ -> assert false)
+            ~idx_of_number_capture:(fun _ -> fail_numbered_capture ())
+            ~idx_of_named_capture:(fun _ -> fail_named_capture ())
         in
         compiled_query, Array.init !num_used_idxs ~f:Int.to_string)
     | Single_capture _ ->
-      assert (Queue.is_empty named_captures);
-      assert (Queue.is_empty number_captures);
-      assert (!num_unlabeled_captures = 1);
+      if !num_unlabeled_captures <> 1
+      then
+        raise_s
+          (let query_pattern = uncompiled_query in
+           [%message
+             "Query pattern has 0 or multiple unlabeled captures, which is not allowed \
+              if using this output method"
+               (query_pattern : Query.t)
+               (output_method : _ Output_method.t)]);
       let compiled_query =
         of_query
           uncompiled_query
           ~idx_of_unlabeled_capture:(fun () -> 0)
-          ~idx_of_number_capture:(fun _ -> assert false)
-          ~idx_of_named_capture:(fun _ -> assert false)
+          ~idx_of_number_capture:(fun _ -> fail_numbered_capture ())
+          ~idx_of_named_capture:(fun _ -> fail_named_capture ())
       in
       compiled_query, [| "0" |]
   in

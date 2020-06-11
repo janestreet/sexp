@@ -2,6 +2,22 @@ open Core
 open Expect_test_helpers_core
 open Sexp_app_pattern
 
+module Wrap_mode_for_run = struct
+  type t =
+    | Output of Output_method.some_output_method
+    | Wrap_non_singletons
+    | Wrap_always
+    | Unwrap_always
+
+  let to_output_method query = function
+    | Output output_method -> output_method
+    | Wrap_non_singletons ->
+      Output_method.default_method query ~wrap_mode:Wrap_non_singletons
+    | Wrap_always -> Output_method.default_method query ~wrap_mode:Wrap_always
+    | Unwrap_always -> Output_method.default_method query ~wrap_mode:Unwrap_always
+  ;;
+end
+
 let show_parse querystr =
   let query = Parser.parse_exn querystr in
   printf "%s : %s\n" querystr (Sexp.to_string (Query.sexp_of_t query))
@@ -12,18 +28,15 @@ let show_parse_fail querystr =
   show_raise ~hide_positions:true (fun () -> Parser.parse_exn querystr)
 ;;
 
-let run ?(more_newlines = false) ?(wrap_mode = `Wrap_non_singletons) querystr sexpstrs =
+let run
+      ?(more_newlines = false)
+      ?(wrap_mode = Wrap_mode_for_run.Wrap_non_singletons)
+      querystr
+      sexpstrs
+  =
   let query = Parser.parse_exn querystr in
-  let output_method =
-    match wrap_mode with
-    | `Wrap_non_singletons ->
-      Sexp_app_pattern.Output_method.default_method query ~wrap_mode:Wrap_non_singletons
-    | `Wrap_always ->
-      Sexp_app_pattern.Output_method.default_method query ~wrap_mode:Wrap_always
-    | `Unwrap_always ->
-      Sexp_app_pattern.Output_method.default_method query ~wrap_mode:Unwrap_always
-  in
-  let (Sexp_app_pattern.Output_method.T output_method) = output_method in
+  let output_method = Wrap_mode_for_run.to_output_method query wrap_mode in
+  let (T output_method) = output_method in
   let delimiter = if more_newlines then "\n" else " " in
   List.iter sexpstrs ~f:(fun sexpstr ->
     let sexp = Sexp.of_string sexpstr in
@@ -1099,7 +1112,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single
-    ~wrap_mode:`Unwrap_always
+    ~wrap_mode:Unwrap_always
     "(.* %[foo+] .*)"
     "(foo foo bar baz foo bar)";
   [%expect {|
@@ -1111,7 +1124,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single
-    ~wrap_mode:`Wrap_non_singletons
+    ~wrap_mode:Wrap_non_singletons
     "(.* %[foo+] .*)"
     "(foo foo bar baz foo bar)";
   [%expect {|
@@ -1122,7 +1135,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single
-    ~wrap_mode:`Wrap_always
+    ~wrap_mode:Wrap_always
     "(.* %[foo+] .*)"
     "(foo foo bar baz foo bar)";
   [%expect {|
@@ -1133,7 +1146,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single
-    ~wrap_mode:`Unwrap_always
+    ~wrap_mode:Unwrap_always
     "(.* %[foo+] .* %.)"
     "(foo foo bar baz foo bar)";
   [%expect {|
@@ -1144,7 +1157,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single
-    ~wrap_mode:`Wrap_non_singletons
+    ~wrap_mode:Wrap_non_singletons
     "(.* %[foo+] .* %.)"
     "(foo foo bar baz foo bar)";
   [%expect {|
@@ -1155,7 +1168,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single
-    ~wrap_mode:`Wrap_always
+    ~wrap_mode:Wrap_always
     "(.* %[foo+] .* %.)"
     "(foo foo bar baz foo bar)";
   [%expect
@@ -1369,7 +1382,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single
-    ~wrap_mode:`Wrap_always
+    ~wrap_mode:Wrap_always
     ".. (foo (%.?))"
     "( (foo (1)) (foo ()) (foo (2)) (foo (())) (foo ()) )";
   [%expect {|
@@ -1731,7 +1744,7 @@ let%test_module "Simple wrapping test for direct output" = (module struct
 
   let%expect_test _ =
     run_single
-      ~wrap_mode:`Unwrap_always
+      ~wrap_mode:Unwrap_always
       query
       "((a b) (a c d e) (f g a) (h a i))";
     [%expect {|
@@ -1743,7 +1756,7 @@ let%test_module "Simple wrapping test for direct output" = (module struct
 
   let%expect_test _ =
     run_single
-      ~wrap_mode:`Wrap_non_singletons
+      ~wrap_mode:Wrap_non_singletons
       query
       "((a b) (a c d e) (f g a) (h a i))";
     [%expect {|
@@ -1754,7 +1767,7 @@ let%test_module "Simple wrapping test for direct output" = (module struct
 
   let%expect_test _ =
     run_single
-      ~wrap_mode:`Wrap_always
+      ~wrap_mode:Wrap_always
       query
       "((a b) (a c d e) (f g a) (h a i))";
     [%expect {|
@@ -1774,7 +1787,7 @@ let%test_module "Simple wrapping test for list output" = (module struct
 
   let%expect_test _ =
     run_single
-      ~wrap_mode:`Unwrap_always
+      ~wrap_mode:Unwrap_always
       query
       "((a b) (a c d) (a) (z) (z y) (z x w))";
     [%expect {|
@@ -1790,7 +1803,7 @@ let%test_module "Simple wrapping test for list output" = (module struct
 
   let%expect_test _ =
     run_single
-      ~wrap_mode:`Wrap_non_singletons
+      ~wrap_mode:Wrap_non_singletons
       query
       "((a b) (a c d) (a) (z) (z y) (z x w))";
     [%expect {|
@@ -1806,7 +1819,7 @@ let%test_module "Simple wrapping test for list output" = (module struct
 
   let%expect_test _ =
     run_single
-      ~wrap_mode:`Wrap_always
+      ~wrap_mode:Wrap_always
       query
       "((a b) (a c d) (a) (z) (z y) (z x w))";
     [%expect {|
@@ -1831,7 +1844,7 @@ let%test_module "Simple wrapping test for record output" = (module struct
 
   let%expect_test _ =
     run_single
-      ~wrap_mode:`Unwrap_always
+      ~wrap_mode:Unwrap_always
       query
       "((a b) (a c d) (a) (z) (z y) (z x w))";
     [%expect {|
@@ -1847,7 +1860,7 @@ let%test_module "Simple wrapping test for record output" = (module struct
 
   let%expect_test _ =
     run_single
-      ~wrap_mode:`Wrap_non_singletons
+      ~wrap_mode:Wrap_non_singletons
       query
       "((a b) (a c d) (a) (z) (z y) (z x w))";
     [%expect {|
@@ -1863,7 +1876,7 @@ let%test_module "Simple wrapping test for record output" = (module struct
 
   let%expect_test _ =
     run_single
-      ~wrap_mode:`Wrap_always
+      ~wrap_mode:Wrap_always
       query
       "((a b) (a c d) (a) (z) (z y) (z x w))";
     [%expect {|
@@ -2042,4 +2055,59 @@ let%expect_test "replace missing target" =
     :(raised (
       Failure
       "Attempting to replace %def but it does not occur in the query pattern")) |}]
+;;
+
+let%expect_test _ =
+  show_raise (fun () ->
+    run_single
+      ~wrap_mode:
+        (Output
+           (T (Formats (Wrap_non_singletons, Output_method.Format.ts_of_string "()"))))
+      "%."
+      "abc");
+  [%expect
+    {|
+    :(raised (
+      "Query pattern contains unlabeled capture, but they are not allowed when using this output method"
+      (query_pattern (Capture_unlabeled Any))
+      (output_method (Formats Wrap_non_singletons (()))))) |}]
+;;
+
+let%expect_test _ =
+  show_raise (fun () ->
+    run_single ~wrap_mode:(Output (T (List Wrap_non_singletons))) "%a" "abc");
+  [%expect
+    {|
+    :(raised (
+      "Query pattern contains named capture, but they are not allowed when using this output method"
+      (query_pattern (Capture_to_name a Any))
+      (output_method (List Wrap_non_singletons)))) |}]
+;;
+
+let%expect_test _ =
+  show_raise (fun () ->
+    run_single ~wrap_mode:(Output (T (Record Wrap_non_singletons))) "%." "abc");
+  [%expect
+    {|
+    :(raised (
+      "Query pattern contains unlabeled capture, but they are not allowed when using this output method"
+      (query_pattern (Capture_unlabeled Any))
+      (output_method (Record            Wrap_non_singletons)))) |}]
+;;
+
+let%expect_test _ =
+  show_raise (fun () ->
+    run_single
+      ~wrap_mode:(Output (T (Single_capture Wrap_non_singletons)))
+      "%. %."
+      "abc");
+  [%expect
+    {|
+    :(raised (
+      "Query pattern has 0 or multiple unlabeled captures, which is not allowed if using this output method"
+      (query_pattern (
+        Sequence (
+          (Capture_unlabeled Any)
+          (Capture_unlabeled Any))))
+      (output_method (Single_capture Wrap_non_singletons)))) |}]
 ;;
