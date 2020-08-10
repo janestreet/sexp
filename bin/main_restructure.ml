@@ -41,6 +41,5 @@ let command =
          In_channel.with_file infile ~f:(fun cin ->
            match outfile with
            | None -> main cin cout
-           | Some outfile ->
-             Out_channel.with_file outfile ~f:(fun cout -> main cin cout)))
+           | Some outfile -> Out_channel.with_file outfile ~f:(fun cout -> main cin cout)))
 ;;

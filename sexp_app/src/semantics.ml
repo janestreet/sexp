@@ -43,8 +43,7 @@ let sexp_to_record = function
     with_return (fun r ->
       match
         String.Map.of_alist
-          (List.mapi fields ~f:(fun i ->
-             function
+          (List.mapi fields ~f:(fun i -> function
              | List [ Atom field; s ] -> field, (i, s)
              | _ -> r.return None))
       with

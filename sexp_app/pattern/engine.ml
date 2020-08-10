@@ -374,9 +374,7 @@ let iter_matches
               Hashtbl.find_exn capture_label_to_idx_map capture_label
             in
             let capture_result =
-              maybe_wrap_results
-                ~wrap_mode
-                ~revcapture:revcapture_buf.(capture_idx)
+              maybe_wrap_results ~wrap_mode ~revcapture:revcapture_buf.(capture_idx)
             in
             match wrap_mode with
             | Unwrap_always -> capture_result

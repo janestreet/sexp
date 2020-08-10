@@ -72,10 +72,7 @@ let%expect_test _ =
     let syntax = Syntax.Query.t_of_sexp (Sexp.of_string query) in
     List.iter inputs ~f:(fun input ->
       let result =
-        Sexp.of_string input
-        |> Semantics.query syntax
-        |> Lazy_list.to_list
-        |> Sexp.List
+        Sexp.of_string input |> Semantics.query syntax |> Lazy_list.to_list |> Sexp.List
       in
       print_s result)
   in

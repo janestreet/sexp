@@ -25,8 +25,8 @@ module Escape = struct
                  "-lines"
                  (no_arg_some Kind.Lines)
                  ~doc:
-                   "generate and output one atom per line of input. This ignores a \
-                    single trailing newline."
+                   "generate and output one atom per line of input. This ignores a single \
+                    trailing newline."
              ]
          in
          fun () ->

@@ -93,10 +93,7 @@ let query_command =
        and query =
          anon (maybe (t2 ("QUERY" %: query_arg) (sequence ("FILE" %: Filename.arg_type))))
        and stdin_label =
-         flag
-           "stdin-label"
-           (optional string)
-           ~doc:"LABEL override default label for stdin"
+         flag "stdin-label" (optional string) ~doc:"LABEL override default label for stdin"
        in
        (* switch from command line parsing to argument processing *)
        let query, files =
@@ -119,10 +116,7 @@ let query_command =
        in
        source, inputs, labeled_default
      and group =
-       flag
-         "group"
-         no_arg
-         ~doc:" Group incoming sequence of sexps into a single list sexp"
+       flag "group" no_arg ~doc:" Group incoming sequence of sexps into a single list sexp"
      and { machine; fail_on_parse_error } = Shared_params.machine_and_fail_on_parse_error
      and { output_mode; allow_empty_output; labeled } = Shared_params.query_args in
      fun () ->
@@ -196,8 +190,7 @@ let change_command =
      and { machine; fail_on_parse_error } = Shared_params.machine_and_fail_on_parse_error
      and source, files =
        let%map_open x =
-         anon
-           (maybe (t2 ("QUERY" %: change_arg) (sequence ("FILE" %: Filename.arg_type))))
+         anon (maybe (t2 ("QUERY" %: change_arg) (sequence ("FILE" %: Filename.arg_type))))
        and file =
          flag
            "file"

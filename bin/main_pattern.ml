@@ -103,11 +103,8 @@ let pat_query_command =
              ~(on_result : Sexp.t -> unit)
          =
          let sexp = Sexp_app.Sexp_ext.sexp_of_t sexp_ext in
-         Sexp_app_pattern.Engine.iter_matches
-           ~query
-           ~output_method
-           sexp
-           ~f:(fun output -> on_result output)
+         Sexp_app_pattern.Engine.iter_matches ~query ~output_method sexp ~f:(fun output ->
+           on_result output)
        in
        let perform_query_returning_sexp_lists
              ~(output_method : Sexp.t list Sexp_app_pattern.Output_method.t)
@@ -115,17 +112,13 @@ let pat_query_command =
              ~(on_result : Sexp.t -> unit)
          =
          let sexp = Sexp_app.Sexp_ext.sexp_of_t sexp_ext in
-         Sexp_app_pattern.Engine.iter_matches
-           ~query
-           ~output_method
-           sexp
-           ~f:(fun output -> List.iter ~f:on_result output)
+         Sexp_app_pattern.Engine.iter_matches ~query ~output_method sexp ~f:(fun output ->
+           List.iter ~f:on_result output)
        in
        let perform_query =
          let (Sexp_app_pattern.Output_method.T output_method) = output_method in
          match output_method with
-         | Formats _ as output_method ->
-           perform_query_returning_sexp_lists ~output_method
+         | Formats _ as output_method -> perform_query_returning_sexp_lists ~output_method
          | List _ as output_method -> perform_query_returning_sexps ~output_method
          | Record _ as output_method -> perform_query_returning_sexps ~output_method
          | Single_capture Unwrap_always as output_method ->
@@ -262,10 +255,7 @@ let pat_change_command =
        flag "stdin-label" (optional string) ~doc:"LABEL override default label for stdin"
      and wrap_mode = wrap_mode_param
      and replace =
-       flag
-         "replace"
-         (required string)
-         ~doc:"%foo what named capture location to replace"
+       flag "replace" (required string) ~doc:"%foo what named capture location to replace"
      and format =
        choose_one
          ~if_nothing_chosen:Raise

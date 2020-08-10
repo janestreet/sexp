@@ -16,9 +16,7 @@ let read_of_next_char
   (* The transformation necessary to turn a raw atom that didn't appear with double quotes
      into a string that will parse to the same character sequence once it does get
      double-quoted *)
-  let escape =
-    unstage (String.Escaping.escape ~escapeworthy:[ '"' ] ~escape_char:'\\')
-  in
+  let escape = unstage (String.Escaping.escape ~escapeworthy:[ '"' ] ~escape_char:'\\') in
   let maybe_quote_not_inside_string_atom s =
     if String.exists s ~f:should_be_quoted then "\"" ^ escape s ^ "\"" else s
   in

@@ -144,9 +144,7 @@ let%test_module "Utils" =
 
     let%test _ =
       let value = Sexp.Atom "my-new-value" in
-      let sexp =
-        Or_error.ok_exn (replace_field ~field:"second" ~value sexp `Immediate)
-      in
+      let sexp = Or_error.ok_exn (replace_field ~field:"second" ~value sexp `Immediate) in
       [%equal: Sexp.t]
         (List.Assoc.find_exn
            (Or_error.ok_exn (immediate_fields sexp))

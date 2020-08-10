@@ -21,8 +21,7 @@ type t =
   | First_match_only of t
 [@@deriving sexp_of]
 
-let of_query query ~idx_of_unlabeled_capture ~idx_of_number_capture ~idx_of_named_capture
-  =
+let of_query query ~idx_of_unlabeled_capture ~idx_of_number_capture ~idx_of_named_capture =
   let rec compile_list = List.map ~f:compile
   and compile_set_arg = List.map ~f:(fun (query, mode) -> compile query, mode)
   and compile query : t =
@@ -69,8 +68,8 @@ let create (type a) (uncompiled_query : Query.t) (output_method : a Output_metho
       (let query_pattern = uncompiled_query in
        [%message
          (sprintf
-            "Query pattern contains %s capture, but they are not allowed when using \
-             this output method"
+            "Query pattern contains %s capture, but they are not allowed when using this \
+             output method"
             kind)
            (query_pattern : Query.t)
            (output_method : _ Output_method.t)])
@@ -114,8 +113,8 @@ let create (type a) (uncompiled_query : Query.t) (output_method : a Output_metho
           if not (Hash_set.mem used_labels c)
           then
             failwithf
-              "Output or replacement expression uses capture not present in \
-               pattern: %s"
+              "Output or replacement expression uses capture not present in pattern: \
+               %s"
               c
               ()));
       pick_indices_for_named_and_number_captures ()

@@ -522,9 +522,7 @@ and change_of_sexp = function
   | List [ Atom "rewrite"; lhs; rhs ] ->
     rewrite ~lhs:(Pattern.t_of_sexp lhs) ~rhs:(Pattern.t_of_sexp rhs)
   | List [ Atom "rewrite_record"; lhs; rhs ] ->
-    rewrite_record
-      ~lhs:(Pattern_record.t_of_sexp lhs)
-      ~rhs:(Pattern_record.t_of_sexp rhs)
+    rewrite_record ~lhs:(Pattern_record.t_of_sexp lhs) ~rhs:(Pattern_record.t_of_sexp rhs)
   | List (Atom "alt" :: xs) -> alt (List.map ~f:change_of_sexp xs)
   | List (Atom "seq" :: xs) -> seq (List.map ~f:change_of_sexp xs)
   | List (Atom "record" :: fields) as sexp ->

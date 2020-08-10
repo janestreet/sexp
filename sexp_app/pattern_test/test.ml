@@ -1925,8 +1925,7 @@ let%expect_test _ =
       ~replace:"0"
       ~with_:"(%bar %foo)"
       "((a 1)(b 2)(c 3))");
-  [%expect
-    {|
+  [%expect {|
     :(raised (Failure "Replacement target '0' does not start with '%'")) |}]
 ;;
 
@@ -1971,8 +1970,8 @@ let%expect_test _ =
     "(foo %a .. (bar %b .. %baz=(%c %d)))"
     ~replace:"%baz"
     ~with_:"(%d %c %a %b)"
-    "(foo 100 (bar 25 ((a 1)(b 2)(c 3))) ((d 4)(e 5)(f 6)) (bar 30 (aa ((g 7)(h 8)(i \
-     9)) ((j 10)(k 11)(l 12)))))";
+    "(foo 100 (bar 25 ((a 1)(b 2)(c 3))) ((d 4)(e 5)(f 6)) (bar 30 (aa ((g 7)(h 8)(i 9)) \
+     ((j 10)(k 11)(l 12)))))";
   [%expect
     {|
     :(foo 100(bar 25((1 a 100 25)(2 b 100 25)(3 c 100 25)))((d 4)(e 5)(f 6))(bar 30(aa((7 g 100 30)(8 h 100 30)(9 i 100 30))((10 j 100 30)(11 k 100 30)(12 l 100 30))))) |}]
