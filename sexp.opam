@@ -17,12 +17,12 @@ depends: [
   "csvfields"
   "ppx_jane"
   "re2"
-  "sexp_diff_kernel"
+  "sexp_diff"
   "sexp_macro"
   "sexp_pretty"
   "sexp_select"
   "sexplib"
-  "dune"             {>= "2.0.0"}
+  "dune"        {>= "2.0.0"}
 ]
 synopsis: "S-expression swiss knife"
 description: "

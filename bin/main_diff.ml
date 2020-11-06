@@ -25,16 +25,13 @@ let multiple_sexps_in_each_file_flag =
 
 module Display_function = struct
   type t =
-    { display_options : Sexp_diff_kernel.Display.Display_options.t
+    { display_options : Sexp_diff.Display.Display_options.t
     ; display_as_plain_string : bool
     }
 
   let create ?(display_as_plain_string = false) ?collapse_threshold ?num_shown () =
     let display_options =
-      Sexp_diff_kernel.Display.Display_options.create
-        ?collapse_threshold
-        ?num_shown
-        Two_column
+      Sexp_diff.Display.Display_options.create ?collapse_threshold ?num_shown Two_column
     in
     { display_options; display_as_plain_string }
   ;;
@@ -63,8 +60,8 @@ module Display_function = struct
   let run { display_options; display_as_plain_string } diff =
     let display =
       if display_as_plain_string
-      then Sexp_diff_kernel.Display.display_as_plain_string
-      else Sexp_diff_kernel.Display.display_with_ansi_colors
+      then Sexp_diff.Display.display_as_plain_string
+      else Sexp_diff.Display.display_with_ansi_colors
     in
     display display_options diff |> Core.print_endline
   ;;
@@ -118,14 +115,14 @@ It also exists non-zero (with exit code 1) if either sexp is malformed.
        let open Deferred.Let_syntax in
        let%bind original = load file1 ~expand_macros ~multiple_sexps_in_each_file in
        let%bind updated = load file2 ~expand_macros ~multiple_sexps_in_each_file in
-       let diff = Sexp_diff_kernel.Algo.diff ~original ~updated () in
+       let diff = Sexp_diff.Algo.diff ~original ~updated () in
        (* emit output *)
        (match mode with
         | Quiet -> ()
-        | Emit_patch -> Sexp_diff_kernel.Diff.sexp_of_t diff |> print_s
+        | Emit_patch -> Sexp_diff.Diff.sexp_of_t diff |> print_s
         | Emit_diff display_fun -> Display_function.run display_fun diff);
        (* similar to "diff", we exit non-zero if the files are different *)
-       match (diff : Sexp_diff_kernel.Diff.t) with
+       match (diff : Sexp_diff.Diff.t) with
        | Same _ -> return ()
        | Add _ | Delete _ | Replace _ | Enclose _ ->
          (match mode with
@@ -155,8 +152,8 @@ DIFF-FILE should have the same format as that produced by [sexp diff -for-patch]
        let open Deferred.Let_syntax in
        let%bind diff =
          load diff_file ~expand_macros ~multiple_sexps_in_each_file:false
-         >>| Sexp_diff_kernel.Diff.t_of_sexp
+         >>| Sexp_diff.Diff.t_of_sexp
        in
        let%map file = load file ~expand_macros ~multiple_sexps_in_each_file:false in
-       Sexp_diff_kernel.Diff.apply_exn diff file |> print_s)
+       Sexp_diff.Diff.apply_exn diff file |> print_s)
 ;;

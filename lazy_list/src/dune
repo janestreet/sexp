@@ -1,2 +1,2 @@
-(library (name lazy_list) (libraries core_kernel)
- (preprocess (pps ppx_jane)))
+(library (name lazy_list) (public_name sexp.lazy_list)
+ (libraries core_kernel) (preprocess (pps ppx_jane)))
