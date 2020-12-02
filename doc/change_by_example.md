@@ -1,4 +1,8 @@
-# Sexp change by example
+---
+title: Sexp change by example
+parent: ../README.md
+uuid: 1cf1fa14-899f-3e75-3032-30633d71230e
+---
 
 Sexp change is a command-line tool for manipulating S-expressions,
 useful if you want to do some data munging without having to write a

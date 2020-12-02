@@ -1,4 +1,8 @@
-# Sexp query formal semantics
+---
+title: Sexp query formal semantics
+parent: ../README.md
+uuid: e89f9e4d-7a4d-3154-a625-5460feab1dff
+---
 
 See also the get and select and pat-query subcommands.
 

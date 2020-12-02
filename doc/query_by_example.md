@@ -1,4 +1,8 @@
-# Sexp query by example
+---
+title: Sexp query by example
+parent: ../README.md
+uuid: ef0f9f9a-cb1b-3cbc-f055-9f49bc67efa8
+---
 
 Sexp query is a command-line tool for getting data out of S-expressions. Really it's a
 mini programming language, and if you want to use it effectively you'll want to see lots of
