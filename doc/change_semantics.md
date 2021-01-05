@@ -1,8 +1,4 @@
----
-title: Sexp change formal semantics
-parent: ../README.md
-uuid: b1feeb7a-294d-3474-6ab5-7584c74abaf1
----
+# Sexp change formal semantics
 
 This document explains the semantics of change expressions, whose
 syntax is as follows:
