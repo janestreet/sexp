@@ -7,7 +7,14 @@ let rec restructure = function
     (try
        assert (Sexplib.Pre_sexp.must_escape foo && String.length foo > 80);
        let xs = Sexp.scan_sexps (Lexing.from_string foo) in
-       let xs = List.map ~f:restructure xs in
+       let xs =
+         List.map xs ~f:(function
+           | Sexp.List _ as restructured_list -> restructure restructured_list
+           | Sexp.Atom restructured_foo as restructured_atom ->
+             (match [%equal: string] foo restructured_foo with
+              | true -> restructured_atom
+              | false -> restructure restructured_atom))
+       in
        Sexp.List (Sexp.Atom "-RESTRUCTURED-" :: xs)
      with
      | _ -> same)
