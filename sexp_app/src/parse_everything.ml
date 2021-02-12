@@ -66,7 +66,8 @@ let read_of_next_char
               if Char.equal c '\\' then follows_escape_in_string := true;
               Buffer.add_char atom_so_far c;
               `Ok "" (* Not inside string *)))
-        else if (* Chars that don't terminate the atom just get appended and we continue *)
+        else if
+          (* Chars that don't terminate the atom just get appended and we continue *)
           not (terminates_atom c ~paren_depth)
         then (
           Buffer.add_char atom_so_far c;

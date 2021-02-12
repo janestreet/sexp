@@ -86,17 +86,17 @@ module Make_engine (S : Sexplike) = struct
       match query with
       | Capture (subquery, capture_idx) ->
         let prev_contents = revcapture_buf.(capture_idx) in
-        ((* Try catch makes sure that we properly restore [revcapture_buf]
-            upon an exception, such as the one involved in With_return *)
-          try
-            iter_matches subquery sexps ~f:(fun nconsumed rev_consumed tail ->
-              revcapture_buf.(capture_idx) <- rev_consumed;
-              f nconsumed rev_consumed tail;
-              revcapture_buf.(capture_idx) <- prev_contents)
-          with
-          | exn ->
-            revcapture_buf.(capture_idx) <- prev_contents;
-            raise exn)
+        (* Try catch makes sure that we properly restore [revcapture_buf]
+           upon an exception, such as the one involved in With_return *)
+        (try
+           iter_matches subquery sexps ~f:(fun nconsumed rev_consumed tail ->
+             revcapture_buf.(capture_idx) <- rev_consumed;
+             f nconsumed rev_consumed tail;
+             revcapture_buf.(capture_idx) <- prev_contents)
+         with
+         | exn ->
+           revcapture_buf.(capture_idx) <- prev_contents;
+           raise exn)
       | Any ->
         (match sexps with
          | [] -> ()
@@ -522,8 +522,9 @@ let replace' ~query ~f sexp =
           targets, replacements)
     in
     (* Whenever a later replacement would overlap with a prior one, do nothing instead. *)
-    if List.for_all replacement_targets_and_replacements ~f:(fun (targets, _) ->
-      no_planned_replacements_yet ~planned_replacements ~targets)
+    if
+      List.for_all replacement_targets_and_replacements ~f:(fun (targets, _) ->
+        no_planned_replacements_yet ~planned_replacements ~targets)
     then
       List.iter replacement_targets_and_replacements ~f:(fun (targets, replacements) ->
         if not (List.is_empty targets)
