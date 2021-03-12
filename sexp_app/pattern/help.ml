@@ -26,7 +26,7 @@ foo?          : Matches foo zero or one times
 %abc %def     : Named captures
 %abc=(a %. c) : Named or numbered captures can also be used on subpatterns or nested.
 
-a bc | de f   : Matches 'a bc' OR 'de f'. Shortcircuiting.
+a bc | de f   : Matches 'a bc' OR 'de f'.
 a [bc | de] f : Matches 'a', then 'bc' OR 'de', then 'f'.
 a b & c d     : Matches any sexp that matches both 'a b' AND 'c d'.
 
