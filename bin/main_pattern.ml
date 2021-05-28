@@ -48,10 +48,12 @@ let pat_query_command =
        let%map_open file =
          flag
            "pattern-file"
-           (optional Filename.arg_type)
+           (optional Filename_unix.arg_type)
            ~doc:"FILE Read program from file instead of command line"
        and pattern_and_files =
-         anon (maybe (t2 ("PATTERN" %: string) (sequence ("FILE" %: Filename.arg_type))))
+         anon
+           (maybe
+              (t2 ("PATTERN" %: string) (sequence ("FILE" %: Filename_unix.arg_type))))
        and stdin_label =
          flag
            "stdin-label"
@@ -240,11 +242,13 @@ let pat_change_command =
      and { machine; fail_on_parse_error } = Shared_params.machine_and_fail_on_parse_error
      and source, files =
        let%map_open x =
-         anon (maybe (t2 ("PATTERN" %: string) (sequence ("FILE" %: Filename.arg_type))))
+         anon
+           (maybe
+              (t2 ("PATTERN" %: string) (sequence ("FILE" %: Filename_unix.arg_type))))
        and file =
          flag
            "pattern-file"
-           (optional Filename.arg_type)
+           (optional Filename_unix.arg_type)
            ~doc:"FILE Read program from file instead of command line"
        in
        match x, file with

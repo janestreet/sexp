@@ -1,13 +1,6 @@
 open Core
 
-type regex = Re2.t
-
-let regex_of_sexp = function
-  | Sexp.Atom s -> Re2.create_exn s
-  | Sexp.List _ as s -> Sexplib.Conv.of_sexp_error "atom (regular expression) expected" s
-;;
-
-let sexp_of_regex r = Sexp.Atom (Re2.to_string r)
+type regex = Re2.Stable.V1_no_options.t [@@deriving sexp]
 
 type sexp = Sexp.t =
   | Atom of string

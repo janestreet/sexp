@@ -11,6 +11,7 @@ let command =
     ; "rewrite", Main_query.rewrite_command
     ; "diff", Main_diff.diff_command
     ; "flatten", Main_parts.flatten_command
+    ; "fzf", Main_fzf.command
     ; "get", Main_get.command
     ; "multi-select", Main_select.multi_command
     ; "of-xml", Main_of_xml.command
@@ -31,5 +32,5 @@ let command =
 
 let () =
   Writer.behave_nicely_in_pipeline ();
-  Command.run command
+  Command_unix.run command
 ;;

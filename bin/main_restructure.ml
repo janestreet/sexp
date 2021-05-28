@@ -37,7 +37,9 @@ let command =
      let%map_open argv =
        anon
          (maybe
-            (t2 ("INFILE" %: Filename.arg_type) (maybe ("OUTFILE" %: Filename.arg_type))))
+            (t2
+               ("INFILE" %: Filename_unix.arg_type)
+               (maybe ("OUTFILE" %: Filename_unix.arg_type))))
      in
      fun () ->
        let cin, cout = In_channel.stdin, Out_channel.stdout in

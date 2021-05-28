@@ -83,15 +83,17 @@ let query_command =
        let%map_open file =
          flag
            "file"
-           (optional Filename.arg_type)
+           (optional Filename_unix.arg_type)
            ~doc:"FILE Read program from file instead of command line"
        and script =
          flag
            "script"
-           (optional Filename.arg_type)
+           (optional Filename_unix.arg_type)
            ~doc:"FILE Read program from file instead of command line (skip #!)"
        and query =
-         anon (maybe (t2 ("QUERY" %: query_arg) (sequence ("FILE" %: Filename.arg_type))))
+         anon
+           (maybe
+              (t2 ("QUERY" %: query_arg) (sequence ("FILE" %: Filename_unix.arg_type))))
        and stdin_label =
          flag "stdin-label" (optional string) ~doc:"LABEL override default label for stdin"
        in
@@ -190,11 +192,13 @@ let change_command =
      and { machine; fail_on_parse_error } = Shared_params.machine_and_fail_on_parse_error
      and source, files =
        let%map_open x =
-         anon (maybe (t2 ("QUERY" %: change_arg) (sequence ("FILE" %: Filename.arg_type))))
+         anon
+           (maybe
+              (t2 ("QUERY" %: change_arg) (sequence ("FILE" %: Filename_unix.arg_type))))
        and file =
          flag
            "file"
-           (optional Filename.arg_type)
+           (optional Filename_unix.arg_type)
            ~doc:"FILE Read program from file instead of command line"
        in
        match x, file with
@@ -254,7 +258,7 @@ See `sexp change -examples` for more information.|})
        Shared_params.machine_and_fail_on_parse_error
      and source_a = anon ("A" %: pattern_arg)
      and source_b = anon ("B" %: pattern_arg)
-     and files = anon (sequence ("FILE" %: Filename.arg_type))
+     and files = anon (sequence ("FILE" %: Filename_unix.arg_type))
      and stdin_label = stdin_label_arg in
      fun () ->
        change_command_body

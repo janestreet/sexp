@@ -105,7 +105,7 @@ It also exists non-zero (with exit code 1) if either sexp is malformed.
 |})
     (let open Command.Let_syntax in
      let%map_open file1, file2 =
-       anon (t2 ("FILE1" %: Filename.arg_type) ("FILE2" %: Filename.arg_type))
+       anon (t2 ("FILE1" %: Filename_unix.arg_type) ("FILE2" %: Filename_unix.arg_type))
      and mode = Diff_mode.flags
      and expand_macros = expand_macros_flag
      and multiple_sexps_in_each_file = multiple_sexps_in_each_file_flag in
@@ -145,8 +145,8 @@ DIFF-FILE should have the same format as that produced by [sexp diff -for-patch]
      let%map_open diff_file, file =
        anon
          (t2
-            ("DIFF-FILE" %: Filename.arg_type)
-            (maybe_with_default "/dev/stdin" ("FILE" %: Filename.arg_type)))
+            ("DIFF-FILE" %: Filename_unix.arg_type)
+            (maybe_with_default "/dev/stdin" ("FILE" %: Filename_unix.arg_type)))
      and expand_macros = expand_macros_flag in
      fun () ->
        let open Deferred.Let_syntax in

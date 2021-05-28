@@ -11,7 +11,10 @@ let command =
       ^ "\nYou can use -p to print out one of the predefined styles and customize it.")
     (let open Command.Let_syntax in
      let%map_open config_file =
-       flag "-c" (optional Filename.arg_type) ~doc:"file use custom configuration file"
+       flag
+         "-c"
+         (optional Filename_unix.arg_type)
+         ~doc:"file use custom configuration file"
      and color =
        flag
          "-color"
