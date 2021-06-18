@@ -1,4 +1,5 @@
 (library (name sexp_app) (public_name sexp.sexp_app)
- (libraries core lazy_list re2 sexplib str) (preprocess (pps ppx_jane)))
+ (libraries core_kernel.core lazy_list re2 sexplib str)
+ (preprocess (pps ppx_jane)))
 
 (ocamllex csv_lexeme)

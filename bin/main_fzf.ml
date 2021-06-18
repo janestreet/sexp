@@ -4,9 +4,9 @@ open Async
 let main ~filename =
   Sys.command
     ("cat "
-     ^ filename
+     ^ Sys.quote filename
      ^ {| | fzf --multi --no-sort --reverse --exact --ansi --preview-window=down:70% \
-        --preview "echo {}|sexp pp -color" |}
+        --preview "printf '%s' {} | sexp pp -color" |}
     )
   >>= exit
 ;;

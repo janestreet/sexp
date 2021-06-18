@@ -1,5 +1,5 @@
 
-open! Core_kernel
+open! Core
 
 (** Lazy lists. *)
 
