@@ -1,11 +1,35 @@
 open Core
 module Sexp = Sexplib.Sexp
 
-let main infile cout =
-  List.iter (Sexp_macro.Blocking.load_sexps infile) ~f:(fun sexp ->
-    Sexp.output_hum cout sexp;
-    (* a whitespace is necessary to separate adjacent atoms *)
-    Out_channel.output_char cout '\n')
+module Mode = struct
+  type t =
+    | Print_resolved_sexp
+    | Print_included_files
+
+  let flags =
+    let open Command.Let_syntax in
+    let%map_open only_print_included_files =
+      flag
+        "only-print-loaded-files"
+        no_arg
+        ~doc:
+          "Instead of printing the resolved macros, only print the names of the files \
+           that are loaded as a result of resolving the input file (including the input \
+           file itself)."
+    in
+    if only_print_included_files then Print_included_files else Print_resolved_sexp
+  ;;
+end
+
+let main mode infile cout =
+  match (mode : Mode.t) with
+  | Print_resolved_sexp ->
+    List.iter (Sexp_macro.Blocking.load_sexps infile) ~f:(fun sexp ->
+      Sexp.output_hum cout sexp;
+      (* a whitespace is necessary to separate adjacent atoms *)
+      Out_channel.output_char cout '\n')
+  | Print_included_files ->
+    Sexp_macro.Blocking.included_files infile |> Out_channel.output_lines cout
 ;;
 
 let readme () =
@@ -18,16 +42,16 @@ let command =
     ~summary:"resolve macros in a sexp"
     ~readme
     (let open Command.Let_syntax in
-     let%map_open infile, maybe_cout =
+     let%map_open mode = Mode.flags
+     and infile, maybe_cout =
        anon
          (t2
             ("INFILE" %: Filename_unix.arg_type)
             (maybe ("OUTFILE" %: Filename_unix.arg_type)))
      in
      fun () ->
-       let cout = stdout in
-       (* defaults *)
+       let k cout = main mode infile cout in
        match maybe_cout with
-       | None -> main infile cout
-       | Some outfile -> Out_channel.with_file outfile ~f:(fun cout -> main infile cout))
+       | None -> k stdout
+       | Some outfile -> Out_channel.with_file outfile ~f:k)
 ;;

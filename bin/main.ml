@@ -14,6 +14,7 @@ let command =
     ; "fzf", Main_fzf.command
     ; "get", Main_get.command
     ; "multi-select", Main_select.multi_command
+    ; "of-json", Main_json.of_json_command
     ; "of-xml", Main_of_xml.command
     ; "pat-change", Main_pattern.pat_change_command
     ; "pat-query", Main_pattern.pat_query_command
@@ -26,6 +27,7 @@ let command =
     ; "select", Main_select.command
     ; "sexpify", Main_sexpify.command
     ; "to-csv", Main_to_csv.command
+    ; "to-json", Main_json.to_json_command
     ; "validate", Main_validate.command
     ]
 ;;
