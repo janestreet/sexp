@@ -109,13 +109,22 @@ Examples:
   ;;
 end
 
+let remove_duplicates_flag =
+  let open Command.Param in
+  flag
+    ~doc:" remove duplicate outputs from each PROGRAM"
+    "remove-dupes"
+    (map_flag no_arg ~f:(fun arg -> if arg then Sexp.Set.stable_dedup_list else Fn.id))
+;;
+
 let command =
   Command.async
     ~summary:"Use CSS-style selectors to traverse sexp trees"
     (let open Command.Let_syntax in
      let%map_open () = Test_and_doc.readme_flag ()
      and program = anon ("program" %: string)
-     and maybe_sexp_string = anon (maybe ("sexp" %: string)) in
+     and maybe_sexp_string = anon (maybe ("sexp" %: string))
+     and maybe_remove_duplicate_outputs = remove_duplicates_flag in
      fun () ->
        let sexp_pipe =
          match maybe_sexp_string with
@@ -123,8 +132,9 @@ let command =
          | Some x -> Pipe.singleton (Sexp.of_string x)
        in
        Pipe.iter_without_pushback sexp_pipe ~f:(fun sexp ->
-         List.iter (Sexp_select.select program sexp) ~f:(fun answer ->
-           printf "%s\n%!" (Sexp.to_string_hum answer))))
+         List.iter
+           (maybe_remove_duplicate_outputs (Sexp_select.select program sexp))
+           ~f:(fun answer -> printf "%s\n%!" (Sexp.to_string_hum answer))))
 ;;
 
 let multi_command =
@@ -135,8 +145,9 @@ let multi_command =
     (let open Command.Let_syntax in
      let%map_open () = Test_and_doc.readme_flag ()
      and labeled =
-       flag "labeled" no_arg ~doc:" label each match with the program that matched it"
+       flag "labeled" no_arg ~doc:" label each match with the PROGRAM that matched it"
      and mach = flag "machine" no_arg ~doc:" print machine-style sexp output"
+     and maybe_remove_duplicate_outputs = remove_duplicates_flag
      and programs =
        map
          ~f:(fun (x, xs) -> x :: xs)
@@ -150,10 +161,12 @@ let multi_command =
        |> Pipe.iter_without_pushback ~f:(fun sexp ->
          match
            List.concat_map programs ~f:(fun program ->
-             List.map (Sexp_select.select program sexp) ~f:(fun answer ->
-               if labeled
-               then [%sexp_of: string * Sexp.t] (program, answer)
-               else answer))
+             List.map
+               (maybe_remove_duplicate_outputs (Sexp_select.select program sexp))
+               ~f:(fun answer ->
+                 if labeled
+                 then [%sexp_of: string * Sexp.t] (program, answer)
+                 else answer))
          with
          | [] -> ()
          | sexps -> printf "%s\n%!" (to_s ([%sexp_of: Sexp.t list] sexps))))
