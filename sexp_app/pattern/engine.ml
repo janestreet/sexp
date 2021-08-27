@@ -522,9 +522,8 @@ let replace' ~query ~f sexp =
           targets, replacements)
     in
     (* Whenever a later replacement would overlap with a prior one, do nothing instead. *)
-    if
-      List.for_all replacement_targets_and_replacements ~f:(fun (targets, _) ->
-        no_planned_replacements_yet ~planned_replacements ~targets)
+    if List.for_all replacement_targets_and_replacements ~f:(fun (targets, _) ->
+      no_planned_replacements_yet ~planned_replacements ~targets)
     then
       List.iter replacement_targets_and_replacements ~f:(fun (targets, replacements) ->
         if not (List.is_empty targets)

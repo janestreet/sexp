@@ -1487,9 +1487,8 @@ module Nofun : S = struct
                | Some _, None -> -1
                | Some i, Some i' -> Int.compare i i'))
         in
-        if
-          List.contains_dup alist ~compare:(fun (field, _) (field', _) ->
-            String.compare field field')
+        if List.contains_dup alist ~compare:(fun (field, _) (field', _) ->
+          String.compare field field')
         then fail ()
         else
           diff
