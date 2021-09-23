@@ -268,13 +268,13 @@ module Vanilla : S = struct
         lhs
         s
         ~fail:(fun () -> Fail)
-        ~succ:(fun env -> Diff (Pattern.instantiate rhs env ident))
+        ~succ:(fun env -> Diff (Pattern.instantiate rhs env Fn.id))
     | Syntax.Rewrite_record (lhs, rhs) ->
       Pattern_record.pmatch
         lhs
         s
         ~fail:(fun () -> Fail)
-        ~succ:(fun env -> Diff (Pattern_record.instantiate rhs env ident))
+        ~succ:(fun env -> Diff (Pattern_record.instantiate rhs env Fn.id))
     | Syntax.Lowercase ->
       Diff (atom_map ~f:String.lowercase s)
     | Syntax.Concat ->
