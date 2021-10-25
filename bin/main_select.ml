@@ -117,12 +117,22 @@ let remove_duplicates_flag =
     (map_flag no_arg ~f:(fun arg -> if arg then Sexp.Set.stable_dedup_list else Fn.id))
 ;;
 
+let mach_flag =
+  let open Command.Param in
+  flag
+    ~doc:" print machine-style sexp output"
+    "machine"
+    (map_flag no_arg ~f:(fun mach ->
+       if mach then Sexp.to_string_mach else fun sexp -> Sexp.to_string_hum sexp))
+;;
+
 let command =
   Command.async
     ~summary:"Use CSS-style selectors to traverse sexp trees"
     (let open Command.Let_syntax in
      let%map_open () = Test_and_doc.readme_flag ()
      and program = anon ("program" %: string)
+     and sexp_to_string = mach_flag
      and maybe_sexp_string = anon (maybe ("sexp" %: string))
      and maybe_remove_duplicate_outputs = remove_duplicates_flag in
      fun () ->
@@ -134,7 +144,7 @@ let command =
        Pipe.iter_without_pushback sexp_pipe ~f:(fun sexp ->
          List.iter
            (maybe_remove_duplicate_outputs (Sexp_select.select program sexp))
-           ~f:(fun answer -> printf "%s\n%!" (Sexp.to_string_hum answer))))
+           ~f:(fun answer -> printf "%s\n%!" (sexp_to_string answer))))
 ;;
 
 let multi_command =
@@ -146,7 +156,7 @@ let multi_command =
      let%map_open () = Test_and_doc.readme_flag ()
      and labeled =
        flag "labeled" no_arg ~doc:" label each match with the PROGRAM that matched it"
-     and mach = flag "machine" no_arg ~doc:" print machine-style sexp output"
+     and sexp_to_string = mach_flag
      and maybe_remove_duplicate_outputs = remove_duplicates_flag
      and programs =
        map
@@ -154,9 +164,6 @@ let multi_command =
          (anon (non_empty_sequence_as_pair ("program" %: string)))
      in
      fun () ->
-       let to_s =
-         if mach then Sexp.to_string_mach else fun sexp -> Sexp.to_string_hum sexp
-       in
        Reader.read_sexps (Lazy.force Reader.stdin)
        |> Pipe.iter_without_pushback ~f:(fun sexp ->
          match
@@ -169,5 +176,5 @@ let multi_command =
                  else answer))
          with
          | [] -> ()
-         | sexps -> printf "%s\n%!" (to_s ([%sexp_of: Sexp.t list] sexps))))
+         | sexps -> printf "%s\n%!" (sexp_to_string ([%sexp_of: Sexp.t list] sexps))))
 ;;
