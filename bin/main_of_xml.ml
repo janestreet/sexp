@@ -18,7 +18,7 @@ module Main = struct
   end
 
   (* direct style *)
-  module V1 : S = struct
+  module _ : S = struct
     let rec sexp_of_xml = function
       | PCData x -> Atom x
       | Element (tag, attrs, children) ->
@@ -28,7 +28,7 @@ module Main = struct
   end
 
   (* continuation-passing style *)
-  module V2 : S = struct
+  module _ : S = struct
     let rec sexp_of_xml xml k =
       match xml with
       | PCData x -> k (Atom x)

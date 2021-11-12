@@ -1,10 +1,5 @@
 open Core
 
-include struct
-  module Command = Command
-  module Extended_list = List
-end
-
 let contains xs x =
   try
     ignore (List.find_exn xs ~f:(fun y -> String.equal x y));

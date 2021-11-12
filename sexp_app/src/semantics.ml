@@ -9,7 +9,6 @@ include struct
   module Query = Query
   module Template = Template
   module Unroll = Unroll
-  module Var = Var
 end
 
 type 'sexp query_meaning = 'sexp -> Sexp.t Lazy_list.t
@@ -62,7 +61,7 @@ let restructure acc s ~nil ~of_list =
 ;;
 
 (* the reference implementation *)
-module Vanilla : S = struct
+module _ : S = struct
   let nil : Sexp.t Lazy_list.t = Lazy_list.empty ()
   let cons = Lazy_list.cons
   let one s = Lazy_list.cons s nil
@@ -317,7 +316,7 @@ module Vanilla : S = struct
 end
 
 (* conversion of [Vanilla] to continuation-passing style *)
-module Cont : S = struct
+module _ : S = struct
   module Internal : sig
     open Syntax
 
@@ -648,7 +647,7 @@ module Cont : S = struct
 end
 
 (* monomorphization of [Cont] b/c it makes the next translation easier *)
-module Mono : S = struct
+module _ : S = struct
   module Internal : sig
     open Syntax
 
