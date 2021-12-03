@@ -1,5 +1,5 @@
 (library (name sexp_app_pattern) (public_name sexp.sexp_app_pattern)
- (libraries core_kernel.core re2 sexplib str) (preprocess (pps ppx_jane)))
+ (libraries core re2 sexplib str) (preprocess (pps ppx_jane)))
 
 (ocamllex lexer)
 
