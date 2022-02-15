@@ -1,4 +1,5 @@
 opam-version: "2.0"
+version: "v0.15.0"
 maintainer: "Jane Street developers"
 authors: ["Jane Street Group, LLC"]
 homepage: "https://github.com/janestreet/sexp"
@@ -10,20 +11,20 @@ build: [
   ["dune" "build" "-p" name "-j" jobs]
 ]
 depends: [
-  "ocaml" {>= "4.08.0"}
-  "async"
-  "core"
-  "core_kernel"
-  "core_unix"
-  "csvfields"
-  "jsonaf"
-  "ppx_jane"
-  "re2"
-  "sexp_diff"
-  "sexp_macro"
-  "sexp_pretty"
-  "sexp_select"
-  "sexplib"
+  "ocaml"       {>= "4.08.0"}
+  "async"       {>= "v0.15" & < "v0.16"}
+  "core"        {>= "v0.15" & < "v0.16"}
+  "core_kernel" {>= "v0.15" & < "v0.16"}
+  "core_unix"   {>= "v0.15" & < "v0.16"}
+  "csvfields"   {>= "v0.15" & < "v0.16"}
+  "jsonaf"      {>= "v0.15" & < "v0.16"}
+  "ppx_jane"    {>= "v0.15" & < "v0.16"}
+  "re2"         {>= "v0.15" & < "v0.16"}
+  "sexp_diff"   {>= "v0.15" & < "v0.16"}
+  "sexp_macro"  {>= "v0.15" & < "v0.16"}
+  "sexp_pretty" {>= "v0.15" & < "v0.16"}
+  "sexp_select" {>= "v0.15" & < "v0.16"}
+  "sexplib"     {>= "v0.15" & < "v0.16"}
   "dune"        {>= "2.0.0"}
 ]
 synopsis: "S-expression swiss knife"
