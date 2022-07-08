@@ -501,7 +501,7 @@ let replace' ~query ~f sexp =
     in
     let replacements = f captures_by_label in
     let replacement_targets_and_replacements =
-      String.Map.to_alist replacements
+      Map.to_alist (replacements : _ String.Map.t)
       |> List.map ~f:(fun (label, replacements) ->
         match Map.find capture_label_to_idx_map label with
         | None ->

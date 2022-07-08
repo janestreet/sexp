@@ -321,7 +321,6 @@ module _ : S = struct
     open Syntax
 
     type ('a, 'r) seq = ('a, 'r) cont -> 'r
-
     and ('a, 'r) cont = ('a, 'r) node -> 'r
 
     and ('a, 'r) node =
@@ -340,7 +339,6 @@ module _ : S = struct
       -> 'r
   end = struct
     type ('a, 'r) seq = ('a, 'r) cont -> 'r
-
     and ('a, 'r) cont = ('a, 'r) node -> 'r
 
     and ('a, 'r) node =
@@ -652,7 +650,6 @@ module _ : S = struct
     open Syntax
 
     type 'r seq = 'r cont -> 'r
-
     and 'r cont = 'r node -> 'r
 
     and 'r node =
@@ -671,7 +668,6 @@ module _ : S = struct
       -> 'r
   end = struct
     type 'r seq = 'r cont -> 'r
-
     and 'r cont = 'r node -> 'r
 
     and 'r node =
@@ -679,7 +675,6 @@ module _ : S = struct
       | Cons of Sexp.t * 'r seq
 
     type 'r seq' = 'r cont' -> 'r
-
     and 'r cont' = 'r node' -> 'r
 
     and 'r node' =

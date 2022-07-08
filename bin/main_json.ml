@@ -15,6 +15,16 @@ module El = struct
   [@@deriving compare]
 end
 
+let parse_float_exn : string -> float =
+  fun s ->
+  if String.length s > 1 && String.equal (String.prefix s 1) "0"
+  then
+    failwith
+      "not a float - leading zeros should be treated as strings when converting to json \
+       because they are not valid json numbers"
+  else Float.of_string s
+;;
+
 let parse_json_value : Sexp.t -> Jsonaf.t =
   let try_to_parse f s =
     try Some (f s) with
@@ -26,8 +36,11 @@ let parse_json_value : Sexp.t -> Jsonaf.t =
      | Some true -> `True
      | Some false -> `False
      | None ->
-       (match try_to_parse Float.of_string s with
-        | Some _ -> `Number s
+       (match try_to_parse parse_float_exn s with
+        | Some _ ->
+          (* sometimes numbers contain underscores, but this is not allowed by some JSON
+             things (e.g. jq) *)
+          `Number (String.filter s ~f:(fun c -> not (Char.equal c '_')))
         | None -> `String s))
   | Sexp.List [] -> `Null
   | Sexp.List _ -> failwith "bug - every value after flatten should be an atom or nil"
