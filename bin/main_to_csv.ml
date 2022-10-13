@@ -44,8 +44,7 @@ Example
         b,3,88
         c,4,888
 |})
-    (let open Command.Let_syntax in
-     let%map_open view_atoms_as_sexps =
+    (let%map_open.Command view_atoms_as_sexps =
        flag
          "atoms-as-sexps"
          no_arg

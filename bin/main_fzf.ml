@@ -12,10 +12,9 @@ let main ~filename =
 ;;
 
 let command =
-  let open Command.Let_syntax in
   Command.async_or_error
     ~summary:"select one or more inputs sexps with [fzf --multi]"
-    [%map_open
+    [%map_open.Command
       let filename =
         anon (maybe_with_default "-" ("FILENAME" %: Filename_unix.arg_type))
       in

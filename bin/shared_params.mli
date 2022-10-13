@@ -18,3 +18,4 @@ module Machine_and_fail_on_parse_error : sig
 end
 
 val machine_and_fail_on_parse_error : Machine_and_fail_on_parse_error.t Command.Param.t
+val machine : bool Command.Param.t

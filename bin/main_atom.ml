@@ -12,38 +12,36 @@ module Escape = struct
   let command =
     Command.async
       ~summary:"Convert stdin into a sexp atom"
-      (let open Command.Let_syntax in
-       [%map_open
-         let kind =
-           choose_one
-             ~if_nothing_chosen:(Default_to Kind.Exactly_stdin)
-             [ flag
-                 "-strip-trailing-newlines"
-                 (no_arg_some Kind.Strip_trailing_newlines)
-                 ~doc:"ignore any trailing newlines."
-             ; flag
-                 "-lines"
-                 (no_arg_some Kind.Lines)
-                 ~doc:
-                   "generate and output one atom per line of input. This ignores a single \
-                    trailing newline."
-             ]
-         in
-         fun () ->
-           let open Deferred.Let_syntax in
-           let stdin = Lazy.force Reader.stdin in
-           let singleton = Deferred.map ~f:Pipe.singleton in
-           let%bind strings =
-             match kind with
-             | Exactly_stdin -> Reader.contents stdin |> singleton
-             | Strip_trailing_newlines ->
-               Reader.contents stdin
-               |> Deferred.map ~f:(String.rstrip ~drop:(Char.( = ) '\n'))
-               |> singleton
-             | Lines -> Reader.lines stdin |> return
-           in
-           Pipe.iter_without_pushback strings ~f:(fun str ->
-             str |> Sexp.Atom |> Sexp.to_string |> print_endline)])
+      [%map_open.Command
+        let kind =
+          choose_one
+            ~if_nothing_chosen:(Default_to Kind.Exactly_stdin)
+            [ flag
+                "-strip-trailing-newlines"
+                (no_arg_some Kind.Strip_trailing_newlines)
+                ~doc:"ignore any trailing newlines."
+            ; flag
+                "-lines"
+                (no_arg_some Kind.Lines)
+                ~doc:
+                  "generate and output one atom per line of input. This ignores a single \
+                   trailing newline."
+            ]
+        in
+        fun () ->
+          let stdin = Lazy.force Reader.stdin in
+          let singleton = Deferred.map ~f:Pipe.singleton in
+          let%bind strings =
+            match kind with
+            | Exactly_stdin -> Reader.contents stdin |> singleton
+            | Strip_trailing_newlines ->
+              Reader.contents stdin
+              |> Deferred.map ~f:(String.rstrip ~drop:(Char.( = ) '\n'))
+              |> singleton
+            | Lines -> Reader.lines stdin |> return
+          in
+          Pipe.iter_without_pushback strings ~f:(fun str ->
+            str |> Sexp.Atom |> Sexp.to_string |> print_endline)]
   ;;
 end
 
@@ -61,19 +59,17 @@ module Escape_command = struct
         \    echo \"((some_arg 1)(extra_args ($extra_args)))\" >config.sexp\n\
         \    run.exe -config config.sexp\n\
         \  }\n")
-      (let open Command.Let_syntax in
-       [%map_open
-         let args =
-           flag "--" ~doc:"args the command line to convert to a sexp list" escape
-         in
-         fun () ->
-           let open Deferred.Let_syntax in
-           (match args with
-            | None -> failwith "no args given to sexp unescape-command"
-            | Some args ->
-              List.iter args ~f:(fun str ->
-                str |> Sexp.Atom |> Sexp.to_string |> print_endline));
-           return ()])
+      [%map_open.Command
+        let args =
+          flag "--" ~doc:"args the command line to convert to a sexp list" escape
+        in
+        fun () ->
+          (match args with
+           | None -> failwith "no args given to sexp unescape-command"
+           | Some args ->
+             List.iter args ~f:(fun str ->
+               str |> Sexp.Atom |> Sexp.to_string |> print_endline));
+          return ()]
   ;;
 end
 
@@ -81,16 +77,15 @@ module Unescape = struct
   let command =
     Command.async
       ~summary:"Print unescaped atoms from stdin"
-      (let open Command.Let_syntax in
-       [%map_open
-         let () = return () in
-         fun () ->
-           Lazy.force Reader.stdin
-           |> Reader.read_sexps
-           |> Pipe.iter_without_pushback ~f:(function
-             | Atom atom -> print_endline atom
-             | List _ as input ->
-               Core.eprint_s [%message "Non-atom input" (input : Sexp.t)])])
+      [%map_open.Command
+        let () = return () in
+        fun () ->
+          Lazy.force Reader.stdin
+          |> Reader.read_sexps
+          |> Pipe.iter_without_pushback ~f:(function
+            | Atom atom -> print_endline atom
+            | List _ as input ->
+              Core.eprint_s [%message "Non-atom input" (input : Sexp.t)])]
   ;;
 end
 
@@ -131,32 +126,30 @@ module Unescape_command = struct
         \  args='-arg1\"foo\"-arg2\"bar\"'\n\
         \  cmd=\"command.exe $(printf \"%s\" \"$args\" | sexp atom unescape-command)\"\n\
         \  bash -c \"$cmd\"")
-      (let open Command.Let_syntax in
-       [%map_open
-         let input = Input.param in
-         fun () ->
-           let open Deferred.Let_syntax in
-           let input_pipe = Lazy.force Reader.stdin |> Reader.read_sexps in
-           match input with
-           | Sexp_lists ->
-             Pipe.iter_without_pushback input_pipe ~f:(function
-               | Sexp.Atom _ ->
-                 raise_s
-                   [%sexp
-                     "Atom encountered where a command line encoded as a sexp list was \
-                      expected."]
-               | List l ->
-                 let atoms = List.map l ~f:[%of_sexp: string] in
-                 print_endline (String.concat ~sep:" " (List.map ~f:Sys.quote atoms)))
-           | Atoms ->
-             let first = ref true in
-             let%map () =
-               Pipe.iter_without_pushback input_pipe ~f:(fun atom ->
-                 if not !first then print_string " ";
-                 first := false;
-                 print_string (Sys.quote ([%of_sexp: string] atom)))
-             in
-             print_endline ""])
+      [%map_open.Command
+        let input = Input.param in
+        fun () ->
+          let input_pipe = Lazy.force Reader.stdin |> Reader.read_sexps in
+          match input with
+          | Sexp_lists ->
+            Pipe.iter_without_pushback input_pipe ~f:(function
+              | Sexp.Atom _ ->
+                raise_s
+                  [%sexp
+                    "Atom encountered where a command line encoded as a sexp list was \
+                     expected."]
+              | List l ->
+                let atoms = List.map l ~f:[%of_sexp: string] in
+                print_endline (String.concat ~sep:" " (List.map ~f:Sys.quote atoms)))
+          | Atoms ->
+            let first = ref true in
+            let%map () =
+              Pipe.iter_without_pushback input_pipe ~f:(fun atom ->
+                if not !first then print_string " ";
+                first := false;
+                print_string (Sys.quote ([%of_sexp: string] atom)))
+            in
+            print_endline ""]
   ;;
 end
 

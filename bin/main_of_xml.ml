@@ -103,9 +103,6 @@ end
 let command =
   Command.basic
     ~summary:"convert XML from stdin into an s-expression"
-    (let open Command.Let_syntax in
-     let%map_open machine =
-       flag "machine" no_arg ~doc:" Use machine style for output (one sexp per line)"
-     in
+    (let%map_open.Command machine = Shared_params.machine in
      fun () -> Main.main ~machine)
 ;;

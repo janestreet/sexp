@@ -41,7 +41,6 @@ sexp. Transforms things that would be comments into actual data in the sexp as w
   Command.basic
     ~summary:"Sexpify an arbitrary string received via stdin."
     ~readme
-    (let open Command.Let_syntax in
-     let%map_open () = return () in
+    (let%map_open.Command () = return () in
      fun () -> main ())
 ;;

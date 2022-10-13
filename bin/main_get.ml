@@ -57,8 +57,7 @@ Examples for sexp "((a 23) (b 24) (c (2 3 5)))":
   Command.async
     ~summary:"extract parts of an s-expression"
     ~readme
-    (let open Command.Let_syntax in
-     let%map_open ignore_errors =
+    (let%map_open.Command ignore_errors =
        flag "ignore-errors" no_arg ~doc:" ignore errors and print whatever is found"
      and sexp_paths = anon ("\"SEXP-PATH(,SEXP-PATH)*\"" %: string) in
      fun () -> main ~ignore_errors ~sexp_paths ())

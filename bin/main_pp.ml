@@ -9,8 +9,7 @@ let command =
     ~readme:(fun () ->
       "Use pre-defined styles or load a custom style from a file."
       ^ "\nYou can use -p to print out one of the predefined styles and customize it.")
-    (let open Command.Let_syntax in
-     let%map_open config_file =
+    (let%map_open.Command config_file =
        flag
          "-c"
          (optional Filename_unix.arg_type)

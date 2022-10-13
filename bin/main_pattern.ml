@@ -11,8 +11,7 @@ let load_pattern source =
 ;;
 
 let wrap_mode_param =
-  let open Command.Let_syntax in
-  let%map_open wrap_singletons =
+  let%map_open.Command wrap_singletons =
     flag
       "wrap-singletons"
       no_arg
@@ -32,11 +31,10 @@ let wrap_mode_param =
 ;;
 
 let pat_query_command =
-  let open Command.Let_syntax in
   Command.basic
     ~summary:"query for parts of an s-expression via regex-like pattern"
     ~readme:(fun () -> Sexp_app_pattern.Help.pat_query_readme)
-    (let%map_open () = return ()
+    (let%map_open.Command () = return ()
      and () =
        flag
          "examples"
@@ -45,7 +43,7 @@ let pat_query_command =
             Core.exit 0))
          ~doc:" Print a longer explanation with examples"
      and source, inputs, labeled_default =
-       let%map_open file =
+       let%map_open.Command file =
          flag
            "pattern-file"
            (optional Filename_unix.arg_type)
@@ -227,11 +225,10 @@ Effect:
 ;;
 
 let pat_change_command =
-  let open Command.Let_syntax in
   Command.basic
     ~summary:"change parts of an s-expression via regex-like pattern"
     ~readme:pat_change_readme
-    (let%map_open () = return ()
+    (let%map_open.Command () = return ()
      and () =
        flag
          "examples"
@@ -241,7 +238,7 @@ let pat_change_command =
          ~doc:" Print a longer explanation with examples"
      and { machine; fail_on_parse_error } = Shared_params.machine_and_fail_on_parse_error
      and source, files =
-       let%map_open x =
+       let%map_open.Command x =
          anon
            (maybe
               (t2 ("PATTERN" %: string) (sequence ("FILE" %: Filename_unix.arg_type))))

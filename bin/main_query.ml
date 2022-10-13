@@ -50,8 +50,7 @@ let query_command =
   Command.basic
     ~summary:"query an s-expression"
     ~readme:(fun () -> Grammar.grammar_for_readme ())
-    (let open Command.Let_syntax in
-     let%map_open () =
+    (let%map_open.Command () =
        flag
          "examples"
          (no_arg_abort ~exit:(fun () ->
@@ -80,7 +79,7 @@ let query_command =
             exit 0))
          ~doc:" Print a sexp-query quine (outputs itself on any input sexp)"
      and source, inputs, labeled_default =
-       let%map_open file =
+       let%map_open.Command file =
          flag
            "file"
            (optional Filename_unix.arg_type)
@@ -95,7 +94,10 @@ let query_command =
            (maybe
               (t2 ("QUERY" %: query_arg) (sequence ("FILE" %: Filename_unix.arg_type))))
        and stdin_label =
-         flag "stdin-label" (optional string) ~doc:"LABEL override default label for stdin"
+         flag
+           "stdin-label"
+           (optional string)
+           ~doc:"LABEL override default label for stdin"
        in
        (* switch from command line parsing to argument processing *)
        let query, files =
@@ -118,7 +120,10 @@ let query_command =
        in
        source, inputs, labeled_default
      and group =
-       flag "group" no_arg ~doc:" Group incoming sequence of sexps into a single list sexp"
+       flag
+         "group"
+         no_arg
+         ~doc:" Group incoming sequence of sexps into a single list sexp"
      and { machine; fail_on_parse_error } = Shared_params.machine_and_fail_on_parse_error
      and { output_mode; allow_empty_output; labeled } = Shared_params.query_args in
      fun () ->
@@ -167,8 +172,7 @@ let change_command_body ~files ~stdin_label ~source ~machine ~fail_on_parse_erro
 let change_command =
   Command.basic
     ~summary:"transform an s-expression"
-    (let open Command.Let_syntax in
-     let%map_open () =
+    (let%map_open.Command () =
        flag
          "formal-semantics"
          (no_arg_abort ~exit:(fun () ->
@@ -191,7 +195,7 @@ let change_command =
          ~doc:" Show grammar for change expressions"
      and { machine; fail_on_parse_error } = Shared_params.machine_and_fail_on_parse_error
      and source, files =
-       let%map_open x =
+       let%map_open.Command x =
          anon
            (maybe
               (t2 ("QUERY" %: change_arg) (sequence ("FILE" %: Filename_unix.arg_type))))
@@ -253,8 +257,7 @@ $ cat /tmp/sexp | sexp rewrite '(fruit $FRUIT)' '(snack $FRUIT)'
 
 
 See `sexp change -examples` for more information.|})
-    (let open Command.Let_syntax in
-     let%map_open { machine; fail_on_parse_error } =
+    (let%map_open.Command { machine; fail_on_parse_error } =
        Shared_params.machine_and_fail_on_parse_error
      and source_a = anon ("A" %: pattern_arg)
      and source_b = anon ("B" %: pattern_arg)

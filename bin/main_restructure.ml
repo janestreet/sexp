@@ -33,8 +33,7 @@ let command =
   Command.basic
     ~summary:"recover structure of an s-expression"
     ~readme
-    (let open Command.Let_syntax in
-     let%map_open argv =
+    (let%map_open.Command argv =
        anon
          (maybe
             (t2
@@ -50,5 +49,6 @@ let command =
          In_channel.with_file infile ~f:(fun cin ->
            match outfile with
            | None -> main cin cout
-           | Some outfile -> Out_channel.with_file outfile ~f:(fun cout -> main cin cout)))
+           | Some outfile ->
+             Out_channel.with_file outfile ~f:(fun cout -> main cin cout)))
 ;;

@@ -115,7 +115,7 @@ let to_json () =
   | exception End_of_file -> ()
 ;;
 
-let of_json () =
+let of_json ~machine =
   let module Conv = Sexplib.Conv in
   let rec convert : Jsonaf.t -> Sexp.t = function
     | `Null -> Conv.sexp_of_unit ()
@@ -130,7 +130,7 @@ let of_json () =
   in
   let parser_state =
     (* Print as we go so the incremental work can be gc'd  *)
-    Angstrom.lift (convert >> print_s) Jsonaf.Parser.t
+    Angstrom.lift (convert >> print_s ?mach:(Option.some_if machine ())) Jsonaf.Parser.t
     |> Angstrom.many
     |> Angstrom.map ~f:(fun (_ : unit list) -> ())
     |> Angstrom.Buffered.parse
@@ -148,15 +148,13 @@ let of_json () =
 let to_json_command =
   Command.basic
     ~summary:"Convert sexps on stdin to json"
-    (let open Command.Let_syntax in
-     let%map_open () = return () in
+    (let%map_open.Command () = return () in
      fun () -> to_json ())
 ;;
 
 let of_json_command =
   Command.basic
     ~summary:"Convert json on stdin to sexps"
-    (let open Command.Let_syntax in
-     let%map_open () = return () in
-     fun () -> of_json ())
+    (let%map_open.Command machine = Shared_params.machine in
+     fun () -> of_json ~machine)
 ;;

@@ -25,8 +25,7 @@ let rec assemble () =
 let flatten_command =
   Command.basic
     ~summary:"Flatten a list of sexp into its parts.  Each part on its own line."
-    (let open Command.Let_syntax in
-     let%map_open () = return () in
+    (let%map_open.Command () = return () in
      fun () -> flatten ())
 ;;
 
@@ -34,7 +33,6 @@ let assemble_command =
   Command.basic
     ~summary:
       "Assemble a lists of parts into sexps.  Sexp part lists are separated by newlines."
-    (let open Command.Let_syntax in
-     let%map_open () = return () in
+    (let%map_open.Command () = return () in
      fun () -> assemble ())
 ;;

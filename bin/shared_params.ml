@@ -9,9 +9,8 @@ module Query_args = struct
 end
 
 let query_args =
-  let open Command.Let_syntax in
-  let%map_open output_mode =
-    let%map_open quiet =
+  let%map_open.Command output_mode =
+    let%map_open.Command quiet =
       flag
         "quiet"
         no_arg
@@ -25,7 +24,7 @@ let query_args =
   and allow_empty_output =
     flag "allow-empty-output" no_arg ~doc:" Do not fail even if no match is found"
   and labeled =
-    let%map_open label =
+    let%map_open.Command label =
       flag "label" no_arg ~doc:" pair with filenames (override default behavior)"
     and no_label =
       flag
@@ -49,10 +48,13 @@ module Machine_and_fail_on_parse_error = struct
     }
 end
 
+let machine =
+  let open Command.Param in
+  flag "machine" no_arg ~doc:" Use machine style for output (one sexp per line)"
+;;
+
 let machine_and_fail_on_parse_error =
-  let open Command.Let_syntax in
-  let%map_open machine =
-    flag "machine" no_arg ~doc:" Use machine style for output (one sexp per line)"
+  let%map_open.Command machine = machine
   and fail_on_parse_error =
     flag
       "fail-on-parse-error"

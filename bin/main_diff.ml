@@ -37,8 +37,7 @@ module Display_function = struct
   ;;
 
   let flags =
-    let open Command.Let_syntax in
-    let%map_open () = return ()
+    let%map_open.Command () = return ()
     and display_as_plain_string =
       flag "plain" no_arg ~doc:" display as plain string instead of ANSI colors"
     and collapse_threshold =
@@ -103,8 +102,7 @@ the -for-patch flag disables this behavior.
 
 It also exists non-zero (with exit code 1) if either sexp is malformed.
 |})
-    (let open Command.Let_syntax in
-     let%map_open file1, file2 =
+    (let%map_open.Command file1, file2 =
        anon (t2 ("FILE1" %: Filename_unix.arg_type) ("FILE2" %: Filename_unix.arg_type))
      and mode = Diff_mode.flags
      and expand_macros = expand_macros_flag
@@ -112,7 +110,6 @@ It also exists non-zero (with exit code 1) if either sexp is malformed.
      fun () ->
        if expand_macros && multiple_sexps_in_each_file
        then failwith "Incompatible flags -expand-macros and -multiple-sexps-in-each-file";
-       let open Deferred.Let_syntax in
        let%bind original = load file1 ~expand_macros ~multiple_sexps_in_each_file in
        let%bind updated = load file2 ~expand_macros ~multiple_sexps_in_each_file in
        let diff = Sexp_diff.Algo.diff ~original ~updated () in
@@ -141,15 +138,13 @@ The resulting sexp is printed to stdout.
 
 DIFF-FILE should have the same format as that produced by [sexp diff -for-patch].
 |})
-    (let open Command.Let_syntax in
-     let%map_open diff_file, file =
+    (let%map_open.Command diff_file, file =
        anon
          (t2
             ("DIFF-FILE" %: Filename_unix.arg_type)
             (maybe_with_default "/dev/stdin" ("FILE" %: Filename_unix.arg_type)))
      and expand_macros = expand_macros_flag in
      fun () ->
-       let open Deferred.Let_syntax in
        let%bind diff =
          load diff_file ~expand_macros ~multiple_sexps_in_each_file:false
          >>| Sexp_diff.Diff.t_of_sexp

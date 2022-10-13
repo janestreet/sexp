@@ -119,18 +119,14 @@ let remove_duplicates_flag =
 
 let mach_flag =
   let open Command.Param in
-  flag
-    ~doc:" print machine-style sexp output"
-    "machine"
-    (map_flag no_arg ~f:(fun mach ->
-       if mach then Sexp.to_string_mach else fun sexp -> Sexp.to_string_hum sexp))
+  map Shared_params.machine ~f:(fun mach ->
+    if mach then Sexp.to_string_mach else fun sexp -> Sexp.to_string_hum sexp)
 ;;
 
 let command =
   Command.async
     ~summary:"Use CSS-style selectors to traverse sexp trees"
-    (let open Command.Let_syntax in
-     let%map_open () = Test_and_doc.readme_flag ()
+    (let%map_open.Command () = Test_and_doc.readme_flag ()
      and program = anon ("program" %: string)
      and sexp_to_string = mach_flag
      and maybe_sexp_string = anon (maybe ("sexp" %: string))
@@ -152,8 +148,7 @@ let multi_command =
     ~summary:
       "like [sexp select], but allowing multiple programs to be passed, and grouping \
        together output from each input sexp"
-    (let open Command.Let_syntax in
-     let%map_open () = Test_and_doc.readme_flag ()
+    (let%map_open.Command () = Test_and_doc.readme_flag ()
      and labeled =
        flag "labeled" no_arg ~doc:" label each match with the PROGRAM that matched it"
      and sexp_to_string = mach_flag

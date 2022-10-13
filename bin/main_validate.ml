@@ -10,8 +10,7 @@ let execute query =
 let command =
   Command.basic
     ~summary:"validate a sequence of s-expressions on stdin"
-    (let open Command.Let_syntax in
-     let%map_open () = return () in
+    (let%map_open.Command () = return () in
      fun () ->
        let perform_query sexp_ext ~on_result =
          let lazy_results = Sexp_app.Semantics.query' Sexp_app.Syntax.This sexp_ext in

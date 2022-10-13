@@ -7,8 +7,7 @@ module Mode = struct
     | Print_included_files
 
   let flags =
-    let open Command.Let_syntax in
-    let%map_open only_print_included_files =
+    let%map_open.Command only_print_included_files =
       flag
         "only-print-loaded-files"
         no_arg
@@ -41,8 +40,7 @@ let command =
   Command.basic
     ~summary:"resolve macros in a sexp"
     ~readme
-    (let open Command.Let_syntax in
-     let%map_open mode = Mode.flags
+    (let%map_open.Command mode = Mode.flags
      and infile, maybe_cout =
        anon
          (t2
