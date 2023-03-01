@@ -36,12 +36,13 @@ module Escape = struct
             | Exactly_stdin -> Reader.contents stdin |> singleton
             | Strip_trailing_newlines ->
               Reader.contents stdin
-              |> Deferred.map ~f:(String.rstrip ~drop:(Char.( = ) '\n'))
+              |> Deferred.map ~f:(fun s -> String.rstrip s ~drop:(Char.( = ) '\n'))
               |> singleton
             | Lines -> Reader.lines stdin |> return
           in
           Pipe.iter_without_pushback strings ~f:(fun str ->
             str |> Sexp.Atom |> Sexp.to_string |> print_endline)]
+      ~behave_nicely_in_pipeline:false
   ;;
 end
 
@@ -70,6 +71,7 @@ module Escape_command = struct
              List.iter args ~f:(fun str ->
                str |> Sexp.Atom |> Sexp.to_string |> print_endline));
           return ()]
+      ~behave_nicely_in_pipeline:false
   ;;
 end
 
@@ -86,6 +88,7 @@ module Unescape = struct
             | Atom atom -> print_endline atom
             | List _ as input ->
               Core.eprint_s [%message "Non-atom input" (input : Sexp.t)])]
+      ~behave_nicely_in_pipeline:false
   ;;
 end
 
@@ -150,6 +153,7 @@ module Unescape_command = struct
                 print_string (Sys.quote ([%of_sexp: string] atom)))
             in
             print_endline ""]
+      ~behave_nicely_in_pipeline:false
   ;;
 end
 

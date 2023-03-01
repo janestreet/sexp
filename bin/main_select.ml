@@ -141,7 +141,9 @@ let command =
          List.iter
            (maybe_remove_duplicate_outputs (Sexp_select.select program sexp))
            ~f:(fun answer -> printf "%s\n%!" (sexp_to_string answer))))
+    ~behave_nicely_in_pipeline:false
 ;;
+
 
 let multi_command =
   Command.async
@@ -172,4 +174,5 @@ let multi_command =
          with
          | [] -> ()
          | sexps -> printf "%s\n%!" (sexp_to_string ([%sexp_of: Sexp.t list] sexps))))
+    ~behave_nicely_in_pipeline:false
 ;;

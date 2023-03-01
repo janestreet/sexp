@@ -15,33 +15,81 @@ module El = struct
   [@@deriving compare]
 end
 
-let parse_float_exn : string -> float =
-  fun s ->
-  if String.length s > 1 && String.equal (String.prefix s 1) "0"
-  then
-    failwith
-      "not a float - leading zeros should be treated as strings when converting to json \
-       because they are not valid json numbers"
-  else Float.of_string s
+(* When converting a sexp to JSON, we want to convert things that look like numbers
+   to _valid_ JSON, and, critically, we also don't want to lose any information.
+   (Idempotent sexp -> json -> sexp round-tripping seems like a desirable property.)
+   It turns out this is rather tricky.
+
+   OCaml and JSON have different grammars for numbers. The set of valid OCaml number
+   literals is a strict superset of valid JSON number literals. Examples (not guaranteed
+   to be exhaustive) of features supported in OCaml, but not in JSON:
+   - Hex, octal, and binary literals, e.g., 0xc0de, 0o1357, or 0b01001010
+   - Leading '+', e.g., +10
+   - Multiple leading '0's, e.g., 007
+   - Underscores for readability, e.g., 8_675_309
+
+   In order to avoid losing information, even if something looks like a number in OCaml,
+   we shouldn't convert it as a similar looking string that would also parse to the same
+   number (e.g., 007 -> 7). This is bad because not everything that looks like a number is
+   a number. Some examples include:
+   - Any sort of number/account id that has a standard format, e.g. 12 digit bank account
+     numbers may start with a 0.
+   - Command line arguments may start with a '+' or '-' for specifying relative ranges
+     rather than absolute values
+
+   Therefore, in order to make sure we produce valid JSON, we will only convert atoms that
+   are already valid JSON numbers according to its spec [1], which we'll do by testing the
+   string against a straightforward regex, and we will serialize those strings without any
+   modifications...
+
+   ... with one exception: since we very frequently use underscores for readability in
+   larger numbers, we will convert strings-that-look-like-numbers-with-underscores to
+   JSON numbers by stripping out the underscores.
+
+   OCaml is very generous in that it accepts any number of underscores anywhere in a
+   number, e.g., "_-__1_.__2_e__+_3_4" is valid floating point literal. Conceivably, we
+   could be less accepting than OCaml, and only support single occurrences of an
+   underscore _between_ numbers, so things like "1_000" and "1234_5678" would still be
+   converted to numbers, but not things like "_1", "2_", and "3__4". (Only allowing
+   underscores every only every 3 numbers, something checked by ppx_js_style, is possible
+   too, but it would make the regex more complicated, and isn't even correct; other
+   cultures/situations don't always put separators as thousands/milli separators.) There's
+   also a standard of using a double underscore to signify the "decimal point" in an
+   integer that really represents a fixed point number. Ultimately there's too much gray
+   area here, so we'll simply accept underscores anywhere like OCaml does.
+
+   [1]: https://www.json.org/json-en.html
+*)
+
+(* regex based on diagram on https://www.json.org/json-en.html, but also with support
+   for underscores *)
+let json_number_with_underscores_re =
+  Re2.create_exn
+    ~options:{ Re2.Options.default with never_capture = true }
+    ("^"
+     (* start of string *)
+     ^ "(_*-)?"
+     (* negative numbers start with '-' *)
+     ^ "(_*0_*"
+     (* integer part is either a 0 *)
+     ^ "|_*[1-9](\\d|_)*)"
+     (* or 1-9 followed by any digits *)
+     ^ "(\\._*\\d(\\d|_)*)?"
+     (* decimal part, '.' then at least one digit, is optional *)
+     ^ "(_*[eE]_*[-+]?_*\\d(\\d|_)*)?"
+     (* exponent part, also optional *)
+     ^ "$" (* end of string *))
 ;;
 
-let parse_json_value : Sexp.t -> Jsonaf.t =
-  let try_to_parse f s =
-    try Some (f s) with
-    | _ -> None
-  in
-  function
+let parse_json_value : Sexp.t -> Jsonaf.t = function
   | Sexp.Atom s ->
-    (match try_to_parse Bool.of_string s with
-     | Some true -> `True
-     | Some false -> `False
-     | None ->
-       (match try_to_parse parse_float_exn s with
-        | Some _ ->
-          (* sometimes numbers contain underscores, but this is not allowed by some JSON
-             things (e.g. jq) *)
-          `Number (String.filter s ~f:(fun c -> not (Char.equal c '_')))
-        | None -> `String s))
+    (match Bool.of_string s with
+     | true -> `True
+     | false -> `False
+     | exception _ ->
+       if Re2.matches json_number_with_underscores_re s
+       then `Number (String.filter s ~f:(fun c -> not (Char.equal c '_')))
+       else `String s)
   | Sexp.List [] -> `Null
   | Sexp.List _ -> failwith "bug - every value after flatten should be an atom or nil"
 ;;

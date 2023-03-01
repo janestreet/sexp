@@ -1,6 +1,6 @@
 {
 open Core
-open Caml.Lexing
+open Stdlib.Lexing
 
 module Token = struct
   type t = Internal_parser.token =
@@ -47,14 +47,14 @@ let char_for_backslash = function
 
 let lf = '\010'
 
-let ascii_0 = Caml.Char.code '0'
-let ascii_a = Caml.Char.code 'a'
-let ascii_A = Caml.Char.code 'A'
+let ascii_0 = Stdlib.Char.code '0'
+let ascii_a = Stdlib.Char.code 'a'
+let ascii_A = Stdlib.Char.code 'A'
 
 let dec_code c1 c2 c3 =
-   100 * (Caml.Char.code c1 - ascii_0)
-  + 10 * (Caml.Char.code c2 - ascii_0)
-  +      (Caml.Char.code c3 - ascii_0)
+   100 * (Stdlib.Char.code c1 - ascii_0)
+  + 10 * (Stdlib.Char.code c2 - ascii_0)
+  +      (Stdlib.Char.code c3 - ascii_0)
 
 let hex_offset = function
   | 'a' .. 'f' -> ascii_a - 10
@@ -62,8 +62,8 @@ let hex_offset = function
   | _          -> ascii_0
 
 let hex_code c1 c2 =
-  let v1 = Caml.Char.code c1 - hex_offset c1 in
-  let v2 = Caml.Char.code c2 - hex_offset c2 in
+  let v1 = Stdlib.Char.code c1 - hex_offset c1 in
+  let v2 = Stdlib.Char.code c2 - hex_offset c2 in
   16 * v1 + v2
 
 let found_newline ({ lex_curr_p; _ } as lexbuf) diff =
@@ -191,13 +191,13 @@ and scan_string buf start = parse
               pos_lnum (pos_cnum - pos_bol - 3)
               c1 c2 c3 in
           failwith msg);
-        Buffer.add_char buf (Caml.Char.chr v);
+        Buffer.add_char buf (Stdlib.Char.chr v);
         scan_string buf start lexbuf
       }
   | '\\' 'x' (hexdigit as c1) (hexdigit as c2)
       {
         let v = hex_code c1 c2 in
-        Buffer.add_char buf (Caml.Char.chr v);
+        Buffer.add_char buf (Stdlib.Char.chr v);
         scan_string buf start lexbuf
       }
   | '\\' (_ as c)

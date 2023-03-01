@@ -19,4 +19,5 @@ let command =
         anon (maybe_with_default "-" ("FILENAME" %: Filename_unix.arg_type))
       in
       fun () -> main ~filename]
+    ~behave_nicely_in_pipeline:false
 ;;

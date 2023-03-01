@@ -127,7 +127,9 @@ It also exists non-zero (with exit code 1) if either sexp is malformed.
             (* In this case, we're running for the patch output, not the comparison *)
             return ()
           | Emit_diff _ | Quiet -> exit 2))
+    ~behave_nicely_in_pipeline:false
 ;;
+
 
 let patch_command =
   Command.async
@@ -151,4 +153,5 @@ DIFF-FILE should have the same format as that produced by [sexp diff -for-patch]
        in
        let%map file = load file ~expand_macros ~multiple_sexps_in_each_file:false in
        Sexp_diff.Diff.apply_exn diff file |> print_s)
+    ~behave_nicely_in_pipeline:false
 ;;

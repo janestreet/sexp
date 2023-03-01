@@ -61,4 +61,5 @@ Examples for sexp "((a 23) (b 24) (c (2 3 5)))":
        flag "ignore-errors" no_arg ~doc:" ignore errors and print whatever is found"
      and sexp_paths = anon ("\"SEXP-PATH(,SEXP-PATH)*\"" %: string) in
      fun () -> main ~ignore_errors ~sexp_paths ())
+    ~behave_nicely_in_pipeline:false
 ;;
