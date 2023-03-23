@@ -137,9 +137,10 @@ let command =
          | None -> Reader.read_sexps (Lazy.force Reader.stdin)
          | Some x -> Pipe.singleton (Sexp.of_string x)
        in
+       let select_fn = unstage (Sexp_select.select_staged program) in
        Pipe.iter_without_pushback sexp_pipe ~f:(fun sexp ->
          List.iter
-           (maybe_remove_duplicate_outputs (Sexp_select.select program sexp))
+           (maybe_remove_duplicate_outputs (select_fn sexp))
            ~f:(fun answer -> printf "%s\n%!" (sexp_to_string answer))))
     ~behave_nicely_in_pipeline:false
 ;;
@@ -161,12 +162,16 @@ let multi_command =
          (anon (non_empty_sequence_as_pair ("program" %: string)))
      in
      fun () ->
+       let programs =
+         List.map programs ~f:(fun program ->
+           program, unstage (Sexp_select.select_staged program))
+       in
        Reader.read_sexps (Lazy.force Reader.stdin)
        |> Pipe.iter_without_pushback ~f:(fun sexp ->
          match
-           List.concat_map programs ~f:(fun program ->
+           List.concat_map programs ~f:(fun (program, select_fn) ->
              List.map
-               (maybe_remove_duplicate_outputs (Sexp_select.select program sexp))
+               (maybe_remove_duplicate_outputs (select_fn sexp))
                ~f:(fun answer ->
                  if labeled
                  then [%sexp_of: string * Sexp.t] (program, answer)

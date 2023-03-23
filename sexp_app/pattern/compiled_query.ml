@@ -113,8 +113,7 @@ let create (type a) (uncompiled_query : Query.t) (output_method : a Output_metho
           if not (Hash_set.mem used_labels c)
           then
             failwithf
-              "Output or replacement expression uses capture not present in pattern: \
-               %s"
+              "Output or replacement expression uses capture not present in pattern: %s"
               c
               ()));
       pick_indices_for_named_and_number_captures ()

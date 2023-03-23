@@ -1,5 +1,3 @@
 (executables (names main) (public_names sexp)
- (libraries async core core_kernel.composition_infix sexp_app sexp_diff
-  core_unix.command_unix core_unix.filename_unix sexp_app_pattern sexp_macro
-  sexp_pretty sexp_select sexplib jsonaf csvfields.xml-light)
- (flags :standard -g) (preprocess (pps ppx_jane)))
+ (libraries sexp_cmds async core core_unix.command_unix) (flags :standard -g)
+ (preprocess (pps ppx_jane)))

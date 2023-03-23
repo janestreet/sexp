@@ -1,0 +1,3 @@
+(executables (names sexp_sort) (public_names sexp-sort)
+ (libraries sexp_cmds core_unix.command_unix) (flags :standard -g)
+ (preprocess (pps ppx_jane)))

@@ -194,7 +194,6 @@ let transform_string s =
 open String.Replace_polymorphic_compare
 
 let unchanged s = transform_string s = s
-
 let%test _ = unchanged ""
 let%test _ = unchanged "abc"
 let%test _ = unchanged "()"

@@ -216,8 +216,7 @@ module Make_engine (S : Sexplike) = struct
                           else (
                             found_a_match := true;
                             loop_subqueries subquery_tail subsexps ~f));
-                      if first_only && !found_a_match
-                      then stop_trying_to_find_a_match ());
+                      if first_only && !found_a_match then stop_trying_to_find_a_match ());
                     if optional && not !found_a_match
                     then loop_subqueries subquery_tail subsexps ~f)
               in
@@ -370,9 +369,7 @@ let iter_matches
       let format_results =
         List.concat_map formats ~f:(fun format ->
           Output_method.Format.embed_captures format ~f:(fun capture_label ->
-            let capture_idx =
-              Hashtbl.find_exn capture_label_to_idx_map capture_label
-            in
+            let capture_idx = Hashtbl.find_exn capture_label_to_idx_map capture_label in
             let capture_result =
               maybe_wrap_results ~wrap_mode ~revcapture:revcapture_buf.(capture_idx)
             in
@@ -458,9 +455,7 @@ let replace
         let replacements =
           List.concat_map formats ~f:(fun format ->
             Output_method.Format.embed_captures format ~f:(fun capture_label ->
-              let capture_idx =
-                Hashtbl.find_exn capture_label_to_idx_map capture_label
-              in
+              let capture_idx = Hashtbl.find_exn capture_label_to_idx_map capture_label in
               let revcapture =
                 List.map revcapture_buf.(capture_idx) ~f:Labeled_sexp.to_sexp
               in
@@ -506,8 +501,8 @@ let replace' ~query ~f sexp =
         match Map.find capture_label_to_idx_map label with
         | None ->
           failwithf
-            "In [Pattern.Engine.replace'], [f] returned a map of replacements \
-             that contains a key that is not the label of a capture: %s"
+            "In [Pattern.Engine.replace'], [f] returned a map of replacements that \
+             contains a key that is not the label of a capture: %s"
             label
             ()
         | Some idx ->
@@ -515,8 +510,8 @@ let replace' ~query ~f sexp =
           if List.is_empty targets && not (List.is_empty replacements)
           then
             failwithf
-              "In [Pattern.Engine.replace'], [f] returned a map of replacements \
-               that contains a key that for a label with zero captures: %s"
+              "In [Pattern.Engine.replace'], [f] returned a map of replacements that \
+               contains a key that for a label with zero captures: %s"
               label
               ();
           targets, replacements)
@@ -527,8 +522,7 @@ let replace' ~query ~f sexp =
     then
       List.iter replacement_targets_and_replacements ~f:(fun (targets, replacements) ->
         if not (List.is_empty targets)
-        then
-          replace_sequence_with ~planned_replacements ~targets ~desired:replacements));
+        then replace_sequence_with ~planned_replacements ~targets ~desired:replacements));
   (* Second pass, perform all replacements *)
   Labeled_sexp.to_sexp_with_replacements sexp ~f:(fun id ->
     match Hashtbl.find planned_replacements id with

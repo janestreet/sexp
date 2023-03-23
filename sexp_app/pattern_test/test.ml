@@ -1177,7 +1177,6 @@ let%expect_test _ =
     ((foo foo)(bar))
     ((foo)(bar))
     ((foo)(bar)) |}]
-
 [@@@ocamlformat "enable"]
 
 let%expect_test _ =
@@ -1731,9 +1730,10 @@ let%expect_test _ =
     :((a a a a a b b b b b)(c c c c c))
     :((b b b b b)(c c c c c))
     :((a a a a a b b b b)b) |}]
-;;
+;;(* Simple wrapping test for direct output, list output, record output *)
 
-(* Simple wrapping test for direct output, list output, record output *)
+
+
 [@@@ocamlformat "disable"]
 
 let%test_module "Simple wrapping test for direct output" = (module struct
@@ -1891,7 +1891,6 @@ let%test_module "Simple wrapping test for record output" = (module struct
     ((a())(z(x w))) |}]
 
 end)
-
 [@@@ocamlformat "enable"]
 
 let%expect_test _ =
@@ -2096,10 +2095,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   show_raise (fun () ->
-    run_single
-      ~wrap_mode:(Output (T (Single_capture Wrap_non_singletons)))
-      "%. %."
-      "abc");
+    run_single ~wrap_mode:(Output (T (Single_capture Wrap_non_singletons))) "%. %." "abc");
   [%expect
     {|
     :(raised (

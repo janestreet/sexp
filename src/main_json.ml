@@ -137,8 +137,7 @@ let rec assemble_to_json (l : (Path.t * Sexp.t) list) =
       List.map groups ~f:(fun l ->
         match List.hd_exn l with
         | Pos _ :: _, _ -> Assemble_to_json.Array [ assemble_to_json (one_deeper l) ]
-        | Rec n :: _, _ ->
-          Assemble_to_json.Object [ n, assemble_to_json (one_deeper l) ]
+        | Rec n :: _, _ -> Assemble_to_json.Object [ n, assemble_to_json (one_deeper l) ]
         | _ -> assert false)
     in
     List.fold parts ~init:Assemble_to_json.None ~f:Assemble_to_json.combine
