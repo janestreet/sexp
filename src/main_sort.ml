@@ -1,16 +1,7 @@
 open Core
 open Async
-open Sexp_app
-module Sexp_path = Sexplib.Path
 
-(* We want to include the original flag (name + value) in our error messages.
-   Flag values often include whitespace, so they need to be quoted. [Sys.quote]
-   will add single quotes, but then to separate the provided flag from the
-   rest of the error message, we will wrap it in double quotes. We won't escape
-   any double quotes inside the flag value because 1) this won't happen that
-   often, 2) the error message isn't getting interpreted so it's fine to not
-   be escaped, and 3) because it makes it harder to read. *)
-let rebuild_flag name value = name ^ " " ^ Sys.quote value
+(* Helper for error messages. *)
 let quoted flag = "\"" ^ flag ^ "\""
 
 (* Command does some automatic handling of exceptions and prints out errors
@@ -19,11 +10,6 @@ let quoted flag = "\"" ^ flag ^ "\""
    out the message and immediately exits to avoid this. *)
 let cmd_error msg =
   Core.prerr_endline msg;
-  Core.exit 1
-;;
-
-let cmd_error_s msg sexp =
-  Core.prerr_endline (msg ^ "\n  " ^ Sexp.to_string_hum ~indent:2 sexp);
   Core.exit 1
 ;;
 
@@ -82,7 +68,7 @@ module Compare_behavior = struct
     }
   ;;
 
-  let from_modifiers modifiers flag =
+  let from_modifiers modifiers flag_and_arg =
     let numeric = ref None in
     let natural = ref None in
     let case_insensitive = ref None in
@@ -98,16 +84,16 @@ module Compare_behavior = struct
       | "i" -> case_insensitive := Some true
       | unknown ->
         cmd_error
-          ("Unknown sort behavior modifier " ^ quoted unknown ^ " in " ^ quoted flag));
+          ("Unknown sort behavior modifier " ^ quoted unknown ^ " in " ^ flag_and_arg));
     (* These checks are nearly the same as the ones above in in from_top_level_flags,
        but we print out slightly different error messages, so duplicate the logic here. *)
     if Option.value !numeric ~default:false
     then
       if Option.is_some !case_insensitive
       then
-        cmd_error ("Cannot specify both \"/num\" and \"/s\" or \"/i\" in " ^ quoted flag)
+        cmd_error ("Cannot specify both \"/num\" and \"/s\" or \"/i\" in " ^ flag_and_arg)
       else if Option.value !natural ~default:false
-      then cmd_error ("Cannot specify both \"/num\" and \"/nat\" in " ^ quoted flag);
+      then cmd_error ("Cannot specify both \"/num\" and \"/nat\" in " ^ flag_and_arg);
     { numeric = !numeric
     ; natural = !natural
     ; case_insensitive = !case_insensitive
@@ -124,117 +110,6 @@ module Compare_behavior = struct
     ; case_insensitive = option_merge sk1.case_insensitive sk2.case_insensitive
     ; reverse = option_merge sk1.reverse sk2.reverse
     }
-  ;;
-end
-
-module Key_extractor = struct
-  type t =
-    | Identity
-    | Query of
-        { query : Syntax.Query.t
-        ; flag : string
-        }
-    | Pat_query of
-        { pat_query : Sexp_app_pattern.Query.t
-        ; flag : string
-        }
-    | Select of
-        { program : string
-        ; flag : string
-        }
-
-  let build_field_extractor ~field ~flag = Query { query = Field field; flag }
-  let build_index_extractor ~index ~flag = Query { query = Index index; flag }
-
-  let build_query_extractor ~query ~flag =
-    (* A little clunky vs. just using parse_string_exn, but we prioritize providing a
-       little more context to the error message, which may be helpful if using sexp sort
-       in a long pipeline. *)
-    let query_sexps =
-      match Parsexp.Many.parse_string query with
-      | Ok x -> x
-      | Error e ->
-        cmd_error_s
-          ("Invalid sexp query [QUERY] passed as " ^ quoted flag)
-          [%sexp (e : Parsexp.Parse_error.t)]
-    in
-    Query { query = Syntax.pipe (List.map ~f:Syntax.Query.t_of_sexp query_sexps); flag }
-  ;;
-
-  let build_pat_query_extractor ~pat_query ~flag =
-    let pat_query = Sexp_app_pattern.Parser.parse_exn pat_query in
-    let ({ num_named_captures; num_number_captures; num_unlabeled_captures }
-         : Sexp_app_pattern.Query.Capture_count.t)
-      =
-      Sexp_app_pattern.Query.count_captures pat_query
-    in
-    if num_named_captures > 0
-    then
-      cmd_error
-        ("Can't define a sort key using labeled captures in pat-query [PATTERN]: "
-         ^ quoted flag);
-    if num_number_captures = 0 && num_unlabeled_captures = 0
-    then
-      cmd_error ("pat-query [PATTERN] must specify at least one capture: " ^ quoted flag);
-    Pat_query { pat_query; flag }
-  ;;
-
-  (* a little compiler from the sort of path expressions you would pass to [sexp get] to the
-     sort of query you would pass to [sexp query] *)
-  let sexp_query_expression_of_get_query_string path flag =
-    let path_parts =
-      try Sexp_path.parse path with
-      | exn ->
-        cmd_error_s ("Bad sexp get [PATH] passed as " ^ quoted flag) [%sexp (exn : Exn.t)]
-    in
-    let query_sexps =
-      List.concat_map path_parts ~f:(function
-        | Pos n -> [ Syntax.Index n ]
-        | Match (tag, n) -> Syntax.[ Test (Variant (tag, None)); Index (n + 1) ]
-        | Rec name -> [ Syntax.Field name ])
-    in
-    Syntax.pipe query_sexps
-  ;;
-
-  let build_get_extractor ~path ~flag =
-    Query { query = sexp_query_expression_of_get_query_string path flag; flag }
-  ;;
-
-  let build_select_extractor ~program ~flag = Select { program; flag }
-
-  let extract_fn = function
-    | Identity -> fun sexp -> [ sexp ]
-    | Query { query; _ } -> fun sexp -> Lazy_list.to_list (Semantics.query query sexp)
-    | Pat_query { pat_query; _ } -> unstage (Pat_query.run pat_query)
-    | Select { program; _ } -> unstage (Sexp_select.select_staged program)
-  ;;
-
-  let flag = function
-    | Identity -> None
-    | Query { flag; _ } | Pat_query { flag; _ } | Select { flag; _ } -> Some flag
-  ;;
-
-  (* Returns a projection function that extracts a key from a sexp and applies a
-     transformation function. Will error if no key is extracted from the sexp, or if
-     multiple keys are extracted. Will also bubble up an error returned by the
-     transformation function. *)
-  let build_extract_or_error_fn t ~transform =
-    let extract = extract_fn t in
-    let specified_by_flag =
-      match flag t with
-      | None -> ""
-      | Some flag -> " specified by " ^ quoted flag
-    in
-    let project sexp =
-      match extract sexp with
-      | [] -> Error ("Missing key" ^ specified_by_flag)
-      | [ key ] ->
-        (match transform key with
-         | Ok key -> Ok key
-         | Error msg -> Error ("Key" ^ specified_by_flag ^ " " ^ msg))
-      | _ -> Error ("Key" ^ specified_by_flag ^ " occurs multiple times")
-    in
-    stage project
   ;;
 end
 
@@ -283,9 +158,7 @@ let build_sexp_key ~key_extractor ~compare_behavior : (module Sort_key) =
     then fun sexp -> Ok (sexp_lowercase sexp)
     else fun x -> Ok x
   in
-  let extract =
-    unstage (Key_extractor.build_extract_or_error_fn key_extractor ~transform)
-  in
+  let extract = unstage (Key_extractor.extract_or_error_fn key_extractor ~transform) in
   let compare_atom =
     match case_insensitive, natural with
     | false, false -> String.compare
@@ -312,9 +185,7 @@ let build_number_key ~key_extractor ~compare_behavior : (module Sort_key) =
        | _ -> Error ("is not a number\n  > " ^ Sexp.to_string sexp))
     | _ -> Error ("is not an atom\n  > " ^ Sexp.to_string_hum sexp)
   in
-  let extract =
-    unstage (Key_extractor.build_extract_or_error_fn key_extractor ~transform)
-  in
+  let extract = unstage (Key_extractor.extract_or_error_fn key_extractor ~transform) in
   let reverse = Compare_behavior.reverse compare_behavior in
   let compare = if reverse then fun a b -> Float.compare b a else Float.compare in
   let module Number_key : Sort_key = struct
@@ -344,120 +215,74 @@ module Chain_sort (A : Sort_key) (B : Sort_key) : Sort_key = struct
   ;;
 end
 
-let none_if_empty = function
-  | [] -> None
-  | l -> Some l
+let with_default_compare_behavior = function
+  | None -> None
+  | Some extractors ->
+    Some (List.map extractors ~f:(fun e -> e, Compare_behavior.default))
 ;;
 
 let field_flag =
   let%map_open.Command fields =
-    flag "field" (listed string) ~doc:"FIELD Sort by the value associated with this field"
+    Key_extractor.field_param ~doc:"FIELD Sort by the value associated with this field" ()
   in
-  List.map fields ~f:(fun field ->
-    ( Key_extractor.build_field_extractor ~field ~flag:(rebuild_flag "-field" field)
-    , Compare_behavior.default ))
-  |> none_if_empty
+  with_default_compare_behavior fields
 ;;
 
 let index_flag =
   let%map_open.Command indexes =
-    flag
-      "index"
-      (listed int)
+    Key_extractor.index_param
       ~doc:"INDEX Sort by the value at this index in the top-level of a sexp"
+      ()
   in
-  List.map indexes ~f:(fun index ->
-    ( Key_extractor.build_index_extractor
-        ~index
-        ~flag:(rebuild_flag "-index" (Int.to_string index))
-    , Compare_behavior.default ))
-  |> none_if_empty
+  with_default_compare_behavior indexes
 ;;
 
 let query_flag =
-  let%map_open.Command queries =
-    flag
-      "query"
-      (listed string)
+  let%map_open.Command fields =
+    Key_extractor.query_param
       ~doc:"QUERY Sort by the values referenced by this query, as used in sexp query"
+      ()
   in
-  List.map queries ~f:(fun query ->
-    ( Key_extractor.build_query_extractor ~query ~flag:(rebuild_flag "-query" query)
-    , Compare_behavior.default ))
-  |> none_if_empty
+  with_default_compare_behavior fields
 ;;
 
 let pat_query_flag =
-  let%map_open.Command pat_queries =
-    flag
-      "pat-query"
-      (listed string)
+  let%map_open.Command fields =
+    Key_extractor.pat_query_param
       ~doc:"PATTERN Sort by the values reference by this query, as used in sexp pat-query"
+      ()
   in
-  List.map pat_queries ~f:(fun pat_query ->
-    ( Key_extractor.build_pat_query_extractor
-        ~pat_query
-        ~flag:(rebuild_flag "-pat-query" pat_query)
-    , Compare_behavior.default ))
-  |> none_if_empty
+  with_default_compare_behavior fields
 ;;
 
 let get_flag =
-  let%map_open.Command paths =
-    flag
-      "get"
-      (listed string)
+  let%map_open.Command fields =
+    Key_extractor.get_param
       ~doc:"PATH Sort by the values referenced by this path, as used in sexp get"
+      ()
   in
-  List.map paths ~f:(fun path ->
-    ( Key_extractor.build_get_extractor ~path ~flag:(rebuild_flag "-get" path)
-    , Compare_behavior.default ))
-  |> none_if_empty
+  with_default_compare_behavior fields
 ;;
 
 let select_flag =
-  let%map_open.Command programs =
-    flag
-      "select"
-      (listed string)
+  let%map_open.Command fields =
+    Key_extractor.select_param
       ~doc:"PATH Sort by the values referenced by this path, as used in sexp select"
+      ()
   in
-  List.map programs ~f:(fun program ->
-    ( Key_extractor.build_select_extractor ~program ~flag:(rebuild_flag "-select" program)
-    , Compare_behavior.default ))
-  |> none_if_empty
-;;
-
-let extract_compare_behavior specifier flag =
-  match String.split specifier ~on:'/' with
-  | [] -> failwith "impossible"
-  | [ specifier ] -> specifier, Compare_behavior.default
-  | specifier :: modifiers -> specifier, Compare_behavior.from_modifiers modifiers flag
+  with_default_compare_behavior fields
 ;;
 
 let key_flag =
-  let%map_open.Command keys = flag "key" (listed string) ~doc:"KEY Sort by the key" in
-  List.map keys ~f:(fun key ->
-    let flag = rebuild_flag "-key" key in
-    match String.lsplit2 ~on:':' key with
-    | None -> cmd_error ("Invalid -key format (no ':' separator): " ^ quoted flag)
-    | Some (specifier, arg) ->
-      let specifier, compare_behavior = extract_compare_behavior specifier flag in
-      let extractor =
-        match specifier with
-        | "field" -> Key_extractor.build_field_extractor ~field:arg ~flag
-        | "index" ->
-          let arg = Int.of_string arg in
-          Key_extractor.build_index_extractor ~index:arg ~flag
-        | "query" -> Key_extractor.build_query_extractor ~query:arg ~flag
-        | "pat-query" -> Key_extractor.build_pat_query_extractor ~pat_query:arg ~flag
-        | "get" -> Key_extractor.build_get_extractor ~path:arg ~flag
-        | "select" -> Key_extractor.build_select_extractor ~program:arg ~flag
-        | specifier ->
-          cmd_error ("Unknown key specifier " ^ quoted specifier ^ " in " ^ quoted flag)
-      in
-      extractor, compare_behavior)
-  |> none_if_empty
+  Key_extractor.general_param
+    ~doc:"KEY Sort by the key"
+    ~modifiers:
+      (Map
+         (fun modifiers ~flag_and_arg ->
+            match modifiers with
+            | None -> Compare_behavior.default
+            | Some modifiers -> Compare_behavior.from_modifiers modifiers flag_and_arg))
+    ()
 ;;
 
 let mach_flag =
@@ -536,7 +361,7 @@ combined with -unique. This matches the behavior of the unix sort command.
      and key_extractors =
        choose_one
          ~if_nothing_chosen:
-           (Default_to [ Key_extractor.Identity, Compare_behavior.default ])
+           (Default_to [ Key_extractor.identity_extractor, Compare_behavior.default ])
          [ field_flag
          ; index_flag
          ; query_flag
