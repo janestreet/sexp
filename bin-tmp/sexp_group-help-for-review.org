@@ -1,0 +1,66 @@
+* sexp_group.exe
+
+: group input sexps by an arbitrary key
+: 
+:   sexp_group.exe 
+: 
+: Groups a list of s-expressions. The group key can be specified in a variety of formats:
+: a field name, a query as used for sexp query, a pattern as used for sexp pat-query,
+: a path as used for sexp get, or a CSS-style program as used for sexp select.
+: 
+: For each unique key in the input, one record-style sexp will be outputted with three
+: keys: "key", containing the common key for the grouped values; "values", containing
+: the list of grouped values; and "count", the number of grouped values.
+: 
+: The output groups will be sorted in order of appearance of each key, and the list of
+: values for each key will be in the same order as in the input.
+: 
+: You can group by multiple keys, in which case the "key" in the output will be a list
+: containing each individual key. You can specify multiple keys by passing the same
+: selector format multiple times, e.g., "-field foo -field bar", or, if you want to use
+: multiple kinds of selectors, by using the special "-key" flag (see below).
+: 
+: Missing keys can be handled in various ways by using the "-if-no-key" flag. By default
+: input sexps with missing keys will cause an error. By passing "-if-no-key drop", inputs
+: with missing keys will be dropped from the input. Missing keys can also just be treated
+: as units ( "()" ) by passing "-if-no-key unit".
+: 
+: When using "-if-no-key unit", there is no way to disambiguate between a missing key
+: and an actual unit. If an actual unit is seen in the input, an error will be thrown.
+: To resolve this, there are two options:
+:   - "-if-no-key wrap" will wrap all keys in an outer sexp, so that actual unit keys
+:     become "(())", while missing keys are "()".
+:   - "-if-no-key force-unit" will simply treat all missing keys as units, even if some
+:     keys are actual units.
+: 
+: To specify multiple keys that use different access formats, or if you want to specify
+: different handling of missing values for each key, use the "-key" flag and pass a
+: string of the form "<access_kind><modifiers>:<arg>", where:
+:   - <access_kind> is one of (field|index|query|pat-query|get|select)
+:   - <modifiers> are optional strings to control specific sort behavior for that column.
+:     Each modifier is prefixed with a '/'. Options are:
+:       mfail  -> raise an error if the key is missing (default)
+:       mdrop  -> drop sexps with missing keys from the output
+:       munit  -> treat missing keys as unit ( "()" )
+:       mwrap  -> wrap all keys in an outer sexp; missing keys are units ( "()" )
+:       mforceunit -> treat missing keys as unit; even if there are actual unit keys
+:   - <arg> is the arg you would pass to the equivalent "-<access_kind>" flag.
+: 
+: === flags ===
+: 
+:   [-field FIELD] ...         . Group by the value associated with this field
+:   [-get PATH] ...            . Group by the values referenced by this path, as
+:                                used in sexp get
+:   [-if-no-key _]             . (can be: drop, fail, force-unit, unit, wrap)
+:   [-index INDEX] ...         . Group by the value at this index in the top-level
+:                                of a sexp
+:   [-key KEY] ...             . Group by the key
+:   [-pat-query PATTERN] ...   . Group by the values reference by this query, as
+:                                used in sexp pat-query
+:   [-query QUERY] ...         . Group by the values referenced by this query, as
+:                                used in sexp query
+:   [-select PATH] ...         . Group by the values referenced by this path, as
+:                                used in sexp select
+:   [-build-info]              . print info about this build and exit
+:   [-version]                 . print the version of this build and exit
+:   [-help], -?                . print this help text and exit

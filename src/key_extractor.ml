@@ -266,25 +266,69 @@ let flag_and_arg = function
     -> Some flag_and_arg
 ;;
 
+module Extraction_error = struct
+  (* This is a slightly awkward type. I considered getting rid of the [Missing_key]
+     constructor, and having the extract function return a [Sexp.t option] instead of
+     just a [Sexp.t], but this results in an extra allocation in the common case when
+     you actually have a key. It also means that there's only one kind of error,
+     [Multiple_keys], which would be slightly weird.
+
+     Another alternative would be to define a custom [Result.t] and have the extract
+     function return that, instead of an [(Sexp.t, Extraction_error.t) result], with
+     three variants:
+
+     {[
+       module Result = struct
+         type t =
+           | Key of Sexp.t
+           | Missing_key of string
+           | Multiple_keys of string
+       end
+     ]}
+
+     The appeal here is that this interface doesn't make a judgment about whether a
+     missing key is an error or not. sexp sort and sexp group both have flags to
+     control the behavior around how missing keys are handled. But neither had that
+     functionality to start; they both errored on missing keys in their initial
+     versions. Forcing the caller to handle that case forces them to think too far
+     down the road. It's fine to implement the happy path of assuming the key always
+     exists when writing a tool, then later on figure out how to evolve it.
+
+     This [Result.t] type also has other issues: it's unclear that the strings in the
+     non-[Key] constructors are supposed to be error messages. Also, [Multiple_keys]
+     should always be an error, but we're forcing people to match on a specific type
+     of error. Making the third constructor just be [Error of Error.t] and then having
+     [Error.t] just contain [Multiple_keys] seems like overkill.
+
+     I did actually implement this, and, ultimately, using the standard [result] type
+     is just semantically clearer, and callers can match on the nested errors if they
+     wish.
+  *)
+  type t =
+    | Missing_key
+    | Multiple_keys
+end
+
+let extractor_source t =
+  match flag_and_arg t with
+  | None -> ""
+  | Some flag_and_arg -> " specified by " ^ flag_and_arg
+;;
+
 (* Returns a projection function that extracts a key from a sexp and applies a
    transformation function. Will error if no key is extracted from the sexp, or if
    multiple keys are extracted. Will also bubble up an error returned by the
    transformation function. *)
-let extract_or_error_fn t ~transform =
+let extract_or_error_fn t =
   let extract = extract_fn t in
-  let specified_by_flag =
-    match flag_and_arg t with
-    | None -> ""
-    | Some flag_and_arg -> " specified by " ^ flag_and_arg
-  in
+  let extractor_source = extractor_source t in
+  let missing_key_error_str = "Missing key" ^ extractor_source in
+  let multiple_keys_error_str = "Key" ^ extractor_source ^ " occurs multiple times" in
   let project sexp =
     match extract sexp with
-    | [] -> Error ("Missing key" ^ specified_by_flag)
-    | [ key ] ->
-      (match transform key with
-       | Ok key -> Ok key
-       | Error msg -> Error ("Key" ^ specified_by_flag ^ " " ^ msg))
-    | _ -> Error ("Key" ^ specified_by_flag ^ " occurs multiple times")
+    | [] -> Error (Extraction_error.Missing_key, missing_key_error_str)
+    | [ key ] -> Ok key
+    | _ -> Error (Extraction_error.Multiple_keys, multiple_keys_error_str)
   in
   stage project
 ;;

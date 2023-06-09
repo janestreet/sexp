@@ -87,16 +87,25 @@ val general_param
   -> unit
   -> 'a list option Command.Param.t
 
+module Extraction_error : sig
+  type t =
+    | Missing_key
+    | Multiple_keys
+end
+
 (* Build a function that will extract out part of the input [Sexp.t] that is specified
    by the key extractor. It will error if nothing is extracted from the input [Sexp.t],
-   or if multiple values are extracted. Additionally, the transform function will be
-   called on just the extracted key and can possibly return a new type. (The transform
-   function can also fail.)
-*)
+   or if multiple values are extracted. The [string] paired with the [Extraction_error.t]
+   in the [Error] case can be used in an error message to indicate which flag on the
+   command line was used when getting this value. *)
 val extract_or_error_fn
   :  t
-  -> transform:(Sexp.t -> ('a, string) result)
-  -> (Sexp.t -> ('a, string) result) Staged.t
+  -> (Sexp.t -> (Sexp.t, Extraction_error.t * string) result) Staged.t
+
+(* A helper for producing nicer error message; returns a string like
+   ' specified by -field foo' to clarify which key lookup failed if there are
+   multiple keys specified. *)
+val extractor_source : t -> string
 
 (* A helper for producing nicer error messages; combines flag name and a command line
    argument into a double quoted string. *)

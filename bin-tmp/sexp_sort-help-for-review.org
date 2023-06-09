@@ -4,7 +4,7 @@
 : 
 :   sexp_sort.exe 
 : 
-: Sorts a list of s-expressions. The sort key be specified in a variety of formats:
+: Sorts a list of s-expressions. The sort key can be specified in a variety of formats:
 : a field name, a query as used for sexp query, a pattern as used for sexp pat-query,
 : a path as used for sexp get, or a CSS-style program as used for sexp select.
 : 
@@ -23,14 +23,18 @@
 :   - <access_kind> is one of (field|index|query|pat-query|get|select)
 :   - <modifiers> are optional strings to control specific sort behavior for that column.
 :     Each modifier is prefixed with a '/'. Options are:
-:       asc  -> sort in ascending order (default)
-:       desc -> sort in descending (reverse) order
-:       rev  -> sort in reverse order
-:       nat  -> use natural sort
-:       num  -> use numeric sort
-:       str  -> use string sort (default)
-:       s    -> use case-sensitive sort (default)
-:       i    -> use case-insensitive sort
+:       asc    -> sort in ascending order (default)
+:       desc   -> sort in descending (reverse) order
+:       rev    -> sort in reverse order
+:       nat    -> use natural sort
+:       num    -> use numeric sort
+:       str    -> use string sort (default)
+:       s      -> use case-sensitive sort (default)
+:       i      -> use case-insensitive sort
+:       merror -> raise an error if the key is missing (default)
+:       mfirst -> output sexps with missing keys first
+:       mlast  -> output sexps with missing keys last
+:       mdrop  -> drop sexps with missing keys from the output
 :   - <arg> is the arg you would pass to the equivalent "-<access_kind>" flag.
 : 
 : For example, if you have sexps of users with names and ages:
@@ -55,6 +59,8 @@
 :                                of a sexp
 :   [-key KEY] ...             . Sort by the key
 :   [-machine]                 . Use machine style for output (one sexp per line)
+:   [-missing ACTION]          . How to handle missing values (can be: drop,
+:                                error, first, last)
 :   [-natural]                 . Use natural sort, i.e., "z2" comes before "z10"
 :   [-numeric], -n             . Treat sort keys as numbers (keys must be atoms)
 :   [-pat-query PATTERN] ...   . Sort by the values reference by this query, as

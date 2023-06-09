@@ -109,19 +109,16 @@ let group_by_path l =
 
 module Assemble_to_json = struct
   type intermediate_result =
-    | None
     | Array of Jsonaf.t list
     | Object of (string * Jsonaf.t) list
 
   let to_json = function
-    | None -> failwith "bug: there should be at least one group"
     | Array a -> `Array a
     | Object a -> `Object a
   ;;
 
   let combine acc item =
     match acc, item with
-    | None, item -> item
     | Array a, Array b -> Array (a @ b)
     | Object a, Object b -> Object (a @ b)
     | _ -> failwith "bug: shouldn't be dealing with both lists and records at once"
@@ -140,8 +137,7 @@ let rec assemble_to_json (l : (Path.t * Sexp.t) list) =
         | Rec n :: _, _ -> Assemble_to_json.Object [ n, assemble_to_json (one_deeper l) ]
         | _ -> assert false)
     in
-    List.fold parts ~init:Assemble_to_json.None ~f:Assemble_to_json.combine
-    |> Assemble_to_json.to_json
+    List.reduce_balanced_exn parts ~f:Assemble_to_json.combine |> Assemble_to_json.to_json
 
 and assemble_to_json1 p v : Jsonaf.t =
   match p with

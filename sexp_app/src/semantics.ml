@@ -539,18 +539,18 @@ module _ : S = struct
             -> ((Sexp.t list, 'r) node -> 'r) -> 'r
           =
           fun ts k ->
-            match ts with
-            | [] -> k (Cons ([], nil))
-            | t :: ts ->
-              let blocks k = rows ts k in
-              quote
-                t
-                s
-                ~dot:(fun x -> map blocks ~f:(fun ys k -> k (x :: ys)) k)
-                ~row:(fun xs -> map blocks ~f:(fun ys k -> k (xs @ ys)) k)
-                ~col:(fun xs ->
-                  let blocks = memo blocks in
-                  bind xs ~f:(fun x k -> map blocks ~f:(fun ys k -> k (x :: ys)) k) k)
+          match ts with
+          | [] -> k (Cons ([], nil))
+          | t :: ts ->
+            let blocks k = rows ts k in
+            quote
+              t
+              s
+              ~dot:(fun x -> map blocks ~f:(fun ys k -> k (x :: ys)) k)
+              ~row:(fun xs -> map blocks ~f:(fun ys k -> k (xs @ ys)) k)
+              ~col:(fun xs ->
+                let blocks = memo blocks in
+                bind xs ~f:(fun x k -> map blocks ~f:(fun ys k -> k (x :: ys)) k) k)
         in
         col (fun k -> bind (fun k -> rows ts k) ~f:(fun row k -> one (List row) k) k)
 

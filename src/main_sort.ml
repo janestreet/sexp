@@ -13,6 +13,57 @@ let cmd_error msg =
   Core.exit 1
 ;;
 
+(* You might think that we should be able to get away with using a plain [result]
+   for the return type of [Sort_key.extract], as opposed to maybe just making the ['ok]
+   half of the result an ['a option].
+
+   Unfortunately, that approach fails when using multiple sort keys, because each
+   sort key might specify a different way to handle missing values. In [Chain_sort]
+   we need someway to combine the extraction result from each key in a way the would
+   preserve our intention to drop a row from the output. Because of how we construct
+   the final [Sort_key] module, there's no place that has a view of all the extracted
+   keys for an input Sexp as a list and say, "Ah, the third key extracted a [None]
+   and it has [How_to_handle_missing.Drop] configured, so we'll ignore it." *)
+module Extraction_result = struct
+  type 'a t =
+    | Ok of 'a
+    | Error of string
+    | Drop
+
+  let map t ~f =
+    match t with
+    | Ok x -> Ok (f x)
+    | Error s -> Error s
+    | Drop -> Drop
+  ;;
+end
+
+(* We support multiple different behaviors when keys are missing. The default
+   will be to error, but we also support putting all the input sexps with
+   missing keys first or last. *)
+module How_to_handle_missing = struct
+  module T = struct
+    type t =
+      | Error
+      | First
+      | Last
+      | Drop
+    [@@deriving sexp, enumerate]
+
+    let to_string t = sexp_of_t t |> Sexp.to_string |> String.lowercase
+  end
+
+  include T
+
+  let flag =
+    let open Command.Param in
+    flag
+      "missing"
+      (optional (Arg_type.enumerated (module T)))
+      ~doc:"ACTION How to handle missing values"
+  ;;
+end
+
 (* Comparison behavior can be configured in four different ways:
    - string vs numeric comparisons
    - for string comparisons, whether we use natural sort ("z2" < "z10")
@@ -44,10 +95,16 @@ module Compare_behavior = struct
     ; natural : bool option
     ; case_insensitive : bool option
     ; reverse : bool option
+    ; handle_missing : How_to_handle_missing.t option
     }
 
   let default =
-    { numeric = None; natural = None; case_insensitive = None; reverse = None }
+    { numeric = None
+    ; natural = None
+    ; case_insensitive = None
+    ; reverse = None
+    ; handle_missing = None
+    }
   ;;
 
   let numeric t = Option.value t.numeric ~default:false
@@ -55,7 +112,11 @@ module Compare_behavior = struct
   let case_insensitive t = Option.value t.case_insensitive ~default:false
   let reverse t = Option.value t.reverse ~default:false
 
-  let from_top_level_flags ~numeric ~natural ~case_insensitive ~reverse =
+  let handle_missing t =
+    Option.value t.handle_missing ~default:How_to_handle_missing.Error
+  ;;
+
+  let from_top_level_flags ~numeric ~natural ~case_insensitive ~reverse ~handle_missing =
     if numeric && case_insensitive
     then cmd_error "Cannot specify both \"-numeric\" and \"-ignore-case\""
     else if numeric && natural
@@ -65,6 +126,7 @@ module Compare_behavior = struct
     ; natural = none_if_false natural
     ; case_insensitive = none_if_false case_insensitive
     ; reverse = none_if_false reverse
+    ; handle_missing
     }
   ;;
 
@@ -73,6 +135,7 @@ module Compare_behavior = struct
     let natural = ref None in
     let case_insensitive = ref None in
     let reverse = ref None in
+    let handle_missing = ref None in
     List.iter modifiers ~f:(function
       | "asc" -> reverse := Some false
       | "desc" -> reverse := Some true
@@ -82,6 +145,10 @@ module Compare_behavior = struct
       | "num" -> numeric := Some true
       | "s" -> case_insensitive := Some false
       | "i" -> case_insensitive := Some true
+      | "merror" -> handle_missing := Some How_to_handle_missing.Error
+      | "mfirst" -> handle_missing := Some How_to_handle_missing.First
+      | "mlast" -> handle_missing := Some How_to_handle_missing.Last
+      | "mdrop" -> handle_missing := Some How_to_handle_missing.Drop
       | unknown ->
         cmd_error
           ("Unknown sort behavior modifier " ^ quoted unknown ^ " in " ^ flag_and_arg));
@@ -98,6 +165,7 @@ module Compare_behavior = struct
     ; natural = !natural
     ; case_insensitive = !case_insensitive
     ; reverse = !reverse
+    ; handle_missing = !handle_missing
     }
   ;;
 
@@ -109,6 +177,7 @@ module Compare_behavior = struct
     ; natural = option_merge sk1.natural sk2.natural
     ; case_insensitive = option_merge sk1.case_insensitive sk2.case_insensitive
     ; reverse = option_merge sk1.reverse sk2.reverse
+    ; handle_missing = option_merge sk1.handle_missing sk2.handle_missing
     }
   ;;
 end
@@ -116,7 +185,7 @@ end
 module type Sort_key = sig
   type key
 
-  val extract : Sexp.t -> (key, string) result
+  val extract : Sexp.t -> key Extraction_result.t
   val compare : key -> key -> int
 end
 
@@ -149,16 +218,120 @@ let rec sexp_lowercase = function
   | List l -> List (List.map l ~f:sexp_lowercase)
 ;;
 
+(* Once we have built the properly typed [extract], [transform] and [compare] functions,
+   we can create a [Sort_key] module. The [key] type of this module will depend on how
+   we handle missing values. If we handle missing keys by putting them first or last,
+   then we'll have [type key = 'a option]. If missing keys result in an error, or we
+   drop input sexps with missing keys, then we'll have [type key].
+
+   In this function we wrap the [extract] and [compare] functions to implement the desired
+   behavior when we see missing values.
+
+   Note that we add additional logic when we wrap the [compare] function, so we have to
+   implement the final reversal _after_ wrapping, otherwise the new compare function
+   wouldn't flip the comparisons between missing keys and present keys. If we flipped
+   the compare function before wrapping it to handle missing keys, this would cause
+   "-missing first" to always put missing keys first, even if "-reverse" were passed
+   in. I think that behavior would be reasonable too ("I passed in '-missing first'.
+   I don't care if I also passed in '-reverse'. I want missing first."). Either way the
+   behavior could be slightly surprising but I think having "-reverse" always flip the
+   order of the output is less surprising.
+*)
+let combine_extract_transform_and_compare_into_sort_key_module
+      (type k)
+      ~(key_extractor : Key_extractor.t)
+      ~(extract : Sexp.t -> (Sexp.t, Key_extractor.Extraction_error.t * string) result)
+      ~(transform : Sexp.t -> (k, string) result)
+      ~(compare : k -> k -> int)
+      ~(handle_missing : How_to_handle_missing.t)
+      ~(reverse : bool)
+  =
+  let maybe_reverse_compare cf = if reverse then fun a b -> cf b a else cf in
+  let extractor_source = Key_extractor.extractor_source key_extractor in
+  let transform sexp =
+    match transform sexp with
+    | Ok x -> Extraction_result.Ok x
+    | Error msg -> Error ("Key" ^ extractor_source ^ " " ^ msg)
+  in
+  (* For [Error] and [Drop]. *)
+  let make_non_option_module ~extract : (module Sort_key) =
+    (module struct
+      type key = k
+
+      let extract = extract
+      let compare = maybe_reverse_compare compare
+    end)
+  in
+  let (module Sexp_key : Sort_key) =
+    match handle_missing with
+    | Error ->
+      (* We could just keep the error as is, but we do a little extra work here to
+         add helpful context to the error message we show the user. *)
+      let extract sexp =
+        match extract sexp with
+        | Ok x -> transform x
+        | Error (Key_extractor.Extraction_error.Missing_key, s) ->
+          Error
+            (s
+             ^ "\n"
+             ^ "You can use the -missing flag to declare how missing keys should be \
+                handled.")
+        | Error (_, s) -> Error s
+      in
+      make_non_option_module ~extract
+    | Drop ->
+      (* Convert [Missing_key] errors to [Drop]. *)
+      let extract sexp =
+        match extract sexp with
+        | Ok x -> transform x
+        | Error (Key_extractor.Extraction_error.Missing_key, _) -> Drop
+        | Error (_, s) -> Error s
+      in
+      make_non_option_module ~extract
+    | First | Last ->
+      (* Wrap extracted value in a [Some], or return [None] on [Missing_key] errors. *)
+      let extract sexp =
+        match extract sexp with
+        | Ok x -> transform x |> Extraction_result.map ~f:Option.some
+        | Error (Key_extractor.Extraction_error.Missing_key, _) -> Ok None
+        | Error (_, s) -> Error s
+      in
+      (* When we have two [Some]s we just use the normal compare function, but
+         otherwise we sort [None]s (missing keys) before or after actual keys. *)
+      let none_to_some, some_to_none =
+        match handle_missing with
+        | First -> -1, 1
+        | Last -> 1, -1
+        | Error | Drop -> failwith "impossible; just checked above"
+      in
+      let compare a b =
+        match a, b with
+        | Some a, Some b -> compare a b
+        | None, Some _ -> none_to_some
+        | Some _, None -> some_to_none
+        | None, None -> 0
+      in
+      (module struct
+        type key = k option
+
+        let extract = extract
+        let compare = maybe_reverse_compare compare
+      end)
+  in
+  (module Sexp_key : Sort_key)
+;;
+
 let build_sexp_key ~key_extractor ~compare_behavior : (module Sort_key) =
   let case_insensitive = Compare_behavior.case_insensitive compare_behavior in
   let natural = Compare_behavior.natural compare_behavior in
   let reverse = Compare_behavior.reverse compare_behavior in
+  let handle_missing = Compare_behavior.handle_missing compare_behavior in
   let transform =
     if case_insensitive && natural
     then fun sexp -> Ok (sexp_lowercase sexp)
     else fun x -> Ok x
   in
-  let extract = unstage (Key_extractor.extract_or_error_fn key_extractor ~transform) in
+  let extract = unstage (Key_extractor.extract_or_error_fn key_extractor) in
   let compare_atom =
     match case_insensitive, natural with
     | false, false -> String.compare
@@ -166,15 +339,13 @@ let build_sexp_key ~key_extractor ~compare_behavior : (module Sort_key) =
     | _, true -> String_extended.collate
   in
   let compare = sexp_compare_fn ~compare_atom in
-  let compare = if reverse then fun a b -> compare b a else compare in
-  let module Sexp_key : Sort_key = struct
-    type key = Sexp.t
-
-    let extract = extract
-    let compare = compare
-  end
-  in
-  (module Sexp_key)
+  combine_extract_transform_and_compare_into_sort_key_module
+    ~key_extractor
+    ~extract
+    ~transform
+    ~compare
+    ~handle_missing
+    ~reverse
 ;;
 
 let build_number_key ~key_extractor ~compare_behavior : (module Sort_key) =
@@ -185,28 +356,31 @@ let build_number_key ~key_extractor ~compare_behavior : (module Sort_key) =
        | _ -> Error ("is not a number\n  > " ^ Sexp.to_string sexp))
     | _ -> Error ("is not an atom\n  > " ^ Sexp.to_string_hum sexp)
   in
-  let extract = unstage (Key_extractor.extract_or_error_fn key_extractor ~transform) in
+  let extract = unstage (Key_extractor.extract_or_error_fn key_extractor) in
   let reverse = Compare_behavior.reverse compare_behavior in
-  let compare = if reverse then fun a b -> Float.compare b a else Float.compare in
-  let module Number_key : Sort_key = struct
-    type key = float
-
-    let extract = extract
-    let compare = compare
-  end
-  in
-  (module Number_key)
+  let handle_missing = Compare_behavior.handle_missing compare_behavior in
+  combine_extract_transform_and_compare_into_sort_key_module
+    ~key_extractor
+    ~extract
+    ~transform
+    ~compare:Float.compare
+    ~handle_missing
+    ~reverse
 ;;
 
 module Chain_sort (A : Sort_key) (B : Sort_key) : Sort_key = struct
   type key = A.key * B.key
 
-  let extract sexp =
+  let extract sexp : key Extraction_result.t =
     match A.extract sexp, B.extract sexp with
+    (* We always surface errors, even if the behavior for one
+       key says we should drop the input sexp. *)
+    | Error e1, Error e2 -> Error (e1 ^ "\n" ^ e2)
+    | Error e, _ -> Error e
+    | _, Error e -> Error e
+    | Drop, _ -> Drop
+    | _, Drop -> Drop
     | Ok a, Ok b -> Ok (a, b)
-    | Error err_a, Error err_b -> Error (err_a ^ "\n" ^ err_b)
-    | Error err_a, _ -> Error err_a
-    | _, Error err_b -> Error err_b
   ;;
 
   let compare (a1, b1) (a2, b2) =
@@ -297,7 +471,8 @@ let pipe_mapi_result pipe ~f =
     | `Ok x ->
       (match f i x with
        | Error _ as e -> return e
-       | Ok y -> foldi_until_err (i + 1) pipe (y :: accum))
+       | Ok (Some y) -> foldi_until_err (i + 1) pipe (y :: accum)
+       | Ok None -> foldi_until_err (i + 1) pipe accum)
   in
   foldi_until_err 0 pipe []
 ;;
@@ -311,7 +486,7 @@ let command =
   let readme () =
     String.strip
       {|
-Sorts a list of s-expressions. The sort key be specified in a variety of formats:
+Sorts a list of s-expressions. The sort key can be specified in a variety of formats:
 a field name, a query as used for sexp query, a pattern as used for sexp pat-query,
 a path as used for sexp get, or a CSS-style program as used for sexp select.
 
@@ -330,14 +505,18 @@ where:
   - <access_kind> is one of (field|index|query|pat-query|get|select)
   - <modifiers> are optional strings to control specific sort behavior for that column.
     Each modifier is prefixed with a '/'. Options are:
-      asc  -> sort in ascending order (default)
-      desc -> sort in descending (reverse) order
-      rev  -> sort in reverse order
-      nat  -> use natural sort
-      num  -> use numeric sort
-      str  -> use string sort (default)
-      s    -> use case-sensitive sort (default)
-      i    -> use case-insensitive sort
+      asc    -> sort in ascending order (default)
+      desc   -> sort in descending (reverse) order
+      rev    -> sort in reverse order
+      nat    -> use natural sort
+      num    -> use numeric sort
+      str    -> use string sort (default)
+      s      -> use case-sensitive sort (default)
+      i      -> use case-insensitive sort
+      merror -> raise an error if the key is missing (default)
+      mfirst -> output sexps with missing keys first
+      mlast  -> output sexps with missing keys last
+      mdrop  -> drop sexps with missing keys from the output
   - <arg> is the arg you would pass to the equivalent "-<access_kind>" flag.
 
 For example, if you have sexps of users with names and ages:
@@ -393,7 +572,7 @@ combined with -unique. This matches the behavior of the unix sort command.
          ~aliases:[ "n" ]
          no_arg
          ~doc:" Treat sort keys as numbers (keys must be atoms)"
-     in
+     and handle_missing = How_to_handle_missing.flag in
      fun () ->
        let top_level_compare_behavior =
          Compare_behavior.from_top_level_flags
@@ -401,6 +580,7 @@ combined with -unique. This matches the behavior of the unix sort command.
            ~natural
            ~case_insensitive
            ~reverse
+           ~handle_missing
        in
        let key_modules =
          List.map
@@ -423,14 +603,15 @@ combined with -unique. This matches the behavior of the unix sort command.
              let module Chained = Chain_sort (A) (B) in
              (module Chained))
        in
-       let extract_or_error i sexp =
+       let extract_or_drop_or_error i sexp =
          match Sorter.extract sexp with
-         | Ok key -> Ok { key; sexp }
-         | Error msg ->
-           Or_error.error_string ("Error on sexp " ^ Int.to_string (i + 1) ^ ": " ^ msg)
+         | Ok key -> Ok (Some { key; sexp })
+         | Drop -> Ok None
+         | Error s ->
+           Or_error.error_string ("Error on sexp " ^ Int.to_string (i + 1) ^ ": " ^ s)
        in
        let sexps_in = Reader.read_sexps (Lazy.force Reader.stdin) in
-       match%bind pipe_mapi_result sexps_in ~f:extract_or_error with
+       match%bind pipe_mapi_result sexps_in ~f:extract_or_drop_or_error with
        | Error err ->
          prerr_endline (Error.to_string_hum err);
          exit 1

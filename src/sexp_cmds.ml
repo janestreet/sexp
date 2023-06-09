@@ -1,5 +1,6 @@
 open Core
 module Main_sort = Main_sort
+module Main_group = Main_group
 
 let summary = "the s-expression toolkit"
 
@@ -32,5 +33,7 @@ let command =
      ; "validate", Main_validate.command
      ]
      @
-     if am_running_test then [ "sort", Main_sort.command ] else [])
+     if am_running_test
+     then [ "sort", Main_sort.command; "group", Main_group.command ]
+     else [])
 ;;

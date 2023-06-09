@@ -114,7 +114,8 @@ let remove_duplicates_flag =
   flag
     ~doc:" remove duplicate outputs from each PROGRAM"
     "remove-dupes"
-    (map_flag no_arg ~f:(fun arg -> if arg then Sexp.Set.stable_dedup_list else Fn.id))
+    (map_flag no_arg ~f:(fun arg ->
+       if arg then List.stable_dedup ~compare:Sexp.compare else Fn.id))
 ;;
 
 let mach_flag =
