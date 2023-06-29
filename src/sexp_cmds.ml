@@ -28,12 +28,11 @@ let command =
      ; "restructure", Main_restructure.command
      ; "select", Main_select.command
      ; "sexpify", Main_sexpify.command
+     ; "sort", Main_sort.command
      ; "to-csv", Main_to_csv.command
      ; "to-json", Main_json.to_json_command
      ; "validate", Main_validate.command
      ]
      @
-     if am_running_test
-     then [ "sort", Main_sort.command; "group", Main_group.command ]
-     else [])
+     if am_running_test then [ "group", Main_group.command ] else [])
 ;;
