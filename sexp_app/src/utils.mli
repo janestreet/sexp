@@ -32,3 +32,12 @@ val replace_field
   -> Sexp.t
   -> [ `Immediate | `Recursive ]
   -> Sexp.t Or_error.t
+
+(** [ remove_field ~field sexp scope ] removes the field if it exists in the designated
+    scope. If `Recursive is chosen, it will replace as many instances as appear. It will
+    not error if the field is not in scope *)
+val remove_field
+  :  field:string
+  -> Sexp.t
+  -> [ `Immediate | `Recursive ]
+  -> Sexp.t Or_error.t

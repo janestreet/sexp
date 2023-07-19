@@ -1,82 +1,50 @@
 open Core
 open Async
 
-module Test_and_doc = struct
-  let test_sexp_string =
-    {|
-      ((foo bar)
-       (baz (
-         (sausage banana)
-         (fred    george)
-         (wizzle (
-           (one   a)
-           (two   b)
-           (three c)))))
-       (wizzle fizzle)
+let example_sexp_string =
+  {|
+    ((foo bar)
+     (baz (
+       (sausage banana)
+       (fred    george)
        (wizzle (
-         (grizzle (
-           (one z)
-           (two y)))
-         (drizzle chizzle)))
-       (fred percy))
-    |}
-  ;;
+         (one   a)
+         (two   b)
+         (three c)))))
+     (wizzle fizzle)
+     (wizzle (
+       (grizzle (
+         (one z)
+         (two y)))
+       (drizzle chizzle)))
+     (fred percy))
+  |}
+;;
 
-  let test_sexp = Sexp.of_string test_sexp_string
+let example_programs =
+  [ "foo"
+  ; "sausage"
+  ; "fred"
+  ; "baz fred"
+  ; "two"
+  ; "wizzle two"
+  ; "wizzle > two"
+  ; "wizzle > ( one two )"
+  ; "wizzle ( one two )"
+  ; "wizzle"
+  ; "> wizzle"
+  ; "wizzle > *"
+  ]
+;;
 
-  let tests =
-    [ "foo", [ "bar" ]
-    ; "sausage", [ "banana" ]
-    ; "fred", [ "george"; "percy" ]
-    ; "baz fred", [ "george" ]
-    ; "two", [ "b"; "y" ]
-    ; "wizzle two", [ "b"; "y" ]
-    ; "wizzle > two", [ "b" ]
-    ; "wizzle > ( one two )", [ "a"; "b" ]
-    ; "wizzle ( one two )", [ "a"; "b"; "z"; "y" ]
-    ; ( "wizzle"
-      , [ "((one a)(two b)(three c))"
-        ; "fizzle"
-        ; "((grizzle ((one z)(two y)))(drizzle chizzle))"
-        ] )
-    ; "wizzle > *", [ "a"; "b"; "c"; "((one z)(two y))"; "chizzle" ]
-    ]
-  ;;
-
-  (* can't do TEST_UNIT b/c this isn't a library *)
-  let () =
-    List.iter tests ~f:(fun (program, expected) ->
-      [%test_result: Sexp.t list]
-        (Sexp_select.select program test_sexp)
-        ~expect:(List.map ~f:Sexp.of_string expected))
-  ;;
-
-  let doc () =
-    let max_program_width =
-      List.fold tests ~init:0 ~f:(fun prev_max (program, _) ->
-        Int.max (String.length program) prev_max)
-    in
-    let pad s = s ^ String.make (max_program_width - String.length s) ' ' in
-    let output_padding = String.make (max_program_width + String.length " -> [ ") ' ' in
-    List.map tests ~f:(fun (program, output) ->
-      let output_str =
-        let one_line = String.concat ~sep:"; " output in
-        if String.length one_line <= 40
-        then one_line
-        else
-          (match output with
-           | [] -> assert false
-           | head :: tail -> head :: List.map tail ~f:(fun s -> output_padding ^ s))
-          |> String.concat ~sep:";\n"
-      in
-      Printf.sprintf "%s -> [ %s ]" (pad program) output_str)
-    |> String.concat ~sep:"\n"
-  ;;
-
-  let readme =
-    String.strip
-      {|
-"Implementation of a subset of CSS-style selectors for traversing sexp trees.
+let readme () =
+  let example_sexp = Parsexp.Single.parse_string_exn example_sexp_string in
+  let example_programs_and_output =
+    Sexp_select.format_program_outputs example_sexp example_programs
+  in
+  String.strip
+    {|
+Implementation of a subset of CSS-style selectors for traversing sexp trees.
 
 See also the get and query subcommands.
 
@@ -95,19 +63,18 @@ Syntax:
 
 Examples:
 |}
-    ^ sprintf "\n%s\n\n%s" test_sexp_string (doc ())
-  ;;
+  ^ sprintf "\n%s\n\n%s" example_sexp_string example_programs_and_output
+;;
 
-  let readme_flag () =
-    let open Command.Param in
-    flag
-      "readme"
-      (no_arg_abort ~exit:(fun () ->
-         Core.print_endline readme;
-         Core.exit 0))
-      ~doc:" Show the readme"
-  ;;
-end
+let readme_flag () =
+  let open Command.Param in
+  flag
+    "readme"
+    (no_arg_abort ~exit:(fun () ->
+       Core.print_endline (readme ());
+       Core.exit 0))
+    ~doc:" Show the readme"
+;;
 
 let remove_duplicates_flag =
   let open Command.Param in
@@ -127,7 +94,7 @@ let mach_flag =
 let command =
   Command.async
     ~summary:"Use CSS-style selectors to traverse sexp trees"
-    (let%map_open.Command () = Test_and_doc.readme_flag ()
+    (let%map_open.Command () = readme_flag ()
      and program = anon ("program" %: string)
      and sexp_to_string = mach_flag
      and maybe_sexp_string = anon (maybe ("sexp" %: string))
@@ -143,16 +110,14 @@ let command =
          List.iter
            (maybe_remove_duplicate_outputs (select_fn sexp))
            ~f:(fun answer -> printf "%s\n%!" (sexp_to_string answer))))
-    ~behave_nicely_in_pipeline:false
 ;;
-
 
 let multi_command =
   Command.async
     ~summary:
       "like [sexp select], but allowing multiple programs to be passed, and grouping \
        together output from each input sexp"
-    (let%map_open.Command () = Test_and_doc.readme_flag ()
+    (let%map_open.Command () = readme_flag ()
      and labeled =
        flag "labeled" no_arg ~doc:" label each match with the PROGRAM that matched it"
      and sexp_to_string = mach_flag
@@ -180,5 +145,4 @@ let multi_command =
          with
          | [] -> ()
          | sexps -> printf "%s\n%!" (sexp_to_string ([%sexp_of: Sexp.t list] sexps))))
-    ~behave_nicely_in_pipeline:false
 ;;

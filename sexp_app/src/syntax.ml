@@ -40,7 +40,7 @@ module Template = struct
 
   let rec t_of_sexp a_of_sexp sexp =
     try Hole (a_of_sexp sexp) with
-    | Escaped_literal s -> Atom s
+    | Escaped_literal s | Of_sexp_error (Escaped_literal s, _) -> Atom s
     | _ ->
       (match sexp with
        | Sexp.Atom s -> Atom s
