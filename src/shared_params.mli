@@ -19,3 +19,4 @@ end
 
 val machine_and_fail_on_parse_error : Machine_and_fail_on_parse_error.t Command.Param.t
 val machine : bool Command.Param.t
+val channel_stdin_or_anon_file : In_channel.t Command.Param.t

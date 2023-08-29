@@ -63,3 +63,10 @@ let machine_and_fail_on_parse_error =
   in
   { Machine_and_fail_on_parse_error.machine; fail_on_parse_error }
 ;;
+
+let channel_stdin_or_anon_file =
+  let open Command.Param in
+  match%map.Command anon (maybe ("FILE" %: Filename_unix.arg_type)) with
+  | None -> Stdlib.stdin
+  | Some file -> In_channel.create file
+;;

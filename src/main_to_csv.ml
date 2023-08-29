@@ -6,9 +6,9 @@ let myprotect f x =
   | _ -> None
 ;;
 
-let main ~two_pass_processing ~view_atoms_as_strings ~delimiter:sep =
+let main ~in_channel ~two_pass_processing ~view_atoms_as_strings ~delimiter:sep =
   let sexps =
-    let channel = Lexing.from_channel In_channel.stdin in
+    let channel = Lexing.from_channel in_channel in
     Lazy_list.build ~seed:() ~f:(fun () ->
       match myprotect Sexp.scan_sexp channel with
       | None -> None
@@ -22,7 +22,8 @@ let main ~two_pass_processing ~view_atoms_as_strings ~delimiter:sep =
 
 let command =
   Command.basic
-    ~summary:"converts a list of record s-expressions into CSV format"
+    ~summary:
+      "Converts a list of record s-expressions from stdin or a file into CSV format."
     ~readme:(fun () ->
       {|
 Example
@@ -67,9 +68,10 @@ Example
          "delimiter"
          (optional_with_default ',' char)
          ~doc:(sprintf "CHAR use this delimiter instead of ','")
-     in
+     and in_channel = Shared_params.channel_stdin_or_anon_file in
      fun () ->
        main
+         ~in_channel
          ~delimiter
          ~two_pass_processing
          ~view_atoms_as_strings:(not view_atoms_as_sexps))

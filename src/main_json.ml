@@ -147,9 +147,9 @@ and assemble_to_json1 p v : Jsonaf.t =
   | Match _ :: _ -> assert false
 ;;
 
-let to_json () =
+let to_json ~in_channel () =
   match
-    let%map.List sexp = Sexp.input_sexps In_channel.stdin in
+    let%map.List sexp = Sexp.input_sexps in_channel in
     let parts = Sexp_app.Parts.flatten sexp in
     let json = assemble_to_json parts in
     print_endline (Jsonaf.to_string_hum json)
@@ -158,7 +158,7 @@ let to_json () =
   | exception End_of_file -> ()
 ;;
 
-let of_json ~machine =
+let of_json ~in_channel ~machine =
   let module Conv = Sexplib.Conv in
   let rec convert : Jsonaf.t -> Sexp.t = function
     | `Null -> Conv.sexp_of_unit ()
@@ -179,7 +179,7 @@ let of_json ~machine =
     |> Angstrom.Buffered.parse
   in
   let parser_state =
-    In_channel.fold_lines ~init:parser_state In_channel.stdin ~f:(fun parser_state line ->
+    In_channel.fold_lines ~init:parser_state in_channel ~f:(fun parser_state line ->
       Angstrom.Buffered.feed parser_state (`String line))
   in
   let parser_state = Angstrom.Buffered.feed parser_state `Eof in
@@ -190,14 +190,15 @@ let of_json ~machine =
 
 let to_json_command =
   Command.basic
-    ~summary:"Convert sexps on stdin to json"
-    (let%map_open.Command () = return () in
-     fun () -> to_json ())
+    ~summary:"Convert sexps on stdin or in a file to json."
+    (let%map_open.Command in_channel = Shared_params.channel_stdin_or_anon_file in
+     fun () -> to_json ~in_channel ())
 ;;
 
 let of_json_command =
   Command.basic
-    ~summary:"Convert json on stdin to sexps"
-    (let%map_open.Command machine = Shared_params.machine in
-     fun () -> of_json ~machine)
+    ~summary:"Convert json on stdin or in a file to sexps."
+    (let%map_open.Command machine = Shared_params.machine
+     and in_channel = Shared_params.channel_stdin_or_anon_file in
+     fun () -> of_json ~in_channel ~machine)
 ;;

@@ -5,7 +5,8 @@ open! Core
 *)
 let command =
   Command.basic
-    ~summary:"Pretty print S expressions in a human-friendly way."
+    ~summary:
+      "Pretty print S expressions in a human-friendly way, either from stdin or a file."
     ~readme:(fun () ->
       "Use pre-defined styles or load a custom style from a file."
       ^ "\nYou can use -p to print out one of the predefined styles and customize it.")
@@ -25,9 +26,8 @@ let command =
      and drop_comments = flag "-drop-comments" no_arg ~doc:" drop comments"
      and new_line_separator =
        flag "-s" (optional bool) ~doc:"bool separate sexps with an empty line"
-     and print_settings =
-       flag "-p" no_arg ~doc:" print the settings in colorless format"
-     in
+     and print_settings = flag "-p" no_arg ~doc:" print the settings in colorless format"
+     and in_channel = Shared_params.channel_stdin_or_anon_file in
      fun () ->
        let config =
          match config_file with
@@ -59,7 +59,7 @@ let command =
          Sexp_pretty.Sexp_with_layout.pp_formatter config_for_output fmt sexp)
        else (
          let sparser = Sexp.With_layout.Parser.sexp Sexp.With_layout.Lexer.main in
-         let lexbuf = Lexing.from_channel Stdlib.stdin in
+         let lexbuf = Lexing.from_channel in_channel in
          let fmt = Format.formatter_of_out_channel stdout in
          let next () =
            try Some (sparser lexbuf) with
