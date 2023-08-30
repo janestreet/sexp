@@ -1,6 +1,5 @@
 open! Core
 
-
 type regex = Re2.t [@@deriving sexp]
 
 module Template : sig

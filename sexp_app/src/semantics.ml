@@ -50,7 +50,6 @@ let sexp_to_record = function
       | `Ok m -> Some m)
 ;;
 
-
 let restructure acc s ~nil ~of_list =
   match (s : Sexp.t) with
   | List _ -> nil acc
@@ -212,15 +211,15 @@ module _ : S = struct
       let rec rows
         : Syntax.Query.t Syntax.anti_quote Template.t list -> Sexp.t list Lazy_list.t
         = function
-          | [] -> cons [] (Lazy_list.empty ())
-          | t :: ts ->
-            let blocks = rows ts in
-            (match quote t s with
-             | One x -> Lazy_list.map blocks ~f:(fun ys -> x :: ys)
-             | Row xs -> Lazy_list.map blocks ~f:(fun ys -> xs @ ys)
-             | Col xs ->
-               let%bind x = xs in
-               Lazy_list.map blocks ~f:(fun ys -> x :: ys))
+        | [] -> cons [] (Lazy_list.empty ())
+        | t :: ts ->
+          let blocks = rows ts in
+          (match quote t s with
+           | One x -> Lazy_list.map blocks ~f:(fun ys -> x :: ys)
+           | Row xs -> Lazy_list.map blocks ~f:(fun ys -> xs @ ys)
+           | Col xs ->
+             let%bind x = xs in
+             Lazy_list.map blocks ~f:(fun ys -> x :: ys))
       in
       Col
         (let%bind row = rows ts in
@@ -274,8 +273,7 @@ module _ : S = struct
         s
         ~fail:(fun () -> Fail)
         ~succ:(fun env -> Diff (Pattern_record.instantiate rhs env Fn.id))
-    | Syntax.Lowercase ->
-      Diff (atom_map ~f:String.lowercase s)
+    | Syntax.Lowercase -> Diff (atom_map ~f:String.lowercase s)
     | Syntax.Concat ->
       (match s with
        | Atom _ -> Same
@@ -536,7 +534,7 @@ module _ : S = struct
       | Template.List ts ->
         let rec rows
           :  Syntax.Query.t Syntax.anti_quote Template.t list
-            -> ((Sexp.t list, 'r) node -> 'r) -> 'r
+          -> ((Sexp.t list, 'r) node -> 'r) -> 'r
           =
           fun ts k ->
           match ts with
@@ -891,8 +889,8 @@ module _ : S = struct
       | Template.Hole (Syntax.Splice q) -> to_list (fun k -> query q s k) row
       | Template.List ts ->
         let rec rows
-                  (ts : Syntax.Query.t Syntax.anti_quote Template.t list)
-                  (k : 'r cont')
+          (ts : Syntax.Query.t Syntax.anti_quote Template.t list)
+          (k : 'r cont')
           : 'r
           =
           match ts with
@@ -1048,9 +1046,7 @@ module Nofun : S = struct
       | Bind of 'r seq * 'r bindf
       | Apply_bindf'_ of Sexp.t list * 'r bindf'_
       | Bind'_ of 'r seq' * 'r bindf'_
-      | Bind_rows_wrap of
-          Sexp.t
-          * Syntax.Query.t Syntax.anti_quote Template.t list
+      | Bind_rows_wrap of Sexp.t * Syntax.Query.t Syntax.anti_quote Template.t list
 
     and 'r cont =
       | CONT of ('r node -> 'r)
@@ -1482,7 +1478,7 @@ module Nofun : S = struct
                | Some i, Some i' -> Int.compare i i'))
         in
         if List.contains_dup alist ~compare:(fun (field, _) (field', _) ->
-          String.compare field field')
+             String.compare field field')
         then fail ()
         else
           diff

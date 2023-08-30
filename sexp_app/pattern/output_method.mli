@@ -55,20 +55,20 @@ end
 
 type _ t =
   | Formats : _ Wrap_mode.t * Format.t list -> Sexp.t list t
-  (** Embed captures in the specified formats *)
+      (** Embed captures in the specified formats *)
   | List : _ Wrap_mode.t -> Sexp.t t
-  (** Return different capture expressions' results as a Sexp.List.  In the case of
+      (** Return different capture expressions' results as a Sexp.List.  In the case of
       [Unwrap_always], the sequences consumed by each capture expression are concatenated,
       so the list may be longer (or shorter) than the number of capture expressions. *)
   | Record : _ Wrap_mode.t -> Sexp.t t
-  (** Return captures as a sexp record where the field names are the labels of the
+      (** Return captures as a sexp record where the field names are the labels of the
       capturing expressions. In the case of [Unwrap_always], the sequences consumed by
       each capture expression have the field name consed onto them, so the result
       may not actually be a list of pairs! *)
   | Single_capture : 'query_result Wrap_mode.t -> 'query_result t
-  (** Expect exactly one capture in the pattern, and return its captured contents. *)
+      (** Expect exactly one capture in the pattern, and return its captured contents. *)
   | Map : Sexp.t list String.Map.t t
-  (** Return a map from capture name to captures. Similar to doing [Record Wrap_always]
+      (** Return a map from capture name to captures. Similar to doing [Record Wrap_always]
       and then [[%of_sexp: Sexp.t list String.Map.t]] *)
 [@@deriving sexp_of]
 

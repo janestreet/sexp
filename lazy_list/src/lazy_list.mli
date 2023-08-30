@@ -1,4 +1,3 @@
-
 open! Core
 
 (** Lazy lists. *)
@@ -33,8 +32,6 @@ val fold_right : f:('a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
 val foldr : 'a t -> f:('a -> 'b Lazy.t -> 'b) -> init:'b -> 'b Lazy.t
 val iter : 'a t -> f:('a -> unit) -> unit
 val of_iterator : curr:('a -> 'b option) -> next:('a -> 'a) -> init:'a -> 'b t
-
-
 val build : f:('s -> ('a * 's) option) -> seed:'s -> 'a t
 val unfold : f:('a -> 'a option) -> init:'a -> 'a t
 val uniter : f:(unit -> 'a option) -> 'a t
@@ -44,8 +41,6 @@ val to_list : 'a t -> 'a list
 val of_array : 'a array -> 'a t
 val to_array : 'a t -> 'a array
 val cartesian_product : 'a t t -> 'a t t
-
-
 val merge : cmp:('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
 
 val unify

@@ -42,7 +42,7 @@ let read_of_next_char
       match next_char () with
       | Some c ->
         if (* Inside string *)
-          !inside_string
+           !inside_string
         then (
           (* If we followed an escape character, we always take the next char verbatim *)
           let followed_escape_in_string = !follows_escape_in_string in
@@ -67,7 +67,7 @@ let read_of_next_char
               Buffer.add_char atom_so_far c;
               `Ok "" (* Not inside string *)))
         else if (* Chars that don't terminate the atom just get appended and we continue *)
-          not (terminates_atom c ~paren_depth)
+                not (terminates_atom c ~paren_depth)
         then (
           Buffer.add_char atom_so_far c;
           `Ok "" (* Else... *))

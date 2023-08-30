@@ -60,7 +60,7 @@ let multi_or_numbered_capture_output_method : Sexp.t Sexp_app_pattern.Output_met
 
 let run (query : Sexp_app_pattern.Query.t) : (Sexp.t -> Sexp.t list) Staged.t =
   let ({ num_number_captures; num_unlabeled_captures; _ }
-       : Sexp_app_pattern.Query.Capture_count.t)
+        : Sexp_app_pattern.Query.Capture_count.t)
     =
     Sexp_app_pattern.Query.count_captures query
   in

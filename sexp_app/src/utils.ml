@@ -37,7 +37,7 @@ let sexp_rewrite_aux sexp ~f:visit =
        | Sexp.List sexps ->
          let sexps' = List.filter_map ~f:aux sexps in
          if List.length sexps = List.length sexps'
-         && List.for_all2_exn ~f:phys_equal sexps sexps'
+            && List.for_all2_exn ~f:phys_equal sexps sexps'
          then Some sexp
          else Some (Sexp.List sexps'))
   in
@@ -177,7 +177,6 @@ let%test_module "Utils" =
            "second")
         value
     ;;
-
 
     let to_alist_exn sexp = Or_error.ok_exn (immediate_fields sexp)
 

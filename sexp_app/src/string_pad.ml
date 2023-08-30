@@ -26,6 +26,5 @@ let add_char t c = add t (String.of_char c)
 let rec dump = function
   | Empty -> ""
   | Snoc (Empty, x) -> x
-  | Snoc (Snoc (t, x), y) ->
-    dump (Snoc (t, x ^ y))
+  | Snoc (Snoc (t, x), y) -> dump (Snoc (t, x ^ y))
 ;;

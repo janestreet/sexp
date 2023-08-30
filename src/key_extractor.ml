@@ -90,8 +90,8 @@ let index_param ?(flag = "index") ~doc () =
    of an extraction function is the same for every access kind, with just the name
    of the flag and the <access_kind>_extraction function changing. *)
 let build_param_function
-      default_flag_name
-      (extractor_constructor : flag:string -> arg:string -> string -> t)
+  default_flag_name
+  (extractor_constructor : flag:string -> arg:string -> string -> t)
   =
   let fn ?(flag = default_flag_name) ~doc () =
     let flag_name = flag in
@@ -138,7 +138,7 @@ let pat_query_extractor ~flag ~arg pat_query =
   let flag_and_arg = quoted_flag_and_arg ~flag ~arg in
   let pat_query = Sexp_app_pattern.Parser.parse_exn pat_query in
   let ({ num_named_captures; num_number_captures; num_unlabeled_captures }
-       : Sexp_app_pattern.Query.Capture_count.t)
+        : Sexp_app_pattern.Query.Capture_count.t)
     =
     Sexp_app_pattern.Query.count_captures pat_query
   in
@@ -230,11 +230,11 @@ type _ modifiers_handler =
   | Map : (string list option -> flag_and_arg:string -> 'a) -> (t * 'a) modifiers_handler
 
 let general_param
-      (type a)
-      ?(flag = "key")
-      ~doc
-      ~modifiers:(how_to_handle_modifiers : a modifiers_handler)
-      ()
+  (type a)
+  ?(flag = "key")
+  ~doc
+  ~modifiers:(how_to_handle_modifiers : a modifiers_handler)
+  ()
   : a list option Command.Param.t
   =
   let flag_name = flag in

@@ -29,10 +29,10 @@ let show_parse_fail querystr =
 ;;
 
 let run
-      ?(more_newlines = false)
-      ?(wrap_mode = Wrap_mode_for_run.Wrap_non_singletons)
-      querystr
-      sexpstrs
+  ?(more_newlines = false)
+  ?(wrap_mode = Wrap_mode_for_run.Wrap_non_singletons)
+  querystr
+  sexpstrs
   =
   let query = Parser.parse_exn querystr in
   let output_method = Wrap_mode_for_run.to_output_method query wrap_mode in

@@ -22,9 +22,9 @@ module Path = struct
       String.concat
         ~sep:""
         (List.map l ~f:(function
-           | Pos p -> sprintf ".[%i]" p
-           | Rec n -> sprintf ".%s" n
-           | Match (n, p) -> sprintf ".%s[%i]" n p))
+          | Pos p -> sprintf ".[%i]" p
+          | Rec n -> sprintf ".%s" n
+          | Match (n, p) -> sprintf ".%s[%i]" n p))
   ;;
 end
 
@@ -42,8 +42,8 @@ let is_record l =
   && Option.is_none
        (List.find_a_dup
           (List.rev_map l ~f:(function
-             | List [ Atom n; _ ] -> n
-             | _ -> assert false))
+            | List [ Atom n; _ ] -> n
+            | _ -> assert false))
           ~compare:Poly.compare)
 ;;
 
@@ -56,8 +56,8 @@ let rec flatten path t =
     then
       List.concat
         (List.map l ~f:(function
-           | List [ Atom n; v ] -> flatten (Rec n :: path) v
-           | _ -> assert false))
+          | List [ Atom n; v ] -> flatten (Rec n :: path) v
+          | _ -> assert false))
     else List.concat (List.mapi l ~f:(fun p e -> flatten (Pos p :: path) e))
 ;;
 

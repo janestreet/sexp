@@ -98,18 +98,18 @@ let pat_query_command =
                 (wrap_mode, [ Sexp_app_pattern.Output_method.Format.t_of_sexp format ]))
        in
        let perform_query_returning_sexps
-             ~(output_method : Sexp.t Sexp_app_pattern.Output_method.t)
-             sexp_ext
-             ~(on_result : Sexp.t -> unit)
+         ~(output_method : Sexp.t Sexp_app_pattern.Output_method.t)
+         sexp_ext
+         ~(on_result : Sexp.t -> unit)
          =
          let sexp = Sexp_app.Sexp_ext.sexp_of_t sexp_ext in
          Sexp_app_pattern.Engine.iter_matches ~query ~output_method sexp ~f:(fun output ->
            on_result output)
        in
        let perform_query_returning_sexp_lists
-             ~(output_method : Sexp.t list Sexp_app_pattern.Output_method.t)
-             sexp_ext
-             ~(on_result : Sexp.t -> unit)
+         ~(output_method : Sexp.t list Sexp_app_pattern.Output_method.t)
+         sexp_ext
+         ~(on_result : Sexp.t -> unit)
          =
          let sexp = Sexp_app.Sexp_ext.sexp_of_t sexp_ext in
          Sexp_app_pattern.Engine.iter_matches ~query ~output_method sexp ~f:(fun output ->

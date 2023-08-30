@@ -238,13 +238,13 @@ let rec sexp_lowercase = function
    order of the output is less surprising.
 *)
 let combine_extract_transform_and_compare_into_sort_key_module
-      (type k)
-      ~(key_extractor : Key_extractor.t)
-      ~(extract : Sexp.t -> (Sexp.t, Key_extractor.Extraction_error.t * string) result)
-      ~(transform : Sexp.t -> (k, string) result)
-      ~(compare : k -> k -> int)
-      ~(handle_missing : How_to_handle_missing.t)
-      ~(reverse : bool)
+  (type k)
+  ~(key_extractor : Key_extractor.t)
+  ~(extract : Sexp.t -> (Sexp.t, Key_extractor.Extraction_error.t * string) result)
+  ~(transform : Sexp.t -> (k, string) result)
+  ~(compare : k -> k -> int)
+  ~(handle_missing : How_to_handle_missing.t)
+  ~(reverse : bool)
   =
   let maybe_reverse_compare cf = if reverse then fun a b -> cf b a else cf in
   let extractor_source = Key_extractor.extractor_source key_extractor in
@@ -453,9 +453,9 @@ let key_flag =
     ~modifiers:
       (Map
          (fun modifiers ~flag_and_arg ->
-            match modifiers with
-            | None -> Compare_behavior.default
-            | Some modifiers -> Compare_behavior.from_modifiers modifiers flag_and_arg))
+           match modifiers with
+           | None -> Compare_behavior.default
+           | Some modifiers -> Compare_behavior.from_modifiers modifiers flag_and_arg))
     ()
 ;;
 
@@ -586,22 +586,22 @@ combined with -unique. This matches the behavior of the unix sort command.
          List.map
            key_extractors
            ~f:(fun (key_extractor, key_compare_behavior) : (module Sort_key) ->
-             let compare_behavior =
-               Compare_behavior.merge top_level_compare_behavior key_compare_behavior
-             in
-             let (module Key : Sort_key) =
-               if Compare_behavior.numeric compare_behavior
-               then build_number_key ~key_extractor ~compare_behavior
-               else build_sexp_key ~key_extractor ~compare_behavior
-             in
-             (module Key))
+           let compare_behavior =
+             Compare_behavior.merge top_level_compare_behavior key_compare_behavior
+           in
+           let (module Key : Sort_key) =
+             if Compare_behavior.numeric compare_behavior
+             then build_number_key ~key_extractor ~compare_behavior
+             else build_sexp_key ~key_extractor ~compare_behavior
+           in
+           (module Key))
        in
        let (module Sorter : Sort_key) =
          List.reduce_exn
            key_modules
            ~f:(fun (module A : Sort_key) (module B : Sort_key) : (module Sort_key) ->
-             let module Chained = Chain_sort (A) (B) in
-             (module Chained))
+           let module Chained = Chain_sort (A) (B) in
+           (module Chained))
        in
        let extract_or_drop_or_error i sexp =
          match Sorter.extract sexp with

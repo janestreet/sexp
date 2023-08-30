@@ -87,8 +87,8 @@ end = struct
       then f
       else
         fun sexp ->
-          f sexp;
-          any_output := true
+        f sexp;
+        any_output := true
     in
     let process_sexp, finalize_source, finalize_all =
       match t.output_mode with

@@ -245,7 +245,6 @@ let rec unify ~cmp xlst ylst =
            | _ -> assert false)))
 ;;
 
-
 let lazy_sort ~cmp zlst =
   (* This is a stable, O(N log N) worst-case, merge sort.  It has the
    * additional useful property that forcing the first element only takes
@@ -266,7 +265,7 @@ let lazy_sort ~cmp zlst =
    * whose head element is the head element of the sorted list)- so forcing
    * the second element only takes O(log N) work.  And so on for the third
    * element, etc.
-  *)
+   *)
   let rec to_zlist_list accum = function
     | Empty -> accum
     | Cons (x, xs) -> to_zlist_list (return x :: accum) (Lazy.force xs)
@@ -291,7 +290,7 @@ let sort ~cmp zlst =
   (* We inline to_array here, so we can control where we catch the
    * invalid_argument exception Array.create ~len:throws when we try to
    * make too large of an array.
-  *)
+   *)
   match Lazy.force zlst with
   | Empty -> zlst
   | Cons (x, xs) ->
@@ -301,7 +300,7 @@ let sort ~cmp zlst =
      * executing code that could potientially throw Invalid_argument
      * for entirely other reasons, and I don't want to catch those
      * exceptions.
-    *)
+     *)
     let ary_opt =
       try Some (Array.create ~len:(length zlst) x) with
       | Invalid_argument _ -> None

@@ -6,15 +6,15 @@ let%test_unit _ =
       "(const 13)", "foo", Some "13"
     ; "(const 13)", "()", Some "13"
     ; "(const 13)", "(foo bar)", Some "13"
-      ; (* alt *)
+    ; (* alt *)
       "(alt)", "()", None
-      ; (* delete *)
+    ; (* delete *)
       "delete", "foo", None
     ; "(seq delete fail)", "foo", None
     ; "(children delete)", "()", Some "()"
     ; "(children delete)", "(foo bar)", Some "()"
     ; "(children (alt (rewrite foo bar) delete))", "(foo zzz)", Some "(bar)"
-      ; (* record *)
+    ; (* record *)
       "(record)", "foo", None
     ; "(record)", "()", Some "()"
     ; "(record)", "(foo)", None

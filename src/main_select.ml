@@ -134,15 +134,15 @@ let multi_command =
        in
        Reader.read_sexps (Lazy.force Reader.stdin)
        |> Pipe.iter_without_pushback ~f:(fun sexp ->
-         match
-           List.concat_map programs ~f:(fun (program, select_fn) ->
-             List.map
-               (maybe_remove_duplicate_outputs (select_fn sexp))
-               ~f:(fun answer ->
-                 if labeled
-                 then [%sexp_of: string * Sexp.t] (program, answer)
-                 else answer))
-         with
-         | [] -> ()
-         | sexps -> printf "%s\n%!" (sexp_to_string ([%sexp_of: Sexp.t list] sexps))))
+            match
+              List.concat_map programs ~f:(fun (program, select_fn) ->
+                List.map
+                  (maybe_remove_duplicate_outputs (select_fn sexp))
+                  ~f:(fun answer ->
+                    if labeled
+                    then [%sexp_of: string * Sexp.t] (program, answer)
+                    else answer))
+            with
+            | [] -> ()
+            | sexps -> printf "%s\n%!" (sexp_to_string ([%sexp_of: Sexp.t list] sexps))))
 ;;

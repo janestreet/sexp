@@ -1,7 +1,6 @@
 open Core
 open Async
 
-
 let load file ~expand_macros ~multiple_sexps_in_each_file =
   if expand_macros
   then Sexp_macro.Blocking.load_sexp file |> return
@@ -129,7 +128,6 @@ It also exists non-zero (with exit code 1) if either sexp is malformed.
           | Emit_diff _ | Quiet -> exit 2))
     ~behave_nicely_in_pipeline:false
 ;;
-
 
 let patch_command =
   Command.async
