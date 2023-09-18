@@ -1,5 +1,4 @@
 open Core
-module Main_sort = Main_sort
 module Main_group = Main_group
 
 let summary = "the s-expression toolkit"
