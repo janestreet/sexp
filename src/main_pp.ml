@@ -3,10 +3,14 @@ open! Core
 (* Options are provided for parameters which are likely to change a lot and are likely to
    vary depending on the file that is being processed.
 *)
-let command =
+let command ?alias_for () =
   Command.basic
     ~summary:
-      "Pretty print S expressions in a human-friendly way, either from stdin or a file."
+      (match alias_for with
+       | None ->
+         "Pretty print S expressions in a human-friendly way, either from stdin or a \
+          file."
+       | Some other_command -> [%string "Alias for %{other_command}"])
     ~readme:(fun () ->
       "Use pre-defined styles or load a custom style from a file."
       ^ "\nYou can use -p to print out one of the predefined styles and customize it.")

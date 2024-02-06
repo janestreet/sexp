@@ -1,6 +1,10 @@
-(library (name sexp_app_pattern) (public_name sexp.sexp_app_pattern)
- (libraries core re2 sexplib str) (flags :standard -w -68)
- (preprocess (pps ppx_jane)))
+(library
+ (name sexp_app_pattern)
+ (public_name sexp.sexp_app_pattern)
+ (libraries core re2 sexplib str)
+ (flags :standard -w -68)
+ (preprocess
+  (pps ppx_jane)))
 
 (ocamllex lexer)
 

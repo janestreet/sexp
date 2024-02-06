@@ -1,3 +1,3 @@
 open! Core
 
-val command : Command.t
+val command : ?alias_for:string -> unit -> Command.t

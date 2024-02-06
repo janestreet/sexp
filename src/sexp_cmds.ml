@@ -20,7 +20,8 @@ let command =
      ; "pat-change", Main_pattern.pat_change_command
      ; "pat-query", Main_pattern.pat_query_command
      ; "patch", Main_diff.patch_command
-     ; "pp", Main_pp.command
+     ; "pp", Main_pp.command ~alias_for:"[sexp pretty]" ()
+     ; "pretty", Main_pp.command ()
      ; "print", Main_print.command
      ; "query", Main_query.query_command
      ; "resolve-macros", Main_resolve_macros.command
