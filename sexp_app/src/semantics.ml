@@ -1253,6 +1253,7 @@ module Nofun : S = struct
       match s with
       | Atom _ -> nil k
       | List xs ->
+        let i = if i < 0 then List.length xs + i else i in
         (match List.nth xs i with
          | None -> nil k
          | Some s -> one s k)

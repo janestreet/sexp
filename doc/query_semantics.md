@@ -43,13 +43,16 @@ transformation.
 Selection
 ---------
 
-A `(index N)` expression picks out the Nth element of a list s-expression.
-It succeeds if N is a proper index (i.e., 0 <= N < list length) and fails
-otherwise.  Upon success, it returns the single-element sequence containing
-the selected sub-expressions.  Upon failure, it returns an empty list.
+An `(index N)` expression picks out the Nth element of a list s-expression, or the
+Nth-from-last element if N is negative. It succeeds if N is a valid index (i.e., -(list
+length) <= N < list length) and fails otherwise. Upon success, it returns the
+single-element sequence containing the selected sub-expressions. Upon failure, it returns
+an empty list.
 
-    (index 2) : (one two three four) => {three}
-    (index 8) : (one two three four) => {}
+    (index 2)  : (one two three four) => {three}
+    (index 8)  : (one two three four) => {}
+    (index -1) : (one two three four) => {four}
+    (index -5) : (one two three four) => {}
 
 A `(field F)` expression is like `(index N)` except that it projects
 the field named F out of a record.  If more than one field of that
@@ -65,7 +68,7 @@ An `each` expression selects every element of a list.
     each : ()    => {}
     each : hello => {}
 
-An `smash` expression selects every sub-expression of an s-expression
+A `smash` expression selects every sub-expression of an s-expression
 
     smash : (a (b c) (d (e f))) => { (a (b c) (d (e f))),
                                       a, (b c), (d (e f)),

@@ -171,6 +171,42 @@ let pat_change_examples =
 A few examples of sexp pat-change!
 
 ----------------------------------------------
+Remove a record field foo
+
+sexp pat-change ".. (.. %field=(foo .))" \
+-replace %field \
+-with-nothing
+
+Effect:
+((foo 1)(bar 2)(list (foo 1 2)))
+->
+((bar 2)(list (foo 1 2)))
+
+----------------------------------------------
+Rename a record field foo to baz
+
+sexp pat-change ".. (.. %field=(foo %value))" \
+-replace %field \
+-with "(baz %value)"
+
+Effect:
+((foo 1)(bar 2)(list (foo 1 2)))
+->
+((baz 1)(bar 2)(list (foo 1 2)))
+
+----------------------------------------------
+Add a record field baz with value 0 after record field foo
+
+sexp pat-change ".. (.. %field=(foo %value))" \
+-replace %field \
+-with "%field (baz 0)"
+
+Effect:
+((foo 1)(bar 2)(list (foo 1 2)))
+->
+((foo 1)(baz 0)(bar 2)(list (foo 1 2)))
+
+----------------------------------------------
 Reverse the order of all pairs.
 
 sexp pat-change ".. %0=(%foo %bar)" \

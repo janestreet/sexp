@@ -56,6 +56,14 @@ from 0:
 If you've got a single-element list, like `(one)`, calling `(index 0)` on it is a nifty
 trick for removing the parens.
 
+`index` also supports negative indexing, allowing you to get elements relative to the end
+of the list rather than to the start:
+
+```sh
+  $ echo "(one two three four five)" | sexp query '(index -1)'
+  # => five
+```
+
 Equals and Test
 ---------------
 

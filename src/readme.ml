@@ -400,6 +400,13 @@ let query_by_example_dot_md =
    ```\n\n\
    If you've got a single-element list, like `(one)`, calling `(index 0)` on it is a nifty\n\
    trick for removing the parens.\n\n\
+   `index` also supports negative indexing, allowing you to get elements relative to the \
+   end\n\
+   of the list rather than to the start:\n\n\
+   ```sh\n\
+  \  $ echo \"(one two three four five)\" | sexp query '(index -1)'\n\
+  \  # => five\n\
+   ```\n\n\
    Equals and Test\n\
    ---------------\n\n\
    `equals` and `test` are often used together, because `equals` alone is rarely what you\n\
@@ -764,12 +771,16 @@ let query_semantics_dot_md =
    transformation.\n\n\
    Selection\n\
    ---------\n\n\
-   A `(index N)` expression picks out the Nth element of a list s-expression.\n\
-   It succeeds if N is a proper index (i.e., 0 <= N < list length) and fails\n\
-   otherwise.  Upon success, it returns the single-element sequence containing\n\
-   the selected sub-expressions.  Upon failure, it returns an empty list.\n\n\
-  \    (index 2) : (one two three four) => {three}\n\
-  \    (index 8) : (one two three four) => {}\n\n\
+   An `(index N)` expression picks out the Nth element of a list s-expression, or the\n\
+   Nth-from-last element if N is negative. It succeeds if N is a valid index (i.e., -(list\n\
+   length) <= N < list length) and fails otherwise. Upon success, it returns the\n\
+   single-element sequence containing the selected sub-expressions. Upon failure, it \
+   returns\n\
+   an empty list.\n\n\
+  \    (index 2)  : (one two three four) => {three}\n\
+  \    (index 8)  : (one two three four) => {}\n\
+  \    (index -1) : (one two three four) => {four}\n\
+  \    (index -5) : (one two three four) => {}\n\n\
    A `(field F)` expression is like `(index N)` except that it projects\n\
    the field named F out of a record.  If more than one field of that\n\
    name exists, they will all be selected.\n\n\
@@ -780,7 +791,7 @@ let query_semantics_dot_md =
   \    each : (one two three four) => {one, two, three, four}\n\
   \    each : ()    => {}\n\
   \    each : hello => {}\n\n\
-   An `smash` expression selects every sub-expression of an s-expression\n\n\
+   A `smash` expression selects every sub-expression of an s-expression\n\n\
   \    smash : (a (b c) (d (e f))) => { (a (b c) (d (e f))),\n\
   \                                      a, (b c), (d (e f)),\n\
   \                                          b, c,  d, (e f),\n\
