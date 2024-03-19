@@ -33,13 +33,13 @@ Field
 -----
 
 `field` gets the value from a `(key value)` pair. Suppose you've got a record with two
-fields, `jane_symbol` and `bloomberg`. Well, calling `(field jane_symbol)` gets you the
+fields, `animal_name` and `age`. Well, calling `(field animal_name)` gets you the
 value of that field:
 
 ```sh
-  $ echo '((jane_symbol "AAPL US") \\
-           (bloomberg "AAPL UW Equity"))' | sexp query '(field jane_symbol)'
-  # => "AAPL US"
+  $ echo '((animal_name "capybara") \\
+           (age 3))' | sexp query '(field animal_name)'
+  # => "capybara"
 ```
 
 Index

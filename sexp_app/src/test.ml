@@ -91,7 +91,7 @@ let%expect_test _ =
     (A)
     ("(")
     (" ")
-  |}];
+    |}];
   run {|(pipe (field id) restructure)|} examples;
   [%expect {|
     ((a b c))
@@ -99,5 +99,5 @@ let%expect_test _ =
     (A)
     ()
     ()
-  |}]
+    |}]
 ;;

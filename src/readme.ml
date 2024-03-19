@@ -382,12 +382,12 @@ let query_by_example_dot_md =
    Field\n\
    -----\n\n\
    `field` gets the value from a `(key value)` pair. Suppose you've got a record with two\n\
-   fields, `jane_symbol` and `bloomberg`. Well, calling `(field jane_symbol)` gets you the\n\
+   fields, `animal_name` and `age`. Well, calling `(field animal_name)` gets you the\n\
    value of that field:\n\n\
    ```sh\n\
-  \  $ echo '((jane_symbol \"AAPL US\") \\\\\n\
-  \           (bloomberg \"AAPL UW Equity\"))' | sexp query '(field jane_symbol)'\n\
-  \  # => \"AAPL US\"\n\
+  \  $ echo '((animal_name \"capybara\") \\\\\n\
+  \           (age 3))' | sexp query '(field animal_name)'\n\
+  \  # => \"capybara\"\n\
    ```\n\n\
    Index\n\
    -----\n\n\

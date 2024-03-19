@@ -573,7 +573,8 @@ let%expect_test _ =
     {%abc=[a]} : (Set(((Capture_to_name abc(Atom a))((optional false)(first_only false)))))
     {a} : (Set(((Atom a)((optional false)(first_only false)))))
     !.. a : (raised (Failure "Parsing match query failed at line 1 char 1 in query !.. a"))
-    a !()!() : (Sequence((Atom a)(First_match_only(List(Sequence())))(First_match_only(List(Sequence()))))) |}]
+    a !()!() : (Sequence((Atom a)(First_match_only(List(Sequence())))(First_match_only(List(Sequence())))))
+    |}]
 ;;
 
 let standard_test_cases =
@@ -603,7 +604,8 @@ let%expect_test _ =
     :(a(b)c)
     :((a 1)(b 2)(c 3))
     :((a 1 1)(b 2 2)(c 3 3))
-    :(((a 1)(b 2)(c 3))((d 3)(e 4)(f 5))) |}]
+    :(((a 1)(b 2)(c 3))((d 3)(e 4)(f 5)))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -619,7 +621,8 @@ let%expect_test _ =
     :(a(b)c)
     :((a 1)(b 2)(c 3))
     :((a 1 1)(b 2 2)(c 3 3))
-    :(((a 1)(b 2)(c 3))((d 3)(e 4)(f 5))) |}]
+    :(((a 1)(b 2)(c 3))((d 3)(e 4)(f 5)))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -635,12 +638,14 @@ let%expect_test _ =
     :
     :
     :
-    : |}]
+    :
+    |}]
 ;;
 
 let%expect_test _ =
   run "(%.)" standard_test_cases;
-  [%expect {|
+  [%expect
+    {|
     :
     :
     :()
@@ -650,7 +655,8 @@ let%expect_test _ =
     :
     :
     :
-    : |}]
+    :
+    |}]
 ;;
 
 let%expect_test _ =
@@ -666,7 +672,8 @@ let%expect_test _ =
     :(a(b)c)
     :((a 1)(b 2)(c 3))
     :((a 1 1)(b 2 2)(c 3 3))
-    : |}]
+    :
+    |}]
 ;;
 
 let%expect_test _ =
@@ -682,7 +689,8 @@ let%expect_test _ =
     :a (b) c
     :(a 1) (b 2) (c 3)
     :(a 1 1) (b 2 2) (c 3 3)
-    :((a 1)(b 2)(c 3)) ((d 3)(e 4)(f 5)) |}]
+    :((a 1)(b 2)(c 3)) ((d 3)(e 4)(f 5))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -698,7 +706,8 @@ let%expect_test _ =
     :((a(b)c))
     :(((a 1)(b 2)(c 3)))
     :(((a 1 1)(b 2 2)(c 3 3)))
-    :((((a 1)(b 2)(c 3))((d 3)(e 4)(f 5)))) |}]
+    :((((a 1)(b 2)(c 3))((d 3)(e 4)(f 5))))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -714,7 +723,8 @@ let%expect_test _ =
     :((field(a(b)c)))
     :((field((a 1)(b 2)(c 3))))
     :((field((a 1 1)(b 2 2)(c 3 3))))
-    :((field(((a 1)(b 2)(c 3))((d 3)(e 4)(f 5))))) |}]
+    :((field(((a 1)(b 2)(c 3))((d 3)(e 4)(f 5)))))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -730,7 +740,8 @@ let%expect_test _ =
     :
     :
     :
-    : |}]
+    :
+    |}]
 ;;
 
 let%expect_test _ =
@@ -746,7 +757,8 @@ let%expect_test _ =
     :(a) ((b)) (c)
     :((a 1)) ((b 2)) ((c 3))
     :((a 1 1)) ((b 2 2)) ((c 3 3))
-    :(((a 1)(b 2)(c 3))) (((d 3)(e 4)(f 5))) |}]
+    :(((a 1)(b 2)(c 3))) (((d 3)(e 4)(f 5)))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -762,7 +774,8 @@ let%expect_test _ =
     :((foo a)(bar(b))(baz c))
     :((foo(a 1))(bar(b 2))(baz(c 3)))
     :((foo(a 1 1))(bar(b 2 2))(baz(c 3 3))) ((foo a)(bar 1)(baz 1)) ((foo b)(bar 2)(baz 2)) ((foo c)(bar 3)(baz 3))
-    :((foo(a 1))(bar(b 2))(baz(c 3))) ((foo(d 3))(bar(e 4))(baz(f 5))) |}]
+    :((foo(a 1))(bar(b 2))(baz(c 3))) ((foo(d 3))(bar(e 4))(baz(f 5)))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -781,7 +794,8 @@ let%expect_test _ =
     :(a((c))(barr((b))))
     :((a 1)(((c 3)))(barr((b 2))))
     :((a 1 1)(((c 3 3)))(barr((b 2 2)))) (a((1))(barr(1))) (b((2))(barr(2))) (c((3))(barr(3)))
-    :((a 1)(((c 3)))(barr((b 2)))) ((d 3)(((f 5)))(barr((e 4)))) |}]
+    :((a 1)(((c 3)))(barr((b 2)))) ((d 3)(((f 5)))(barr((e 4))))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -797,7 +811,8 @@ let%expect_test _ =
     :(a(b)c)
     :((a 1)(b 2)(c 3))
     :((a 1 1)(b 2 2)(c 3 3))
-    :(((a 1)(b 2)(c 3))((d 3)(e 4)(f 5))) |}]
+    :(((a 1)(b 2)(c 3))((d 3)(e 4)(f 5)))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -813,7 +828,8 @@ let%expect_test _ =
     :a (b) c
     :(a 1) (b 2) (c 3)
     :(a 1 1) (b 2 2) (c 3 3)
-    :((a 1)(b 2)(c 3)) ((d 3)(e 4)(f 5)) |}]
+    :((a 1)(b 2)(c 3)) ((d 3)(e 4)(f 5))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -829,7 +845,8 @@ let%expect_test _ =
     :c
     :(c 3)
     :(c 3 3)
-    :((d 3)(e 4)(f 5)) |}]
+    :((d 3)(e 4)(f 5))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -844,7 +861,8 @@ let%expect_test _ =
     :
     :2
     :2
-    :2 |}]
+    :2
+    |}]
 ;;
 
 let%expect_test _ =
@@ -860,7 +878,8 @@ let%expect_test _ =
     :((b)b)
     :((b 2)b) ((b 2)2)
     :((b 2 2)b) ((b 2 2)2) ((b 2 2)2)
-    :((b 2)b) ((b 2)2) |}]
+    :((b 2)b) ((b 2)2)
+    |}]
 ;;
 
 let%expect_test _ =
@@ -875,7 +894,8 @@ let%expect_test _ =
     :
     :c
     :3
-    :c d |}]
+    :c d
+    |}]
 ;;
 
 let%expect_test _ =
@@ -891,7 +911,8 @@ let%expect_test _ =
     :
     :(a 1) (b 2) (c 3)
     :
-    :(((a 1)(b 2)(c 3))((d 3)(e 4)(f 5))) (a 1) (b 2) (c 3) (d 3) (e 4) (f 5) |}]
+    :(((a 1)(b 2)(c 3))((d 3)(e 4)(f 5))) (a 1) (b 2) (c 3) (d 3) (e 4) (f 5)
+    |}]
 ;;
 
 let%expect_test _ =
@@ -907,7 +928,8 @@ let%expect_test _ =
     :
     :(a 1)
     :
-    :(((a 1)(b 2)(c 3))((d 3)(e 4)(f 5))) |}]
+    :(((a 1)(b 2)(c 3))((d 3)(e 4)(f 5)))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -923,7 +945,8 @@ let%expect_test _ =
     :((b)()) ((b)c) (c())
     :((b 2)()) ((b 2)(c 3)) (1()) ((c 3)()) (2()) (3())
     :((b 2 2)()) ((b 2 2)(c 3 3)) (1()) (1 1) (1()) ((c 3 3)()) (2()) (2 2) (2()) (3()) (3 3) (3())
-    :(((d 3)(e 4)(f 5))()) ((b 2)()) ((b 2)(c 3)) (1()) ((c 3)()) (2()) (3()) ((e 4)()) ((e 4)(f 5)) (3()) ((f 5)()) (4()) (5()) |}]
+    :(((d 3)(e 4)(f 5))()) ((b 2)()) ((b 2)(c 3)) (1()) ((c 3)()) (2()) (3()) ((e 4)()) ((e 4)(f 5)) (3()) ((f 5)()) (4()) (5())
+    |}]
 ;;
 
 let%expect_test _ =
@@ -939,12 +962,14 @@ let%expect_test _ =
     :((b)c)
     :((b 2)(c 3)) (1()) (2()) (3())
     :((b 2 2)(c 3 3)) (1 1) (2 2) (3 3)
-    :(((d 3)(e 4)(f 5))()) ((b 2)(c 3)) (1()) (2()) (3()) ((e 4)(f 5)) (3()) (4()) (5()) |}]
+    :(((d 3)(e 4)(f 5))()) ((b 2)(c 3)) (1()) (2()) (3()) ((e 4)(f 5)) (3()) (4()) (5())
+    |}]
 ;;
 
 let%expect_test _ =
   run ".. (a %.) & .. (c %.) " standard_test_cases;
-  [%expect {|
+  [%expect
+    {|
     :
     :
     :
@@ -954,41 +979,42 @@ let%expect_test _ =
     :
     :(1 3)
     :
-    :(1 3) |}]
+    :(1 3)
+    |}]
 ;;
 
 let%expect_test _ =
   run ".. ([a|d] %.) & .. ([c|e] %.)" standard_test_cases;
   [%expect
     {|
-      :
-      :
-      :
-      :
-      :
-      :
-      :
-      :(1 3)
-      :
-      :(1 3) (1 4) (3 3) (3 4)
-|}]
+    :
+    :
+    :
+    :
+    :
+    :
+    :
+    :(1 3)
+    :
+    :(1 3) (1 4) (3 3) (3 4)
+    |}]
 ;;
 
 let%expect_test _ =
   run "{[ .. ([a|d] %.) & .. ([c|e] %.) ]}" standard_test_cases;
   [%expect
     {|
-      :
-      :
-      :
-      :
-      :
-      :
-      :
-      :
-      :
-      :(1 3) (3 4)
-|}]
+    :
+    :
+    :
+    :
+    :
+    :
+    :
+    :
+    :
+    :(1 3) (3 4)
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1004,7 +1030,8 @@ let%expect_test _ =
     :
     :((a 1)(b 2))
     :
-    :((a 1)(b 2)) |}]
+    :((a 1)(b 2))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1020,7 +1047,8 @@ let%expect_test _ =
     :
     :((a 1)(b 2))
     :
-    :((a 1)(b 2)) |}]
+    :((a 1)(b 2))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1029,25 +1057,23 @@ let%expect_test _ =
     :
     :(a)
     :
-    : |}]
+    :
+    |}]
 ;;
 
 let%expect_test _ =
   run_single "(%a %1)" "(c d)";
-  [%expect {|
-    :((a c)(1 d)) |}]
+  [%expect {| :((a c)(1 d)) |}]
 ;;
 
 let%expect_test _ =
   run_single "(%1 %0)" "(c d)";
-  [%expect {|
-    :(d c) |}]
+  [%expect {| :(d c) |}]
 ;;
 
 let%expect_test _ =
   show_raise (fun () -> run_single "." "(c d)");
-  [%expect {|
-    (raised (Failure "No captures % were specified in pattern")) |}]
+  [%expect {| (raised (Failure "No captures % were specified in pattern")) |}]
 ;;
 
 let%expect_test _ =
@@ -1056,14 +1082,14 @@ let%expect_test _ =
     {|
     :(raised (
       Failure
-      "Match pattern uses captures up to %2 but is missing %0 (reminder: numbered captures should be zero-indexed)")) |}]
+      "Match pattern uses captures up to %2 but is missing %0 (reminder: numbered captures should be zero-indexed)"))
+    |}]
 ;;
 
 let%expect_test _ =
   show_raise (fun () -> run_single "(%2 %0)" "(c d)");
   [%expect
-    {|
-    :(raised (Failure "Match pattern uses captures up to %2 but is missing %1")) |}]
+    {| :(raised (Failure "Match pattern uses captures up to %2 but is missing %1")) |}]
 ;;
 
 let%expect_test _ =
@@ -1072,7 +1098,8 @@ let%expect_test _ =
     {|
     :(raised (
       Failure
-      "Cannot mix unlabeled captures with named or numbered captures in the same pattern")) |}]
+      "Cannot mix unlabeled captures with named or numbered captures in the same pattern"))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1085,7 +1112,8 @@ let%expect_test _ =
     (G H I)
     G
     H
-    I |}]
+    I
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1093,7 +1121,8 @@ let%expect_test _ =
   [%expect {|
     :(A B C)
     (foo(G H I))
-    (G H I) |}]
+    (G H I)
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1105,7 +1134,8 @@ let%expect_test _ =
     :foo
     foo
     foo
-    foo |}]
+    foo
+    |}]
 ;;
 
 [@@@ocamlformat "disable"]
@@ -1120,7 +1150,8 @@ let%expect_test _ =
     foo
     foo
     foo
-    foo |}]
+    foo
+    |}]
 
 let%expect_test _ =
   run_single
@@ -1131,7 +1162,8 @@ let%expect_test _ =
     :foo
     (foo foo)
     foo
-    foo |}]
+    foo
+    |}]
 
 let%expect_test _ =
   run_single
@@ -1142,7 +1174,8 @@ let%expect_test _ =
     :(foo)
     (foo foo)
     (foo)
-    (foo) |}]
+    (foo)
+    |}]
 
 let%expect_test _ =
   run_single
@@ -1153,7 +1186,8 @@ let%expect_test _ =
     :(foo bar)
     (foo foo bar)
     (foo bar)
-    (foo bar) |}]
+    (foo bar)
+    |}]
 
 let%expect_test _ =
   run_single
@@ -1164,7 +1198,8 @@ let%expect_test _ =
     :(foo bar)
     ((foo foo)bar)
     (foo bar)
-    (foo bar) |}]
+    (foo bar)
+    |}]
 
 let%expect_test _ =
   run_single
@@ -1176,7 +1211,8 @@ let%expect_test _ =
     :((foo)(bar))
     ((foo foo)(bar))
     ((foo)(bar))
-    ((foo)(bar)) |}]
+    ((foo)(bar))
+    |}]
 [@@@ocamlformat "enable"]
 
 let%expect_test _ =
@@ -1185,7 +1221,8 @@ let%expect_test _ =
     :((a foo))
     ((a foo))
     ((a foo))
-    ((a foo)) |}]
+    ((a foo))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1194,7 +1231,8 @@ let%expect_test _ =
     :((a foo))
     ((a(foo foo)))
     ((a foo))
-    ((a foo)) |}]
+    ((a foo))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1211,7 +1249,8 @@ let%expect_test _ =
     ((a()))
     ((a foo))
     ((a()))
-    ((a())) |}]
+    ((a()))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1228,7 +1267,8 @@ let%expect_test _ =
     ((a()))
     ((a foo))
     ((a()))
-    ((a())) |}]
+    ((a()))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1238,7 +1278,8 @@ let%expect_test _ =
     baz
     foo
     cabbage
-    cab |}]
+    cab
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1247,7 +1288,8 @@ let%expect_test _ =
     :bar
     baz
     cabbage
-    cab |}]
+    cab
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1256,13 +1298,13 @@ let%expect_test _ =
     :bar
     baz
     cabbage
-    cab |}]
+    cab
+    |}]
 ;;
 
 let%expect_test _ =
   run_single ".. %/^[abc]+$/" "(bar baz foo cabbage cab)";
-  [%expect {|
-    :cab |}]
+  [%expect {| :cab |}]
 ;;
 
 let%expect_test _ =
@@ -1273,7 +1315,8 @@ let%expect_test _ =
     car
     car
     cab
-    car |}]
+    car
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1286,7 +1329,8 @@ let%expect_test _ =
     :ab
     :ac
     :bc
-    :abc abc |}]
+    :abc abc
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1299,7 +1343,8 @@ let%expect_test _ =
     :ab
     :ac
     :bc
-    :abc abc |}]
+    :abc abc
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1312,7 +1357,8 @@ let%expect_test _ =
     :ab
     :ac
     :
-    :abc abc |}]
+    :abc abc
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1325,7 +1371,8 @@ let%expect_test _ =
     :ab
     :ac
     :
-    :abc |}]
+    :abc
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1338,7 +1385,8 @@ let%expect_test _ =
     :ab
     :ac
     :
-    :abc |}]
+    :abc
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1354,7 +1402,8 @@ let%expect_test _ =
     :((a b)b())
     :((a c)()c)
     :
-    :((a b c)b()) |}]
+    :((a b c)b())
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1366,7 +1415,8 @@ let%expect_test _ =
     (c())
     (d())
     (f e)
-    (g()) |}]
+    (g())
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1376,7 +1426,8 @@ let%expect_test _ =
     ()
     2
     ()
-    () |}]
+    ()
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1389,7 +1440,8 @@ let%expect_test _ =
     ()
     (2)
     (())
-    () |}]
+    ()
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1398,7 +1450,8 @@ let%expect_test _ =
     :b
     b
     b
-    b |}]
+    b
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1413,26 +1466,26 @@ let%expect_test _ =
     :b
     b
     b
-    b |}]
+    b
+    |}]
 ;;
 
 let%expect_test _ =
   run_single "([.*] %.)" "(a b)";
-  [%expect {|
-    :b |}]
+  [%expect {| :b |}]
 ;;
 
 let%expect_test _ =
   run_single "(![.*] %.)" "(a b)";
-  [%expect {|
-    : |}]
+  [%expect {| : |}]
 ;;
 
 let%expect_test _ =
   run_single ".. %0=[a . c]" "(a b a a b c c a d c)";
   [%expect {|
     :((a b c))
-    ((a d c)) |}]
+    ((a d c))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1452,7 +1505,8 @@ let%expect_test _ =
     :((foo 5)(bar()))
     :((foo 6)(bar()))
     :((foo 8)(bar 9))
-    : |}]
+    :
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1472,7 +1526,8 @@ let%expect_test _ =
     :((bar()))
     :((bar()))
     :((bar 9))
-    :((bar())) |}]
+    :((bar()))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1490,7 +1545,8 @@ let%expect_test _ =
     :((baz())(foo 4)(bar 3)(aaa())(a bar)(b 3)) ((baz())(foo 4)(bar 3)(aaa())(a foo)(b 4))
     :((baz())(foo 5)(bar())(aaa())(a foo)(b 5))
     :((baz 7)(foo 6)(bar())(aaa())(a foo)(b 6)) ((baz 7)(foo 6)(bar())(aaa())(a baz)(b 7))
-    :((baz 10)(foo 8)(bar 9)(aaa())(a foo)(b 8)) ((baz 10)(foo 8)(bar 9)(aaa())(a bar)(b 9)) ((baz 10)(foo 8)(bar 9)(aaa())(a baz)(b 10)) |}]
+    :((baz 10)(foo 8)(bar 9)(aaa())(a foo)(b 8)) ((baz 10)(foo 8)(bar 9)(aaa())(a bar)(b 9)) ((baz 10)(foo 8)(bar 9)(aaa())(a baz)(b 10))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1506,7 +1562,8 @@ let%expect_test _ =
     :((foo 1)(baz()))
     :((foo 1)(baz 2))
     :((foo 1)(baz 3)) ((foo 1)(baz 4))
-    :((foo 1)(baz 3)) ((foo 1)(baz 4)) ((foo 1)(baz 5)) ((foo 1)(baz 6)) |}]
+    :((foo 1)(baz 3)) ((foo 1)(baz 4)) ((foo 1)(baz 5)) ((foo 1)(baz 6))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1516,7 +1573,8 @@ let%expect_test _ =
     :((x())(y(b b))) ((x b)(y b))
     :((x())(y(b a))) ((x b)(y a))
     :((x())(y a))
-    :((x())(y b)) ((x b)(y())) |}]
+    :((x())(y b)) ((x b)(y()))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1526,7 +1584,8 @@ let%expect_test _ =
     :((x b)(y b)) ((x())(y(b b)))
     :((x b)(y a)) ((x())(y(b a)))
     :((x())(y a))
-    :((x b)(y())) ((x())(y b)) |}]
+    :((x b)(y())) ((x())(y b))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1534,31 +1593,38 @@ let%expect_test _ =
   run "{(.* %. .*)?}" sexps;
   [%expect {|
     :()
-    :x y z |}];
+    :x y z
+    |}];
   run "{[!(.* %. .*)]?}" sexps;
   [%expect {|
     :()
-    :x z |}];
+    :x z
+    |}];
   run "{!(.* %. .*)?}" sexps;
   [%expect {|
     :()
-    :x y |}];
+    :x y
+    |}];
   run "{(.* %. .*)}" sexps;
   [%expect {|
     :
-    :x y z |}];
+    :x y z
+    |}];
   run "{!(.* %. .*)}" sexps;
   [%expect {|
     :
-    :x y |}];
+    :x y
+    |}];
   run "{[!(.* %. .*)]}" sexps;
   [%expect {|
     :
-    :x z |}];
+    :x z
+    |}];
   run "{![!(.* %. .*)]}" sexps;
   [%expect {|
     :
-    :x |}]
+    :x
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1569,67 +1635,58 @@ let%expect_test _ =
     :((foo()))
     :((foo(foo 1))) ((foo(bar 2)))
     :
-    :((foo a)) |}]
+    :((foo a))
+    |}]
 ;;
 
 let%expect_test _ =
   run "([. a]* %. .*)" [ "(1 a 2 a 3 a 4 a 5 a 6)" ];
-  [%expect {|
-    :1 2 3 4 5 6 |}]
+  [%expect {| :1 2 3 4 5 6 |}]
 ;;
 
 let%expect_test _ =
   run "([. a]*+ %. .*)" [ "(1 a 2 a 3 a 4 a 5 a 6)" ];
-  [%expect {|
-    :6 5 4 3 2 1 |}]
+  [%expect {| :6 5 4 3 2 1 |}]
 ;;
 
 let%expect_test _ =
   run "([. a]* %. .*+)" [ "(1 a 2 a 3 a 4 a 5 a 6)" ];
-  [%expect {|
-    :1 2 3 4 5 6 |}]
+  [%expect {| :1 2 3 4 5 6 |}]
 ;;
 
 let%expect_test _ =
   run "([. a]*+ %. .*+)" [ "(1 a 2 a 3 a 4 a 5 a 6)" ];
-  [%expect {|
-    :6 5 4 3 2 1 |}]
+  [%expect {| :6 5 4 3 2 1 |}]
 ;;
 
 let%expect_test _ =
   run "([. a]+ %. .*)" [ "(1 a 2 a 3 a 4 a 5 a 6)" ];
-  [%expect {|
-    :2 3 4 5 6 |}]
+  [%expect {| :2 3 4 5 6 |}]
 ;;
 
 let%expect_test _ =
   run "([. a]++ %. .*)" [ "(1 a 2 a 3 a 4 a 5 a 6)" ];
-  [%expect {|
-    :6 5 4 3 2 |}]
+  [%expect {| :6 5 4 3 2 |}]
 ;;
 
 let%expect_test _ =
   run "([. a]+ %. .++)" [ "(1 a 2 a 3 a 4 a 5 a 6)" ];
-  [%expect {|
-    :2 3 4 5 |}]
+  [%expect {| :2 3 4 5 |}]
 ;;
 
 let%expect_test _ =
   run "([. a]++ %. .++)" [ "(1 a 2 a 3 a 4 a 5 a 6)" ];
-  [%expect {|
-    :5 4 3 2 |}]
+  [%expect {| :5 4 3 2 |}]
 ;;
 
 let%expect_test _ =
   run "([. a]? %. .*)" [ "(1 a 2 a 3 a 4 a 5 a 6)" ];
-  [%expect {|
-    :1 2 |}]
+  [%expect {| :1 2 |}]
 ;;
 
 let%expect_test _ =
   run "([. a]?+ %. .*)" [ "(1 a 2 a 3 a 4 a 5 a 6)" ];
-  [%expect {|
-    :2 1 |}]
+  [%expect {| :2 1 |}]
 ;;
 
 let%expect_test _ =
@@ -1651,7 +1708,8 @@ let%expect_test _ =
     :(()b()(d e))
     :(()()()(c d e))
     :(()()()(c a d e))
-    :(()()()(d e)) |}]
+    :(()()()(d e))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1673,7 +1731,8 @@ let%expect_test _ =
     :(()b()(d e))
     :(()()c(d e))
     :(()()c(a d e))
-    :(()()()(d e)) |}]
+    :(()()()(d e))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1687,7 +1746,8 @@ let%expect_test _ =
     {|
     :((a a a a a)(b b b b b c c c c c))
     :(()(b b b b b c c c c c))
-    :((a a a a a)(b b b b b)) |}]
+    :((a a a a a)(b b b b b))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1701,7 +1761,8 @@ let%expect_test _ =
     {|
     :((a a a a a)(b b b b b c c c c c))
     :(b(b b b b c c c c c))
-    :((a a a a a)(b b b b b)) |}]
+    :((a a a a a)(b b b b b))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1715,7 +1776,8 @@ let%expect_test _ =
     {|
     :((a a a a a b b b b b)(c c c c c))
     :((b b b b b)(c c c c c))
-    :((a a a a a b b b b b)()) |}]
+    :((a a a a a b b b b b)())
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1729,7 +1791,8 @@ let%expect_test _ =
     {|
     :((a a a a a b b b b b)(c c c c c))
     :((b b b b b)(c c c c c))
-    :((a a a a a b b b b)b) |}]
+    :((a a a a a b b b b)b)
+    |}]
 ;;(* Simple wrapping test for direct output, list output, record output *)
 
 
@@ -1748,11 +1811,12 @@ let%test_module "Simple wrapping test for direct output" = (module struct
       query
       "((a b) (a c d e) (f g a) (h a i))";
     [%expect {|
-    :b
-    c
-    d
-    e
-    i |}]
+      :b
+      c
+      d
+      e
+      i
+      |}]
 
   let%expect_test _ =
     run_single
@@ -1760,10 +1824,11 @@ let%test_module "Simple wrapping test for direct output" = (module struct
       query
       "((a b) (a c d e) (f g a) (h a i))";
     [%expect {|
-    :b
-    (c d e)
-    ()
-    i |}]
+      :b
+      (c d e)
+      ()
+      i
+      |}]
 
   let%expect_test _ =
     run_single
@@ -1771,10 +1836,11 @@ let%test_module "Simple wrapping test for direct output" = (module struct
       query
       "((a b) (a c d e) (f g a) (h a i))";
     [%expect {|
-    :(b)
-    (c d e)
-    ()
-    (i) |}]
+      :(b)
+      (c d e)
+      ()
+      (i)
+      |}]
 
 end)
 
@@ -1791,15 +1857,16 @@ let%test_module "Simple wrapping test for list output" = (module struct
       query
       "((a b) (a c d) (a) (z) (z y) (z x w))";
     [%expect {|
-    :(b)
-    (b y)
-    (b x w)
-    (c d)
-    (c d y)
-    (c d x w)
-    ()
-    (y)
-    (x w) |}]
+      :(b)
+      (b y)
+      (b x w)
+      (c d)
+      (c d y)
+      (c d x w)
+      ()
+      (y)
+      (x w)
+      |}]
 
   let%expect_test _ =
     run_single
@@ -1807,15 +1874,16 @@ let%test_module "Simple wrapping test for list output" = (module struct
       query
       "((a b) (a c d) (a) (z) (z y) (z x w))";
     [%expect {|
-    :(b())
-    (b y)
-    (b(x w))
-    ((c d)())
-    ((c d)y)
-    ((c d)(x w))
-    (()())
-    (()y)
-    (()(x w)) |}]
+      :(b())
+      (b y)
+      (b(x w))
+      ((c d)())
+      ((c d)y)
+      ((c d)(x w))
+      (()())
+      (()y)
+      (()(x w))
+      |}]
 
   let%expect_test _ =
     run_single
@@ -1823,15 +1891,16 @@ let%test_module "Simple wrapping test for list output" = (module struct
       query
       "((a b) (a c d) (a) (z) (z y) (z x w))";
     [%expect {|
-    :((b)())
-    ((b)(y))
-    ((b)(x w))
-    ((c d)())
-    ((c d)(y))
-    ((c d)(x w))
-    (()())
-    (()(y))
-    (()(x w)) |}]
+      :((b)())
+      ((b)(y))
+      ((b)(x w))
+      ((c d)())
+      ((c d)(y))
+      ((c d)(x w))
+      (()())
+      (()(y))
+      (()(x w))
+      |}]
 
 end)
 
@@ -1848,15 +1917,16 @@ let%test_module "Simple wrapping test for record output" = (module struct
       query
       "((a b) (a c d) (a) (z) (z y) (z x w))";
     [%expect {|
-    :((a b)(z))
-    ((a b)(z y))
-    ((a b)(z x w))
-    ((a c d)(z))
-    ((a c d)(z y))
-    ((a c d)(z x w))
-    ((a)(z))
-    ((a)(z y))
-    ((a)(z x w)) |}]
+      :((a b)(z))
+      ((a b)(z y))
+      ((a b)(z x w))
+      ((a c d)(z))
+      ((a c d)(z y))
+      ((a c d)(z x w))
+      ((a)(z))
+      ((a)(z y))
+      ((a)(z x w))
+      |}]
 
   let%expect_test _ =
     run_single
@@ -1864,15 +1934,16 @@ let%test_module "Simple wrapping test for record output" = (module struct
       query
       "((a b) (a c d) (a) (z) (z y) (z x w))";
     [%expect {|
-    :((a b)(z()))
-    ((a b)(z y))
-    ((a b)(z(x w)))
-    ((a(c d))(z()))
-    ((a(c d))(z y))
-    ((a(c d))(z(x w)))
-    ((a())(z()))
-    ((a())(z y))
-    ((a())(z(x w))) |}]
+      :((a b)(z()))
+      ((a b)(z y))
+      ((a b)(z(x w)))
+      ((a(c d))(z()))
+      ((a(c d))(z y))
+      ((a(c d))(z(x w)))
+      ((a())(z()))
+      ((a())(z y))
+      ((a())(z(x w)))
+      |}]
 
   let%expect_test _ =
     run_single
@@ -1880,15 +1951,16 @@ let%test_module "Simple wrapping test for record output" = (module struct
       query
       "((a b) (a c d) (a) (z) (z y) (z x w))";
     [%expect {|
-    :((a(b))(z()))
-    ((a(b))(z(y)))
-    ((a(b))(z(x w)))
-    ((a(c d))(z()))
-    ((a(c d))(z(y)))
-    ((a(c d))(z(x w)))
-    ((a())(z()))
-    ((a())(z(y)))
-    ((a())(z(x w))) |}]
+      :((a(b))(z()))
+      ((a(b))(z(y)))
+      ((a(b))(z(x w)))
+      ((a(c d))(z()))
+      ((a(c d))(z(y)))
+      ((a(c d))(z(x w)))
+      ((a())(z()))
+      ((a())(z(y)))
+      ((a())(z(x w)))
+      |}]
 
 end)
 [@@@ocamlformat "enable"]
@@ -1899,8 +1971,7 @@ let%expect_test _ =
     ~replace:"%0"
     ~with_:"(%bar %foo)"
     "((a 1)(b 2)(c 3))";
-  [%expect {|
-    :((1 a)(2 b)(3 c)) |}]
+  [%expect {| :((1 a)(2 b)(3 c)) |}]
 ;;
 
 let%expect_test _ =
@@ -1914,7 +1985,8 @@ let%expect_test _ =
     {|
     :(raised (
       Failure
-      "Output or replacement expression uses capture not present in pattern: baz")) |}]
+      "Output or replacement expression uses capture not present in pattern: baz"))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1924,8 +1996,7 @@ let%expect_test _ =
       ~replace:"0"
       ~with_:"(%bar %foo)"
       "((a 1)(b 2)(c 3))");
-  [%expect {|
-    :(raised (Failure "Replacement target '0' does not start with '%'")) |}]
+  [%expect {| :(raised (Failure "Replacement target '0' does not start with '%'")) |}]
 ;;
 
 let%expect_test _ =
@@ -1934,14 +2005,12 @@ let%expect_test _ =
     ~replace:"%a"
     ~with_:"(%label %id %counts)"
     "((label B) ( ((id X) (counts (1 2 3))) ((id Y) (counts (4 5 6))) ) )";
-  [%expect {|
-    :((label B)((B X(1 2 3))(B Y(4 5 6)))) |}]
+  [%expect {| :((label B)((B X(1 2 3))(B Y(4 5 6)))) |}]
 ;;
 
 let%expect_test _ =
   replace_single ".. %0=[a]" ~replace:"%0" ~with_:"()" "(a b a a b c c a d c)";
-  [%expect {|
-    :(()b()()b c c()d c) |}]
+  [%expect {| :(()b()()b c c()d c) |}]
 ;;
 
 let%expect_test _ =
@@ -1949,7 +2018,8 @@ let%expect_test _ =
     replace_single ".. %0=[a . c]" ~replace:"%0" ~with_:"()" "(a b a a b c c a d c)");
   [%expect {|
     :(a b a()c())
-    "did not raise" |}]
+    "did not raise"
+    |}]
 ;;
 
 let%expect_test _ =
@@ -1960,8 +2030,7 @@ let%expect_test _ =
     "(foo 100 (bar 25 ((a 1)(b 2)(c 3))) ((d 4)(e 5)(f 6)) (bar 30 (((g 7)(h 8)(i 9)) \
      ((j 10)(k 11)(l 12)))))";
   [%expect
-    {|
-    :(foo 100(bar 25((1 a 100 25)(2 b 100 25)(3 c 100 25)))((d 4)(e 5)(f 6))(bar 30(((j 10)(k 11)(l 12))((g 7)(h 8)(i 9))100 30))) |}]
+    {| :(foo 100(bar 25((1 a 100 25)(2 b 100 25)(3 c 100 25)))((d 4)(e 5)(f 6))(bar 30(((j 10)(k 11)(l 12))((g 7)(h 8)(i 9))100 30))) |}]
 ;;
 
 let%expect_test _ =
@@ -1972,8 +2041,7 @@ let%expect_test _ =
     "(foo 100 (bar 25 ((a 1)(b 2)(c 3))) ((d 4)(e 5)(f 6)) (bar 30 (aa ((g 7)(h 8)(i 9)) \
      ((j 10)(k 11)(l 12)))))";
   [%expect
-    {|
-    :(foo 100(bar 25((1 a 100 25)(2 b 100 25)(3 c 100 25)))((d 4)(e 5)(f 6))(bar 30(aa((7 g 100 30)(8 h 100 30)(9 i 100 30))((10 j 100 30)(11 k 100 30)(12 l 100 30))))) |}]
+    {| :(foo 100(bar 25((1 a 100 25)(2 b 100 25)(3 c 100 25)))((d 4)(e 5)(f 6))(bar 30(aa((7 g 100 30)(8 h 100 30)(9 i 100 30))((10 j 100 30)(11 k 100 30)(12 l 100 30))))) |}]
 ;;
 
 let%expect_test "maps come out like records" =
@@ -1993,7 +2061,8 @@ let%expect_test "maps come out like records" =
     ((alt())(bar(y))(baz())(foo(x)))
     ((alt())(bar(b))(baz(c))(foo(a)))
     ((alt())(bar(2))(baz(4))(foo(1)))
-    ((alt(one))(bar())(baz())(foo())) |}]
+    ((alt(one))(bar())(baz())(foo()))
+    |}]
 ;;
 
 let%expect_test "replace with function" =
@@ -2013,7 +2082,8 @@ let%expect_test "replace with function" =
   [%expect
     {|
     (foo bar bar foo foo)
-    ("was foo" "was bar" "was bar" "was foo" "was foo") |}]
+    ("was foo" "was bar" "was bar" "was foo" "was foo")
+    |}]
 ;;
 
 let%expect_test "replace with function highly path-dependent" =
@@ -2042,7 +2112,8 @@ let%expect_test "replace with function highly path-dependent" =
     (foo bar bar)
     (bar bar)
     (foo bar)
-    (! ("was foo" "was bar") bar goo foo (! ("was foo" "was bar"))) |}]
+    (! ("was foo" "was bar") bar goo foo (! ("was foo" "was bar")))
+    |}]
 ;;
 
 let%expect_test "replace missing target" =
@@ -2052,7 +2123,8 @@ let%expect_test "replace missing target" =
     {|
     :(raised (
       Failure
-      "Attempting to replace %def but it does not occur in the query pattern")) |}]
+      "Attempting to replace %def but it does not occur in the query pattern"))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -2068,7 +2140,8 @@ let%expect_test _ =
     :(raised (
       "Query pattern contains unlabeled capture, but they are not allowed when using this output method"
       (query_pattern (Capture_unlabeled Any))
-      (output_method (Formats Wrap_non_singletons (()))))) |}]
+      (output_method (Formats Wrap_non_singletons (())))))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -2079,7 +2152,8 @@ let%expect_test _ =
     :(raised (
       "Query pattern contains named capture, but they are not allowed when using this output method"
       (query_pattern (Capture_to_name a Any))
-      (output_method (List Wrap_non_singletons)))) |}]
+      (output_method (List Wrap_non_singletons))))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -2090,7 +2164,8 @@ let%expect_test _ =
     :(raised (
       "Query pattern contains unlabeled capture, but they are not allowed when using this output method"
       (query_pattern (Capture_unlabeled Any))
-      (output_method (Record            Wrap_non_singletons)))) |}]
+      (output_method (Record            Wrap_non_singletons))))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -2104,5 +2179,6 @@ let%expect_test _ =
         Sequence (
           (Capture_unlabeled Any)
           (Capture_unlabeled Any))))
-      (output_method (Single_capture Wrap_non_singletons)))) |}]
+      (output_method (Single_capture Wrap_non_singletons))))
+    |}]
 ;;
