@@ -25,7 +25,7 @@ depends: [
   "sexp_select"
   "sexplib"
   "shell"
-  "dune"        {>= "2.0.0"}
+  "dune"        {>= "3.11.0"}
 ]
 available: arch != "arm32" & arch != "x86_32"
 synopsis: "S-expression swiss knife"
