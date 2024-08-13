@@ -210,12 +210,12 @@ module Make_engine (S : Sexplike) = struct
                         subquery
                         [ subsexp ]
                         ~f:(fun nconsumed _rev_consumed _subtail ->
-                        (* If the subquery didn't actually consume the subsexp, it doesn't count *)
-                        if nconsumed = 0
-                        then ()
-                        else (
-                          found_a_match := true;
-                          loop_subqueries subquery_tail subsexps ~f));
+                          (* If the subquery didn't actually consume the subsexp, it doesn't count *)
+                          if nconsumed = 0
+                          then ()
+                          else (
+                            found_a_match := true;
+                            loop_subqueries subquery_tail subsexps ~f));
                       if first_only && !found_a_match then stop_trying_to_find_a_match ());
                     if optional && not !found_a_match
                     then loop_subqueries subquery_tail subsexps ~f)
@@ -350,12 +350,12 @@ let iter_matches
           labels_of_captures
           revcapture_buf
           ~f:(fun capture_label revcapture ->
-          let field_name = Sexp.Atom capture_label in
-          let capture_result = maybe_wrap_results ~revcapture ~wrap_mode in
-          match wrap_mode with
-          | Unwrap_always -> Sexp.List (field_name :: capture_result)
-          | Wrap_non_singletons -> Sexp.List [ field_name; capture_result ]
-          | Wrap_always -> Sexp.List [ field_name; capture_result ])
+            let field_name = Sexp.Atom capture_label in
+            let capture_result = maybe_wrap_results ~revcapture ~wrap_mode in
+            match wrap_mode with
+            | Unwrap_always -> Sexp.List (field_name :: capture_result)
+            | Wrap_non_singletons -> Sexp.List [ field_name; capture_result ]
+            | Wrap_always -> Sexp.List [ field_name; capture_result ])
         |> Array.to_list
       in
       f (Sexp.List results))
@@ -498,23 +498,23 @@ let replace' ~query ~f sexp =
     let replacement_targets_and_replacements =
       Map.to_alist (replacements : _ String.Map.t)
       |> List.map ~f:(fun (label, replacements) ->
-           match Map.find capture_label_to_idx_map label with
-           | None ->
-             failwithf
-               "In [Pattern.Engine.replace'], [f] returned a map of replacements that \
-                contains a key that is not the label of a capture: %s"
-               label
-               ()
-           | Some idx ->
-             let targets = List.rev revcapture_buf.(idx) in
-             if List.is_empty targets && not (List.is_empty replacements)
-             then
-               failwithf
-                 "In [Pattern.Engine.replace'], [f] returned a map of replacements that \
-                  contains a key that for a label with zero captures: %s"
-                 label
-                 ();
-             targets, replacements)
+        match Map.find capture_label_to_idx_map label with
+        | None ->
+          failwithf
+            "In [Pattern.Engine.replace'], [f] returned a map of replacements that \
+             contains a key that is not the label of a capture: %s"
+            label
+            ()
+        | Some idx ->
+          let targets = List.rev revcapture_buf.(idx) in
+          if List.is_empty targets && not (List.is_empty replacements)
+          then
+            failwithf
+              "In [Pattern.Engine.replace'], [f] returned a map of replacements that \
+               contains a key that for a label with zero captures: %s"
+              label
+              ();
+          targets, replacements)
     in
     (* Whenever a later replacement would overlap with a prior one, do nothing instead. *)
     if List.for_all replacement_targets_and_replacements ~f:(fun (targets, _) ->

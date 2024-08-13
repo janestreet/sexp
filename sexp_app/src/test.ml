@@ -85,7 +85,8 @@ let%expect_test _ =
     ]
   in
   run {|(field id)|} examples;
-  [%expect {|
+  [%expect
+    {|
     ("(a b c)")
     ("results: (a b c)")
     (A)
@@ -93,7 +94,8 @@ let%expect_test _ =
     (" ")
     |}];
   run {|(pipe (field id) restructure)|} examples;
-  [%expect {|
+  [%expect
+    {|
     ((a b c))
     (results: (a b c))
     (A)

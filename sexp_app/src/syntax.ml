@@ -134,11 +134,11 @@ module Var = struct
   include T
 
   include Identifiable.Make (struct
-    let module_name = "Sexp_app.Syntax.Var"
+      let module_name = "Sexp_app.Syntax.Var"
 
-    include T
-    include Sexpable.Of_stringable (T)
-  end)
+      include T
+      include Sexpable.Of_stringable (T)
+    end)
 
   let is_list t = Char.( = ) t.[0] '@'
 end

@@ -586,22 +586,22 @@ combined with -unique. This matches the behavior of the unix sort command.
          List.map
            key_extractors
            ~f:(fun (key_extractor, key_compare_behavior) : (module Sort_key) ->
-           let compare_behavior =
-             Compare_behavior.merge top_level_compare_behavior key_compare_behavior
-           in
-           let (module Key : Sort_key) =
-             if Compare_behavior.numeric compare_behavior
-             then build_number_key ~key_extractor ~compare_behavior
-             else build_sexp_key ~key_extractor ~compare_behavior
-           in
-           (module Key))
+             let compare_behavior =
+               Compare_behavior.merge top_level_compare_behavior key_compare_behavior
+             in
+             let (module Key : Sort_key) =
+               if Compare_behavior.numeric compare_behavior
+               then build_number_key ~key_extractor ~compare_behavior
+               else build_sexp_key ~key_extractor ~compare_behavior
+             in
+             (module Key))
        in
        let (module Sorter : Sort_key) =
          List.reduce_exn
            key_modules
            ~f:(fun (module A : Sort_key) (module B : Sort_key) : (module Sort_key) ->
-           let module Chained = Chain_sort (A) (B) in
-           (module Chained))
+             let module Chained = Chain_sort (A) (B) in
+             (module Chained))
        in
        let extract_or_drop_or_error i sexp =
          match Sorter.extract sexp with

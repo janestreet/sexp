@@ -85,9 +85,9 @@ module Unescape = struct
           Lazy.force Reader.stdin
           |> Reader.read_sexps
           |> Pipe.iter_without_pushback ~f:(function
-               | Atom atom -> print_endline atom
-               | List _ as input ->
-                 Core.eprint_s [%message "Non-atom input" (input : Sexp.t)])]
+            | Atom atom -> print_endline atom
+            | List _ as input ->
+              Core.eprint_s [%message "Non-atom input" (input : Sexp.t)])]
       ~behave_nicely_in_pipeline:false
   ;;
 end

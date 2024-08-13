@@ -2,7 +2,7 @@ open! Core
 open! Import
 
 let forall_sexps here ~f =
-  require_does_not_raise ~cr:CR_soon here (fun () ->
+  require_does_not_raise ~cr:CR_soon ~here (fun () ->
     Quickcheck.test
       ~sexp_of:[%sexp_of: Sexp.t]
       ~shrinker:[%quickcheck.shrinker: Sexp.t]

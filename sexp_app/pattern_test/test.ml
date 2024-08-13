@@ -851,7 +851,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run ".. b %." standard_test_cases;
-  [%expect {|
+  [%expect
+    {|
     :
     :
     :
@@ -884,7 +885,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run ".. (.? %. 3)" standard_test_cases;
-  [%expect {|
+  [%expect
+    {|
     :
     :
     :
@@ -1053,7 +1055,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run "[%[[([a])]]]" [ "a"; "(a)"; "()"; "(a a)" ];
-  [%expect {|
+  [%expect
+    {|
     :
     :(a)
     :
@@ -1104,7 +1107,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single ".. (foo (.* %. .*))" "((foo (A B C)) (bar (D E F)) (foo (foo (G H I))))";
-  [%expect {|
+  [%expect
+    {|
     :A
     B
     C
@@ -1118,7 +1122,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single ".. (foo (%[.*]))" "((foo (A B C)) (bar (D E F)) (foo (foo (G H I))))";
-  [%expect {|
+  [%expect
+    {|
     :(A B C)
     (foo(G H I))
     (G H I)
@@ -1130,7 +1135,8 @@ let%expect_test _ =
   (* yes, we get FOUR of them. The extra foo comes from when %[foo]+ matches
      "foo foo", and since the capture is inside the +, it successively captures
      the first "foo" and then second "foo" which overwrites the first. *)
-  [%expect {|
+  [%expect
+    {|
     :foo
     foo
     foo
@@ -1217,7 +1223,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single "(.* %a=foo+ .*)" "(foo foo bar baz foo bar)";
-  [%expect {|
+  [%expect
+    {|
     :((a foo))
     ((a foo))
     ((a foo))
@@ -1227,7 +1234,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single "(.* %a=[foo+] .*)" "(foo foo bar baz foo bar)";
-  [%expect {|
+  [%expect
+    {|
     :((a foo))
     ((a(foo foo)))
     ((a foo))
@@ -1273,7 +1281,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single ".. %/[abc]*/" "(bar baz foo cabbage cab)";
-  [%expect {|
+  [%expect
+    {|
     :bar
     baz
     foo
@@ -1284,7 +1293,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single ".. %/[abc]+/" "(bar baz foo cabbage cab)";
-  [%expect {|
+  [%expect
+    {|
     :bar
     baz
     cabbage
@@ -1294,7 +1304,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single ".. %/^[abc]+/" "(bar baz foo cabbage cab)";
-  [%expect {|
+  [%expect
+    {|
     :bar
     baz
     cabbage
@@ -1309,7 +1320,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single ".. {a .. %/c/}" "(a (foo cab a) acc (car) (a car))";
-  [%expect {|
+  [%expect
+    {|
     :cab
     acc
     car
@@ -1321,7 +1333,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run "%[/a/ & /b/ | /c/]" [ "d"; "a"; "b"; "c"; "ab"; "ac"; "bc"; "abc" ];
-  [%expect {|
+  [%expect
+    {|
     :
     :
     :
@@ -1335,7 +1348,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run "%[/c/ | /a/ & /b/]" [ "d"; "a"; "b"; "c"; "ab"; "ac"; "bc"; "abc" ];
-  [%expect {|
+  [%expect
+    {|
     :
     :
     :
@@ -1349,7 +1363,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run "%[/a/ & [/b/ | /c/]]" [ "d"; "a"; "b"; "c"; "ab"; "ac"; "bc"; "abc" ];
-  [%expect {|
+  [%expect
+    {|
     :
     :
     :
@@ -1363,7 +1378,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run "%[/a/ & ![/b/ | /c/]]" [ "d"; "a"; "b"; "c"; "ab"; "ac"; "bc"; "abc" ];
-  [%expect {|
+  [%expect
+    {|
     :
     :
     :
@@ -1377,7 +1393,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run "%[[![/b/ | /c/]] & /a/]" [ "d"; "a"; "b"; "c"; "ab"; "ac"; "bc"; "abc" ];
-  [%expect {|
+  [%expect
+    {|
     :
     :
     :
@@ -1410,7 +1427,8 @@ let%expect_test _ =
   run_single
     "{[ (a %0 %1) | (b %0 .) ]} "
     "( (a b c) (b c a) (d b b) (b d e) (a f e) (b g g) )";
-  [%expect {|
+  [%expect
+    {|
     :(b c)
     (c())
     (d())
@@ -1421,7 +1439,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single ".. (foo (%.?))" "( (foo (1)) (foo ()) (foo (2)) (foo (())) (foo ()) )";
-  [%expect {|
+  [%expect
+    {|
     :1
     ()
     2
@@ -1435,7 +1454,8 @@ let%expect_test _ =
     ~wrap_mode:Wrap_always
     ".. (foo (%.?))"
     "( (foo (1)) (foo ()) (foo (2)) (foo (())) (foo ()) )";
-  [%expect {|
+  [%expect
+    {|
     :(1)
     ()
     (2)
@@ -1446,7 +1466,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single "([[%.]*]+)" "(a b)";
-  [%expect {|
+  [%expect
+    {|
     :b
     b
     b
@@ -1462,7 +1483,8 @@ let%expect_test _ =
      4. [a b]
   *)
   run_single "([[%.]*]++)" "(a b)";
-  [%expect {|
+  [%expect
+    {|
     :b
     b
     b
@@ -1482,7 +1504,8 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single ".. %0=[a . c]" "(a b a a b c c a d c)";
-  [%expect {|
+  [%expect
+    {|
     :((a b c))
     ((a d c))
     |}]
@@ -1591,37 +1614,44 @@ let%expect_test _ =
 let%expect_test _ =
   let sexps = [ "()"; "((x y) (z))" ] in
   run "{(.* %. .*)?}" sexps;
-  [%expect {|
+  [%expect
+    {|
     :()
     :x y z
     |}];
   run "{[!(.* %. .*)]?}" sexps;
-  [%expect {|
+  [%expect
+    {|
     :()
     :x z
     |}];
   run "{!(.* %. .*)?}" sexps;
-  [%expect {|
+  [%expect
+    {|
     :()
     :x y
     |}];
   run "{(.* %. .*)}" sexps;
-  [%expect {|
+  [%expect
+    {|
     :
     :x y z
     |}];
   run "{!(.* %. .*)}" sexps;
-  [%expect {|
+  [%expect
+    {|
     :
     :x y
     |}];
   run "{[!(.* %. .*)]}" sexps;
-  [%expect {|
+  [%expect
+    {|
     :
     :x z
     |}];
   run "{![!(.* %. .*)]}" sexps;
-  [%expect {|
+  [%expect
+    {|
     :
     :x
     |}]
@@ -2016,7 +2046,8 @@ let%expect_test _ =
 let%expect_test _ =
   show_raise (fun () ->
     replace_single ".. %0=[a . c]" ~replace:"%0" ~with_:"()" "(a b a a b c c a d c)");
-  [%expect {|
+  [%expect
+    {|
     :(a b a()c())
     "did not raise"
     |}]

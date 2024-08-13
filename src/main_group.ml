@@ -175,10 +175,10 @@ let add_exn (t : t) ~extract sexp =
 let groups (t : t) =
   Hashtbl.to_alist t.entries
   |> List.map ~f:(fun (key, { first_line; values }) ->
-       let count = List.length values in
-       (* The values will be accumulated in reverse order; we need to reverse them
+    let count = List.length values in
+    (* The values will be accumulated in reverse order; we need to reverse them
        here so they appear in the same order as the input. *)
-       first_line, { Group.key; count; values = List.rev values })
+    first_line, { Group.key; count; values = List.rev values })
   |> List.sort ~compare:(fun (line1, _) (line2, _) -> Int.compare line1 line2)
   |> List.map ~f:snd
 ;;
@@ -192,8 +192,8 @@ let main ~keys ~default_if_no_key =
   in
   groups t
   |> Deferred.List.iter ~how:`Sequential ~f:(fun group ->
-       [%sexp_of: Group.t] group |> Core.print_s;
-       return ())
+    [%sexp_of: Group.t] group |> Core.print_s;
+    return ())
 ;;
 
 let field_doc = "FIELD Group by the value associated with this field"

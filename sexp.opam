@@ -17,6 +17,7 @@ depends: [
   "core_unix"
   "csvfields"
   "jsonaf"
+  "parsexp"
   "ppx_jane"
   "re2"
   "sexp_diff"
@@ -25,6 +26,7 @@ depends: [
   "sexp_select"
   "sexplib"
   "shell"
+  "angstrom"    {>= "0.15.0"}
   "dune"        {>= "3.11.0"}
 ]
 available: arch != "arm32" & arch != "x86_32"

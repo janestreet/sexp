@@ -190,13 +190,13 @@ let multi_command =
        in
        Reader.read_sexps (Lazy.force Reader.stdin)
        |> Pipe.iter_without_pushback ~f:(fun sexp ->
-            match process_fn with
-            | `select select_fn ->
-              (match select_fn sexp with
-               | [] -> ()
-               | sexps -> printf "%s\n%!" (sexp_to_string ([%sexp_of: Sexp.t list] sexps)))
-            | `drop drop_fn ->
-              (match drop_fn sexp with
-               | None -> ()
-               | Some sexp -> printf "%s\n%!" (sexp_to_string sexp))))
+         match process_fn with
+         | `select select_fn ->
+           (match select_fn sexp with
+            | [] -> ()
+            | sexps -> printf "%s\n%!" (sexp_to_string ([%sexp_of: Sexp.t list] sexps)))
+         | `drop drop_fn ->
+           (match drop_fn sexp with
+            | None -> ()
+            | Some sexp -> printf "%s\n%!" (sexp_to_string sexp))))
 ;;
