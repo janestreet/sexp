@@ -54,7 +54,7 @@ let machine =
 ;;
 
 let machine_and_fail_on_parse_error =
-  let%map_open.Command machine = machine
+  let%map_open.Command machine
   and fail_on_parse_error =
     flag
       "fail-on-parse-error"
