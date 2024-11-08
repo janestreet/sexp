@@ -1829,7 +1829,7 @@ let%expect_test _ =
 
 [@@@ocamlformat "disable"]
 
-let%test_module "Simple wrapping test for direct output" = (module struct
+module%test [@name "Simple wrapping test for direct output"] _ = struct
 
   (* Anywhere that an "a" occurs in the sexp, greedily capture the entire sequence
      of sexps after it *)
@@ -1872,9 +1872,9 @@ let%test_module "Simple wrapping test for direct output" = (module struct
       (i)
       |}]
 
-end)
+end
 
-let%test_module "Simple wrapping test for list output" = (module struct
+module%test [@name "Simple wrapping test for list output"] _ = struct
 
   (* Anywhere that an "a" occurs in the sexp, greedily capture the entire sequence
      of sexps after it, AND anywhere that a "z" occurs in the sexp, greedily
@@ -1932,9 +1932,9 @@ let%test_module "Simple wrapping test for list output" = (module struct
       (()(x w))
       |}]
 
-end)
+end
 
-let%test_module "Simple wrapping test for record output" = (module struct
+module%test [@name "Simple wrapping test for record output"] _ = struct
 
   (* Anywhere that an "a" occurs in the sexp, greedily capture the entire sequence
      of sexps after it, AND anywhere that a "z" occurs in the sexp, greedily
@@ -1992,7 +1992,7 @@ let%test_module "Simple wrapping test for record output" = (module struct
       ((a())(z(x w)))
       |}]
 
-end)
+end
 [@@@ocamlformat "enable"]
 
 let%expect_test _ =

@@ -12,8 +12,8 @@ build: [
 depends: [
   "ocaml" {>= "5.1.0"}
   "async"
+  "base"
   "core"
-  "core_kernel"
   "core_unix"
   "csvfields"
   "jsonaf"

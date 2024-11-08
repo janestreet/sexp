@@ -112,101 +112,98 @@ let remove_field ~field sexp immediate_or_recursive =
   | `Recursive -> remove_field_recursively ~field sexp
 ;;
 
-let%test_module "Utils" =
-  (module struct
-    let sexp =
-      Sexp.of_string
-        "((first (a b c)) (second 123) (third ()) (fourth ((foo a) (boo b))))"
-    ;;
+module%test Utils = struct
+  let sexp =
+    Sexp.of_string "((first (a b c)) (second 123) (third ()) (fourth ((foo a) (boo b))))"
+  ;;
 
-    let%test _ =
-      [%compare.equal: Sexp.t Or_error.t]
-        (get_one_field sexp "second")
-        (Ok (Sexp.Atom "123"))
-    ;;
+  let%test _ =
+    [%compare.equal: Sexp.t Or_error.t]
+      (get_one_field sexp "second")
+      (Ok (Sexp.Atom "123"))
+  ;;
 
-    let%test _ = Result.is_error (get_one_field sexp "zoo")
+  let%test _ = Result.is_error (get_one_field sexp "zoo")
 
-    let%test _ =
-      [%compare.equal: Sexp.t Or_error.t] (get_one_field sexp "boo") (Ok (Sexp.Atom "b"))
-    ;;
+  let%test _ =
+    [%compare.equal: Sexp.t Or_error.t] (get_one_field sexp "boo") (Ok (Sexp.Atom "b"))
+  ;;
 
-    let%test _ = Result.is_error (immediate_fields (Sexp.of_string "zoo"))
-    let%test _ = Result.is_error (immediate_fields (Sexp.of_string "(zoo)"))
-    let%test _ = Result.is_error (immediate_fields (Sexp.of_string "(zoo boo)"))
-    let%test _ = Result.is_error (immediate_fields (Sexp.of_string "((good true)(bad))"))
+  let%test _ = Result.is_error (immediate_fields (Sexp.of_string "zoo"))
+  let%test _ = Result.is_error (immediate_fields (Sexp.of_string "(zoo)"))
+  let%test _ = Result.is_error (immediate_fields (Sexp.of_string "(zoo boo)"))
+  let%test _ = Result.is_error (immediate_fields (Sexp.of_string "((good true)(bad))"))
 
-    let%test _ =
-      [%equal: Sexp.t]
-        (List.Assoc.find_exn
-           (Or_error.ok_exn (immediate_fields sexp))
-           ~equal:String.equal
-           "second")
-        (Atom "123")
-    ;;
+  let%test _ =
+    [%equal: Sexp.t]
+      (List.Assoc.find_exn
+         (Or_error.ok_exn (immediate_fields sexp))
+         ~equal:String.equal
+         "second")
+      (Atom "123")
+  ;;
 
-    let%test _ =
-      [%equal: Sexp.t]
-        (List.Assoc.find_exn
-           (Or_error.ok_exn (immediate_fields sexp))
-           ~equal:String.equal
-           "third")
-        (List [])
-    ;;
+  let%test _ =
+    [%equal: Sexp.t]
+      (List.Assoc.find_exn
+         (Or_error.ok_exn (immediate_fields sexp))
+         ~equal:String.equal
+         "third")
+      (List [])
+  ;;
 
-    let%test _ =
-      [%equal: Sexp.t]
-        (List.Assoc.find_exn
-           (Or_error.ok_exn (immediate_fields sexp))
-           ~equal:String.equal
-           "fourth")
-        (Sexp.of_string "((foo a) (boo b))")
-    ;;
+  let%test _ =
+    [%equal: Sexp.t]
+      (List.Assoc.find_exn
+         (Or_error.ok_exn (immediate_fields sexp))
+         ~equal:String.equal
+         "fourth")
+      (Sexp.of_string "((foo a) (boo b))")
+  ;;
 
-    let%test _ =
-      [%equal: Sexp.t] (to_record_sexp (Or_error.ok_exn (immediate_fields sexp))) sexp
-    ;;
+  let%test _ =
+    [%equal: Sexp.t] (to_record_sexp (Or_error.ok_exn (immediate_fields sexp))) sexp
+  ;;
 
-    let%test _ =
-      let value = Sexp.Atom "my-new-value" in
-      let sexp = Or_error.ok_exn (replace_field ~field:"second" ~value sexp `Immediate) in
-      [%equal: Sexp.t]
-        (List.Assoc.find_exn
-           (Or_error.ok_exn (immediate_fields sexp))
-           ~equal:String.equal
-           "second")
-        value
-    ;;
+  let%test _ =
+    let value = Sexp.Atom "my-new-value" in
+    let sexp = Or_error.ok_exn (replace_field ~field:"second" ~value sexp `Immediate) in
+    [%equal: Sexp.t]
+      (List.Assoc.find_exn
+         (Or_error.ok_exn (immediate_fields sexp))
+         ~equal:String.equal
+         "second")
+      value
+  ;;
 
-    let to_alist_exn sexp = Or_error.ok_exn (immediate_fields sexp)
+  let to_alist_exn sexp = Or_error.ok_exn (immediate_fields sexp)
 
-    let ( -@! ) record_sexp field_name =
-      List.Assoc.find_exn (to_alist_exn record_sexp) ~equal:String.equal field_name
-    ;;
+  let ( -@! ) record_sexp field_name =
+    List.Assoc.find_exn (to_alist_exn record_sexp) ~equal:String.equal field_name
+  ;;
 
-    let ( -@? ) record_sexp field_name =
-      List.Assoc.find (to_alist_exn record_sexp) ~equal:String.equal field_name
-    ;;
+  let ( -@? ) record_sexp field_name =
+    List.Assoc.find (to_alist_exn record_sexp) ~equal:String.equal field_name
+  ;;
 
-    let%test _ =
-      let value = Sexp.Atom "my-new-value" in
-      let sexp = Or_error.ok_exn (replace_field ~field:"foo" ~value sexp `Recursive) in
-      [%equal: Sexp.t] (sexp -@! "fourth" -@! "foo") value
-    ;;
+  let%test _ =
+    let value = Sexp.Atom "my-new-value" in
+    let sexp = Or_error.ok_exn (replace_field ~field:"foo" ~value sexp `Recursive) in
+    [%equal: Sexp.t] (sexp -@! "fourth" -@! "foo") value
+  ;;
 
-    let%test "remove_field immediate" =
-      let sexp = Or_error.ok_exn (remove_field ~field:"second" sexp `Immediate) in
-      [%equal: Sexp.t option] (sexp -@? "second") None
-    ;;
+  let%test "remove_field immediate" =
+    let sexp = Or_error.ok_exn (remove_field ~field:"second" sexp `Immediate) in
+    [%equal: Sexp.t option] (sexp -@? "second") None
+  ;;
 
-    let%test "remove_field recursive" =
-      let sexp = Or_error.ok_exn (remove_field ~field:"foo" sexp `Recursive) in
-      [%equal: Sexp.t option] (sexp -@! "fourth" -@? "foo") None
-    ;;
+  let%test "remove_field recursive" =
+    let sexp = Or_error.ok_exn (remove_field ~field:"foo" sexp `Recursive) in
+    [%equal: Sexp.t option] (sexp -@! "fourth" -@? "foo") None
+  ;;
 
-    let%test "remove_field error" =
-      let sexp_or_error = remove_field ~field:"foo" (Sexp.of_string "(foo)") `Immediate in
-      Or_error.is_error sexp_or_error
-    ;;
-  end)
-;;
+  let%test "remove_field error" =
+    let sexp_or_error = remove_field ~field:"foo" (Sexp.of_string "(foo)") `Immediate in
+    Or_error.is_error sexp_or_error
+  ;;
+end
