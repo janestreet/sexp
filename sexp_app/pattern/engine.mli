@@ -1,6 +1,7 @@
 open Core
 
-(** Match a query against a sexp.
+(** {v
+ Match a query against a sexp.
 
     Calls [f] once for every match found, passing the captured results in the format
     specified by [output_method] as an argument.
@@ -30,7 +31,7 @@ open Core
 
     This wrapping (or not) occurs before packing the result into whatever format specified
     by [output_method].
-*)
+    v} *)
 val iter_matches
   :  query:Query.t
   -> output_method:'output_type Output_method.t
@@ -55,10 +56,9 @@ val iter_matches
     arbitrary one of them will happen and the other will not.
 
     The return type is a list because if the *entire* sexp itself is the target being
-    replaced, then the result of replacement will have length equal to [with_] upon
-    any successful match, for example returning an empty list if [with_] specifies to
-    delete the whole sexp upon a match.
-*)
+    replaced, then the result of replacement will have length equal to [with_] upon any
+    successful match, for example returning an empty list if [with_] specifies to delete
+    the whole sexp upon a match. *)
 val replace
   :  query:Query.t
   -> replace:string
@@ -74,18 +74,17 @@ val replace
     [f] should return a map from capture label to the new sexp sequence that should be
     used as a replacement.
 
-    If no replacement is desired for a given label, [f] can omit that label entirely
-    in the map it returns - that part of the original sexp will then remain unchanged.
+    If no replacement is desired for a given label, [f] can omit that label entirely in
+    the map it returns - that part of the original sexp will then remain unchanged.
 
     If there are multiple matches and two different calls to [f] overlap in what subsexps
     they indicate should be replaced in the original underlying sexp, only the outermost
     and/or the first of those [f]'s replacements happen.
 
-    Note that this means that there is a difference between [f] acting as the identity
-    on a given label and [f] omitting returning that label entirely. In the first case,
-    the identity replacement will happen, excluding any overlapping replacements, while
-    the second will not exclude overlapping replacements.
-*)
+    Note that this means that there is a difference between [f] acting as the identity on
+    a given label and [f] omitting returning that label entirely. In the first case, the
+    identity replacement will happen, excluding any overlapping replacements, while the
+    second will not exclude overlapping replacements. *)
 val replace'
   :  query:Query.t
   -> f:(Sexp.t list String.Map.t -> Sexp.t list String.Map.t)
