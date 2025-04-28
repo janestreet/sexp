@@ -58,7 +58,9 @@ let command ?alias_for () =
          in
          let fmt = Format.formatter_of_out_channel Stdlib.stdout in
          let sexp =
-           Sexp_pretty.sexp_to_sexp_or_comment (Sexp_pretty.Config.sexp_of_t config)
+           Sexp_pretty.sexp_to_sexp_or_comment
+             config_for_output
+             (Sexp_pretty.Config.sexp_of_t config)
          in
          Sexp_pretty.Sexp_with_layout.pp_formatter config_for_output fmt sexp)
        else (

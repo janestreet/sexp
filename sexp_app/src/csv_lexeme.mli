@@ -1,7 +1,5 @@
-(**
-   This module encapsulates the lexical structure of the CSV format
-   In particular, it does everything necessary to handle double-quotes.
-*)
+(** This module encapsulates the lexical structure of the CSV format In particular, it
+    does everything necessary to handle double-quotes. *)
 
 module T : sig
   type t =

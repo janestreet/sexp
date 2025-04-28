@@ -1,8 +1,7 @@
 open! Core
 
-(** Same as Query.t, except that Re2 regexes have been compiled and captures
-    have been boiled down into simply an index into an array where that capture should be
-    stored. *)
+(** Same as Query.t, except that Re2 regexes have been compiled and captures have been
+    boiled down into simply an index into an array where that capture should be stored. *)
 type t =
   | Capture of t * int
   | Any
@@ -31,7 +30,6 @@ type t =
     a named capture, and unique default-created labels in the case of captures that the
     user did not themselves label.
 
-    The array indices of [labels] correspond one-to-one with the integers returned in
-    the [Capture] variant of [t].
-*)
+    The array indices of [labels] correspond one-to-one with the integers returned in the
+    [Capture] variant of [t]. *)
 val create : Query.t -> _ Output_method.t -> t * [ `Labels_of_captures of string array ]

@@ -1,8 +1,8 @@
 open! Core
 
 module Format : sig
-  (** A format specifies how the user wants their captured results to be formatted
-      by providing a sexp structure in which the captures will get embedded. *)
+  (** A format specifies how the user wants their captured results to be formatted by
+      providing a sexp structure in which the captures will get embedded. *)
   type t =
     | Atom of string
     | Capture of string
@@ -15,7 +15,8 @@ module Format : sig
 end
 
 module Wrap_mode : sig
-  (** This controls what happens when a single capture expression consumes multiple sexps
+  (** {v
+ This controls what happens when a single capture expression consumes multiple sexps
       during a single match. It specifies whether to wrap them together as a single sexp
       list or return all the results separately.
 
@@ -43,7 +44,7 @@ module Wrap_mode : sig
 
       Since [Unwrap_always] has the possiblity of returning multiple sexps separately,
       the [`capture] type for it is a list of sexps instead of a single sexp.
-  *)
+      v} *)
   type 'capture t =
     | Wrap_always : Sexp.t t
     | Wrap_non_singletons : Sexp.t t
@@ -57,14 +58,14 @@ type _ t =
   | Formats : _ Wrap_mode.t * Format.t list -> Sexp.t list t
   (** Embed captures in the specified formats *)
   | List : _ Wrap_mode.t -> Sexp.t t
-  (** Return different capture expressions' results as a Sexp.List.  In the case of
+  (** Return different capture expressions' results as a Sexp.List. In the case of
       [Unwrap_always], the sequences consumed by each capture expression are concatenated,
       so the list may be longer (or shorter) than the number of capture expressions. *)
   | Record : _ Wrap_mode.t -> Sexp.t t
   (** Return captures as a sexp record where the field names are the labels of the
       capturing expressions. In the case of [Unwrap_always], the sequences consumed by
-      each capture expression have the field name consed onto them, so the result
-      may not actually be a list of pairs! *)
+      each capture expression have the field name consed onto them, so the result may not
+      actually be a list of pairs! *)
   | Single_capture : 'query_result Wrap_mode.t -> 'query_result t
   (** Expect exactly one capture in the pattern, and return its captured contents. *)
   | Map : Sexp.t list String.Map.t t
@@ -74,6 +75,6 @@ type _ t =
 
 type some_output_method = T : _ t -> some_output_method
 
-(** Determine a default output method to use based on whether the query contains
-    numbered or named captures. *)
+(** Determine a default output method to use based on whether the query contains numbered
+    or named captures. *)
 val default_method : Query.t -> wrap_mode:_ Wrap_mode.t -> some_output_method

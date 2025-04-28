@@ -24,11 +24,10 @@ open! Core
 
     However, if a given single match of the pattern captures two different expressions
     into the same label simultaneously, it is unspecified which of the two expressions
-    will actually be returned for that label.
-*)
+    will actually be returned for that label. *)
 
 module Set_kind : sig
-  (** Specifies how a term in a [Set] should be matched  *)
+  (** Specifies how a term in a [Set] should be matched *)
   type t =
     { optional : bool
     (** If [optional] is true then the whole [Set] query may match a list even if the
@@ -45,7 +44,8 @@ end
 type t =
   | Capture_unlabeled of t
   (** [Capture_unlabeled t] is equivalent to [Capture_to_number (i, t)] where [i] starts
-      at 0 and increments each time an unlabeled capture appears in the query. Syntax: [%.] *)
+      at 0 and increments each time an unlabeled capture appears in the query. Syntax:
+      [%.] *)
   | Capture_to_number of int * t
   (** [Capture_to_number (i, t)] applies the subquery [t], associating each consumed
       sequence to the label [Int.to_string i]. Example syntax: [%0] *)
@@ -67,9 +67,9 @@ type t =
   | Star_greedy of t
   (** Same as [Star], but tries possiblities in reverse order. Example syntax: [t*+] *)
   | Plus of t
-  (** Iteratively applies all of [[ Sequence [t]; Sequence [t; t]; ... ]], with
-      a special-case guard against an infinite loop if [t] itself can consume zero
-      elements. Example syntax: [t+] *)
+  (** Iteratively applies all of [[ Sequence [t]; Sequence [t; t]; ... ]], with a
+      special-case guard against an infinite loop if [t] itself can consume zero elements.
+      Example syntax: [t+] *)
   | Plus_greedy of t
   (** Same as [Plus], but tries possiblities in reverse order. Example syntax: [t++] *)
   | Maybe of t
@@ -81,7 +81,7 @@ type t =
   | List of t
   (** Consumes a sexp if it is a list, applying [t] to the sequence of the list's elements
       and requiring any successful matches by [t] to consume the entire sequence. Example
-      syntax: [(t1 t2 t3)]*)
+      syntax: [(t1 t2 t3)] *)
   | Set of (t * Set_kind.t) list
   (** Consumes a sexp if it is a list, recursively applying each subquery [t] iteratively
       one by one to each element of the sublist where that element is given as a singleton
@@ -92,15 +92,15 @@ type t =
   | Subsearch of t
   (** [Subsearch t] matches some sequence {e S} of sexps if {e S} contains a subsequence
       which [t] matches, or if [List (Subsearch t)] matches one of the sexps in {e S}.
-      Example syntax: [.. t]*)
+      Example syntax: [.. t] *)
   | And of t list
   (** Consumes a sequence of sexps only if every [t] provided has a successful match
       consuming exactly that sequence of sexps. Example syntax: [t1 & t2] *)
   | Or_shortcircuiting of t list
   (** Applies each [t] iteratively, stopping after iterating through all matches of the
-      first [t] that has any matches. In other words, [Or_shortcircuiting [t1; t2; ...;
-      ti; ...]] matches if and only if [ti] matches and none of queries before [ti] match.
-      Example syntax: none *)
+      first [t] that has any matches. In other words,
+      [Or_shortcircuiting [t1; t2; ...; ti; ...]] matches if and only if [ti] matches and
+      none of queries before [ti] match. Example syntax: none *)
   | Or_all of t list
   (** Applies each [t] iteratively, matching according to the union of their matches. In
       other words, [Or_all [t1; ...; tn]] matches if and only if at least one of the [ti]

@@ -6,7 +6,7 @@ let main ~filename =
     ("cat "
      ^ Sys.quote filename
      ^ {| | fzf --multi --no-sort --reverse --exact --ansi --preview-window=down:70% \
-        --preview "printf '%s' {} | sexp pp -color" |}
+        --preview "printf '%s' {} | sexp pp -color -i" |}
     )
   >>= exit
 ;;

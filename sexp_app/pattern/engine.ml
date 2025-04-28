@@ -70,17 +70,15 @@ module Labeled_sexp = struct
 end
 
 module Make_engine (S : Sexplike) = struct
-  (**
-     Iterates over all ways that [query] can match the singleton list [sexp].
+  (** Iterates over all ways that [query] can match the singleton list [sexp].
 
-     For each match, calls [f], and for the duration of that call to [f], [revcapture_buf]
-     will be filled with the resulting captures, where each entry of [revcapture_buf]
-     contains the captured sequence for that index in reverse order. For any index that
-     failed to capture during a match, [revcapture_buf] will simply contain its original
-     contents.
+      For each match, calls [f], and for the duration of that call to [f],
+      [revcapture_buf] will be filled with the resulting captures, where each entry of
+      [revcapture_buf] contains the captured sequence for that index in reverse order. For
+      any index that failed to capture during a match, [revcapture_buf] will simply
+      contain its original contents.
 
-     Finally, restores all the original contents of [revcapture_buf].
-  *)
+      Finally, restores all the original contents of [revcapture_buf]. *)
   let iter_matches ~revcapture_buf ~f (query : Compiled_query.t) (sexp : S.t) =
     let rec iter_matches (query : Compiled_query.t) (sexps : S.t list) ~f =
       match query with
