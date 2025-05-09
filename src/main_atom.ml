@@ -77,15 +77,30 @@ end
 
 module Unescape = struct
   let command =
+    let parse s = Scanf.unescaped s in
+    let unparse c = String.escaped (String.of_char c) in
     Command.async
       ~summary:"Print unescaped atoms from stdin"
       [%map_open.Command
-        let () = return () in
+        let () = return ()
+        and sep =
+          flag_optional_with_default_doc
+            "-sep"
+            string
+            [%sexp_of: string]
+            ~default:"\n"
+            ~doc:
+              [%string
+                "STR separator/terminator to use instead of line breaks. The syntax is \
+                 the same as for string literals in OCaml. (e.g. \"%{unparse '\n\
+                 '}\", \"%{unparse '\000'}\")"]
+        in
         fun () ->
+          let sep = parse sep in
           Lazy.force Reader.stdin
           |> Reader.read_sexps
           |> Pipe.iter_without_pushback ~f:(function
-            | Atom atom -> print_endline atom
+            | Atom atom -> printf "%s%s" atom sep
             | List _ as input ->
               Core.eprint_s [%message "Non-atom input" (input : Sexp.t)])]
       ~behave_nicely_in_pipeline:false
