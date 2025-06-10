@@ -14,6 +14,7 @@ depends: [
   "async"
   "base"
   "core"
+  "core_kernel"
   "core_unix"
   "csvfields"
   "jsonaf"

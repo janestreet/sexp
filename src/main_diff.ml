@@ -28,9 +28,17 @@ module Display_function = struct
     ; display_as_plain_string : bool
     }
 
-  let create ?(display_as_plain_string = false) ?collapse_threshold ?num_shown () =
+  let default_layout = Sexp_diff.Display.Display_options.Layout.Two_column
+
+  let create
+    ?(display_as_plain_string = false)
+    ?collapse_threshold
+    ?(layout = default_layout)
+    ?num_shown
+    ()
+    =
     let display_options =
-      Sexp_diff.Display.Display_options.create ?collapse_threshold ?num_shown Two_column
+      Sexp_diff.Display.Display_options.create ?collapse_threshold ?num_shown layout
     in
     { display_options; display_as_plain_string }
   ;;
@@ -44,6 +52,12 @@ module Display_function = struct
         "collapse-threshold"
         (optional int)
         ~doc:"INT set [collapse_threshold] in Display_options (default: 10)"
+    and layout =
+      let module Layout = Sexp_diff.Display.Display_options.Layout in
+      Enum.make_param_optional_one_of_flags (module Layout) ~doc:(fun layout ->
+        match [%compare.equal: Layout.t] layout default_layout with
+        | false -> ""
+        | true -> "(default)")
     and num_shown =
       flag
         "num-shown"
@@ -52,7 +66,8 @@ module Display_function = struct
     in
     match display_as_plain_string, collapse_threshold, num_shown with
     | false, None, None -> None
-    | _ -> Some (create ~display_as_plain_string ?collapse_threshold ?num_shown ())
+    | _ ->
+      Some (create ~display_as_plain_string ?collapse_threshold ?layout ?num_shown ())
   ;;
 
   let run { display_options; display_as_plain_string } diff =
