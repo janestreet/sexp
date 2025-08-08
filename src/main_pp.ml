@@ -62,7 +62,7 @@ let command ?alias_for () =
              config_for_output
              (Sexp_pretty.Config.sexp_of_t config)
          in
-         Sexp_pretty.Sexp_with_layout.pp_formatter config_for_output fmt sexp)
+         Sexp_pretty.Parsexp_cst.pp_formatter config_for_output fmt sexp)
        else (
          let sparser = Sexp.With_layout.Parser.sexp Sexp.With_layout.Lexer.main in
          let lexbuf = Lexing.from_channel in_channel in

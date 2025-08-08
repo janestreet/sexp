@@ -33,5 +33,6 @@ let command =
      ; "to-json", Main_json.to_json_command
      ; "validate", Main_validate.command
      ]
+     @ []
      @ if am_running_test then [ "group", Main_group.command ] else [])
 ;;

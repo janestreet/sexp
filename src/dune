@@ -1,9 +1,9 @@
 (library
  (name sexp_cmds)
- (libraries async core angstrom base.composition_infix
+ (libraries async core_kernel.enum core angstrom base.composition_infix
    core_unix.filename_unix jsonaf lazy_list parsexp re2 sexp_app
    sexp_app_pattern sexp_diff sexp_macro sexp_pretty sexp_select sexplib
-   shell.string_extended csvfields.xml-light)
+   shell.string_extended uri csvfields.xml-light)
  (preprocessor_deps)
  (preprocess
   (pps ppx_jane)))
