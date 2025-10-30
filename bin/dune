@@ -2,7 +2,7 @@
  (modes byte exe)
  (names main)
  (public_names sexp)
- (libraries sexp_cmds async core core_unix.command_unix)
+ (libraries async core_unix.command_unix core sexp_cmds)
  (flags :standard -g)
  (preprocess
   (pps ppx_jane)))
