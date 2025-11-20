@@ -273,9 +273,8 @@ module Pattern = struct
                    assign v (List (if rev then List.rev (x :: xs) else x :: xs));
                    gather_all (ts, []) ~rev ~fail ~succ
                  | _ :: _ ->
-                   (* This assertion failing means that we have two list variables in
-                      the template. This should be prevented by
-                      [check_duplicate_list_vars]. *)
+                   (* This assertion failing means that we have two list variables in the
+                      template. This should be prevented by [check_duplicate_list_vars]. *)
                    assert (not rev);
                    gather_all
                      (List.rev (t :: ts), List.rev (x :: xs))
@@ -304,7 +303,7 @@ module Pattern_record = struct
       | None -> Hashtbl.set env ~key:v ~data:s
     in
     let rec gather t env =
-      (* Matches t with any given xs.  If successful, returns the environment and the
+      (* Matches t with any given xs. If successful, returns the environment and the
          remaining xs. *)
       let rec match_any t acc = function
         | [] -> None
@@ -314,8 +313,8 @@ module Pattern_record = struct
           then Some (local_env, acc @ xs)
           else match_any t (x :: acc) xs
       in
-      (* Matches each given t to any of the given xs.  If successful, returns the
-         unmatched xs. *)
+      (* Matches each given t to any of the given xs. If successful, returns the unmatched
+         xs. *)
       let rec match_each xs = function
         | [] -> Some xs
         | t :: ts ->
@@ -334,7 +333,7 @@ module Pattern_record = struct
           true)
       | Template.Atom a, Atom b -> if String.( = ) a b then true else false
       | Template.List ts, List xs ->
-        (* Each of the ts should match first x from xs which it can match.  If there's a
+        (* Each of the ts should match first x from xs which it can match. If there's a
            list variable among ts, all the unmatched xs will be stored in it. *)
         let list_vars, ts =
           List.partition_tf ts ~f:(function
@@ -381,6 +380,7 @@ type query =
   | Each
   | Smash
   | Atomic
+  | Length
   | Wrap of query
   | Test of query
   | Not of query

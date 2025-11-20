@@ -763,7 +763,8 @@ let query_semantics_dot_md =
   \        | (quote T[0])\n\
   \        -- transformations -------\n\
   \        | (change C)\n\
-  \        | restructure\n\n\
+  \        | restructure\n\
+  \        | length\n\n\
    The meaning of an expression is a function from an input s-expression to a\n\
    (possibly empty) sequence of output s-expressions.  The toplevel command is\n\
    applied to each expression in the input.  We will look at five categories\n\
@@ -943,5 +944,9 @@ let query_semantics_dot_md =
    change semantics).\n\n\
    Sometimes the contents of an atom will be the string representation of\n\
    a sequence of sexps. `restructure` will do this interpretation for you:\n\n\
-  \    restructure : \"A (B C) D\" => {A (B C) D}\n"
+  \    restructure : \"A (B C) D\" => {A (B C) D}\n\n\
+   Sometimes you want the number of elements in a list.\n\
+  \    \n\
+  \    length : ATOM => {1}\n\
+  \    length : (T[1] ... T[N]) => {N}\n"
 ;;

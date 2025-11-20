@@ -4,10 +4,10 @@ open Async
 (* Helper for error messages. *)
 let quoted flag = "\"" ^ flag ^ "\""
 
-(* Command does some automatic handling of exceptions and prints out errors
-   as sexps. When combined with the quoting behavior above, this leads to lots
-   of ugly escaping. We provide our own custom error function that just prints
-   out the message and immediately exits to avoid this. *)
+(* Command does some automatic handling of exceptions and prints out errors as sexps. When
+   combined with the quoting behavior above, this leads to lots of ugly escaping. We
+   provide our own custom error function that just prints out the message and immediately
+   exits to avoid this. *)
 let cmd_error msg =
   Core.prerr_endline msg;
   Core.exit 1
@@ -104,15 +104,14 @@ let sexp_unit = Sexp.List []
 (* Given a list of [Key_extractor]s and corresponding [If_no_key] behaviors, return a
    function that returns an [Sexp.t Extraction_result.t].
 
-   If a single extractor is passed in, the returned function will return exactly
-   what the extractor extracted. If multiple extractors are passed in, the extracted
-   value will be a [Sexp.List] where each element is the value extracted by the
-   corresponding extractor (so the return type will always be [Sexp.t] as opposed to
-   [Sexp.t list]). *)
+   If a single extractor is passed in, the returned function will return exactly what the
+   extractor extracted. If multiple extractors are passed in, the extracted value will be
+   a [Sexp.List] where each element is the value extracted by the corresponding extractor
+   (so the return type will always be [Sexp.t] as opposed to [Sexp.t list]). *)
 let create_extractor ~keys ~default_if_no_key =
-  (* Small helper that takes in a [Key_extractor.t], builds the extract function,
-     then maps the regular [(Sexp.t, Extraction_error.t * string) result] into
-     an [Sexp.t Extraction_result.t]. *)
+  (* Small helper that takes in a [Key_extractor.t], builds the extract function, then
+     maps the regular [(Sexp.t, Extraction_error.t * string) result] into an
+     [Sexp.t Extraction_result.t]. *)
   let make_extraction_result_extractor (key_extractor, if_no_key) =
     let if_no_key = Option.value if_no_key ~default:default_if_no_key in
     let extract = Key_extractor.extract_or_error_fn key_extractor |> unstage in
@@ -176,8 +175,8 @@ let groups (t : t) =
   Hashtbl.to_alist t.entries
   |> List.map ~f:(fun (key, { first_line; values }) ->
     let count = List.length values in
-    (* The values will be accumulated in reverse order; we need to reverse them
-       here so they appear in the same order as the input. *)
+    (* The values will be accumulated in reverse order; we need to reverse them here so
+       they appear in the same order as the input. *)
     first_line, { Group.key; count; values = List.rev values })
   |> List.sort ~compare:(fun (line1, _) (line2, _) -> Int.compare line1 line2)
   |> List.map ~f:snd

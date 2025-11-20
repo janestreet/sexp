@@ -1,9 +1,8 @@
 open Core
 
-(*
-   Creating a pad and adding a bunch of strings to it has asymtotic time
-   and space complexity O(n) where n is the total number of characters.
-   Every once and a while, there will be a very expensive [add] operation.
+(* Creating a pad and adding a bunch of strings to it has asymtotic time and space
+   complexity O(n) where n is the total number of characters. Every once and a while,
+   there will be a very expensive [add] operation.
 *)
 
 (** INVARIANT: strings are in order of decreasing length from right to left *)

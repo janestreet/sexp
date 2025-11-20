@@ -1,4 +1,4 @@
-(* an asymtotically good incremental string concatenater  *)
+(* an asymtotically good incremental string concatenater *)
 
 type t
 

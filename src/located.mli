@@ -8,8 +8,8 @@ type 'a t
 
 val stdin : string option -> unit t
 
-(* [files [f1; f2; ... ;fn]]
-   indicates files [f1] ... [f2] as sources labeled with their own filenames
+(* [files [f1; f2; ... ;fn]] indicates files [f1] ... [f2] as sources labeled with their
+   own filenames
 *)
 
 val files : string list -> unit t

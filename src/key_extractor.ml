@@ -17,10 +17,10 @@ type t =
       ; flag_and_arg : string
       }
 
-(* Command does some automatic handling of exceptions and prints out errors
-   as sexps. When combined with the quoting behavior above, this leads to lots
-   of ugly escaping. We provide our own custom error function that just prints
-   out the message and immediately exits to avoid this. *)
+(* Command does some automatic handling of exceptions and prints out errors as sexps. When
+   combined with the quoting behavior above, this leads to lots of ugly escaping. We
+   provide our own custom error function that just prints out the message and immediately
+   exits to avoid this. *)
 let cmd_error msg =
   Core.prerr_endline msg;
   Core.exit 1
@@ -34,7 +34,7 @@ let cmd_error_s msg sexp =
 (* Helper functions for cleaner error messages. *)
 let quoted flag = "\"" ^ flag ^ "\""
 
-(* We really just need to pass in the arg that we got from the command line
+(*=We really just need to pass in the arg that we got from the command line
    to create an extractor, but when an error occurs, we want to tell the user
    which flag caused an error, in case they specified multiple keys. For example:
 
@@ -69,8 +69,8 @@ let none_if_empty = function
   | l -> Some l
 ;;
 
-(* index extraction; do this one first because it takes an int, so the types
-   don't work out quite as nicely *)
+(* index extraction; do this one first because it takes an int, so the types don't work
+   out quite as nicely *)
 
 let index_extractor ~flag ~arg index =
   let flag_and_arg = quoted_flag_and_arg ~flag ~arg in
@@ -85,10 +85,10 @@ let index_param ?(flag = "index") ~doc () =
   |> none_if_empty
 ;;
 
-(* All of the <access_kind>_extractor functions (other than "index" above) have
-   the same type. As a result, building a [t list option Command.Param.t] on top
-   of an extraction function is the same for every access kind, with just the name
-   of the flag and the <access_kind>_extraction function changing. *)
+(* All of the <access_kind>_extractor functions (other than "index" above) have the same
+   type. As a result, building a [t list option Command.Param.t] on top of an extraction
+   function is the same for every access kind, with just the name of the flag and the
+   <access_kind>_extraction function changing. *)
 let build_param_function
   default_flag_name
   (extractor_constructor : flag:string -> arg:string -> string -> t)
@@ -115,9 +115,9 @@ let field_param = build_param_function "field" field_extractor
 
 let query_extractor ~flag ~arg query =
   let flag_and_arg = quoted_flag_and_arg ~flag ~arg in
-  (* A little clunky vs. just using parse_string_exn, but we prioritize providing a
-     little more context to the error message, which may be helpful if using sexp sort
-     in a long pipeline. *)
+  (* A little clunky vs. just using parse_string_exn, but we prioritize providing a little
+     more context to the error message, which may be helpful if using sexp sort in a long
+     pipeline. *)
   let query_sexps =
     match Parsexp.Many.parse_string query with
     | Ok x -> x
@@ -268,14 +268,14 @@ let flag_and_arg = function
 
 module Extraction_error = struct
   (* This is a slightly awkward type. I considered getting rid of the [Missing_key]
-     constructor, and having the extract function return a [Sexp.t option] instead of
-     just a [Sexp.t], but this results in an extra allocation in the common case when
-     you actually have a key. It also means that there's only one kind of error,
+     constructor, and having the extract function return a [Sexp.t option] instead of just
+     a [Sexp.t], but this results in an extra allocation in the common case when you
+     actually have a key. It also means that there's only one kind of error,
      [Multiple_keys], which would be slightly weird.
 
      Another alternative would be to define a custom [Result.t] and have the extract
-     function return that, instead of an [(Sexp.t, Extraction_error.t) result], with
-     three variants:
+     function return that, instead of an [(Sexp.t, Extraction_error.t) result], with three
+     variants:
 
      {[
        module Result = struct
@@ -287,22 +287,21 @@ module Extraction_error = struct
      ]}
 
      The appeal here is that this interface doesn't make a judgment about whether a
-     missing key is an error or not. sexp sort and sexp group both have flags to
-     control the behavior around how missing keys are handled. But neither had that
-     functionality to start; they both errored on missing keys in their initial
-     versions. Forcing the caller to handle that case forces them to think too far
-     down the road. It's fine to implement the happy path of assuming the key always
-     exists when writing a tool, then later on figure out how to evolve it.
+     missing key is an error or not. sexp sort and sexp group both have flags to control
+     the behavior around how missing keys are handled. But neither had that functionality
+     to start; they both errored on missing keys in their initial versions. Forcing the
+     caller to handle that case forces them to think too far down the road. It's fine to
+     implement the happy path of assuming the key always exists when writing a tool, then
+     later on figure out how to evolve it.
 
      This [Result.t] type also has other issues: it's unclear that the strings in the
      non-[Key] constructors are supposed to be error messages. Also, [Multiple_keys]
-     should always be an error, but we're forcing people to match on a specific type
-     of error. Making the third constructor just be [Error of Error.t] and then having
+     should always be an error, but we're forcing people to match on a specific type of
+     error. Making the third constructor just be [Error of Error.t] and then having
      [Error.t] just contain [Multiple_keys] seems like overkill.
 
-     I did actually implement this, and, ultimately, using the standard [result] type
-     is just semantically clearer, and callers can match on the nested errors if they
-     wish.
+     I did actually implement this, and, ultimately, using the standard [result] type is
+     just semantically clearer, and callers can match on the nested errors if they wish.
   *)
   type t =
     | Missing_key

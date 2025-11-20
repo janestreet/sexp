@@ -24,9 +24,8 @@ val filter_map : f:('a -> 'b option) -> 'a t -> 'b t
 val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b t -> 'a
 val fold_right : f:('a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
 
-(* [foldr ~f t ~init] is a lazy version of [fold_right] that doesn't
-   necessarily force a traversal of the entire list, as is more
-   natural for a lazy list.
+(* [foldr ~f t ~init] is a lazy version of [fold_right] that doesn't necessarily force a
+   traversal of the entire list, as is more natural for a lazy list.
 *)
 
 val foldr : 'a t -> f:('a -> 'b Lazy.t -> 'b) -> init:'b -> 'b Lazy.t

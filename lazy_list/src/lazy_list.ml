@@ -167,7 +167,7 @@ let unfold ~f ~init =
   let rec loop accum () =
     match f accum with
     | Some x -> Cons (x, Lazy.from_fun (loop x))
-    (*| Some(x) -> Cons(accum, Lazy.from_fun (loop x)) *)
+    (*=| Some(x) -> Cons(accum, Lazy.from_fun (loop x)) *)
     | None -> Empty
   in
   Lazy.from_fun (loop init)

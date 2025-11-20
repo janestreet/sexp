@@ -22,6 +22,7 @@ let qcmds =
     ; S.This
     ; S.Die
     ; S.Atomic
+    ; S.Length
     ; S.Variant ("TAG", None)
     ; S.Variant ("TAG", Some num)
     ; S.Equals (Sexp_app.Sexps.of_list [ sexp ])

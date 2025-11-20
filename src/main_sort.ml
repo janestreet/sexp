@@ -4,26 +4,26 @@ open Async
 (* Helper for error messages. *)
 let quoted flag = "\"" ^ flag ^ "\""
 
-(* Command does some automatic handling of exceptions and prints out errors
-   as sexps. When combined with the quoting behavior above, this leads to lots
-   of ugly escaping. We provide our own custom error function that just prints
-   out the message and immediately exits to avoid this. *)
+(* Command does some automatic handling of exceptions and prints out errors as sexps. When
+   combined with the quoting behavior above, this leads to lots of ugly escaping. We
+   provide our own custom error function that just prints out the message and immediately
+   exits to avoid this. *)
 let cmd_error msg =
   Core.prerr_endline msg;
   Core.exit 1
 ;;
 
-(* You might think that we should be able to get away with using a plain [result]
-   for the return type of [Sort_key.extract], as opposed to maybe just making the ['ok]
-   half of the result an ['a option].
+(* You might think that we should be able to get away with using a plain [result] for the
+   return type of [Sort_key.extract], as opposed to maybe just making the ['ok] half of
+   the result an ['a option].
 
-   Unfortunately, that approach fails when using multiple sort keys, because each
-   sort key might specify a different way to handle missing values. In [Chain_sort]
-   we need someway to combine the extraction result from each key in a way the would
-   preserve our intention to drop a row from the output. Because of how we construct
-   the final [Sort_key] module, there's no place that has a view of all the extracted
-   keys for an input Sexp as a list and say, "Ah, the third key extracted a [None]
-   and it has [How_to_handle_missing.Drop] configured, so we'll ignore it." *)
+   Unfortunately, that approach fails when using multiple sort keys, because each sort key
+   might specify a different way to handle missing values. In [Chain_sort] we need someway
+   to combine the extraction result from each key in a way the would preserve our
+   intention to drop a row from the output. Because of how we construct the final
+   [Sort_key] module, there's no place that has a view of all the extracted keys for an
+   input Sexp as a list and say, "Ah, the third key extracted a [None] and it has
+   [How_to_handle_missing.Drop] configured, so we'll ignore it." *)
 module Extraction_result = struct
   type 'a t =
     | Ok of 'a
@@ -38,9 +38,8 @@ module Extraction_result = struct
   ;;
 end
 
-(* We support multiple different behaviors when keys are missing. The default
-   will be to error, but we also support putting all the input sexps with
-   missing keys first or last. *)
+(* We support multiple different behaviors when keys are missing. The default will be to
+   error, but we also support putting all the input sexps with missing keys first or last. *)
 module How_to_handle_missing = struct
   module T = struct
     type t =
@@ -70,23 +69,21 @@ end
    - for string comparisons, whether the comparison is case sensitive
    - whether the comparison should be reversed
 
-   Note that specifying the string behaviors (natural/case-sensitivity)
-   is incompatible with specifying numeric sort.
+   Note that specifying the string behaviors (natural/case-sensitivity) is incompatible
+   with specifying numeric sort.
 
-   We allow configuration of this behavior using top-level flags
-   (-numeric, -natural, -ignore-case, and -reverse respectively). We
-   also allow specifying them on a per-key basis using the special
-   '-key "field/asc/rev:foo"' flags.
+   We allow configuration of this behavior using top-level flags (-numeric, -natural,
+   -ignore-case, and -reverse respectively). We also allow specifying them on a per-key
+   basis using the special '-key "field/asc/rev:foo"' flags.
 
-   The top-level flags will specify the default behavior for each key.
-   When using the "-key ..." syntax with behavior modifiers (the part
-   that looks like '/rev/i'), that will override that default behavior.
+   The top-level flags will specify the default behavior for each key. When using the
+   "-key ..." syntax with behavior modifiers (the part that looks like '/rev/i'), that
+   will override that default behavior.
 
-   We will check for the clashing numeric/string flags in the top-level
-   default flags (so you cannot specify both '-numeric' and '-natural),
-   and in the modifiers for any individual key (so you cannot specify
-   '/num/nat), but we won't check inconsistencies in "merging" of them.
-   That is, you can specify "-natural" sort as the top-level default,
+   We will check for the clashing numeric/string flags in the top-level default flags (so
+   you cannot specify both '-numeric' and '-natural), and in the modifiers for any
+   individual key (so you cannot specify '/num/nat), but we won't check inconsistencies in
+   "merging" of them. That is, you can specify "-natural" sort as the top-level default,
    but then still specify "/num" as a modifier for a specific key.
 *)
 module Compare_behavior = struct
@@ -152,8 +149,8 @@ module Compare_behavior = struct
       | unknown ->
         cmd_error
           ("Unknown sort behavior modifier " ^ quoted unknown ^ " in " ^ flag_and_arg));
-    (* These checks are nearly the same as the ones above in in from_top_level_flags,
-       but we print out slightly different error messages, so duplicate the logic here. *)
+    (* These checks are nearly the same as the ones above in in from_top_level_flags, but
+       we print out slightly different error messages, so duplicate the logic here. *)
     if Option.value !numeric ~default:false
     then
       if Option.is_some !case_insensitive
@@ -192,9 +189,9 @@ end
 let sexp_compare_fn ~compare_atom =
   let module My_sexp = struct
     type atom = string
-    (* Because of how we've chosen the names [atom] and [compare_atom], it is as
-       though we've added a [@@deriving compare] to this type declaration, but instead of
-       getting the usual generic String.compare, we've swapped in our own definition. *)
+    (* Because of how we've chosen the names [atom] and [compare_atom], it is as though
+       we've added a [@@deriving compare] to this type declaration, but instead of getting
+       the usual generic String.compare, we've swapped in our own definition. *)
 
     type t = Sexp.t =
       | Atom of atom
@@ -219,23 +216,23 @@ let rec sexp_lowercase = function
 ;;
 
 (* Once we have built the properly typed [extract], [transform] and [compare] functions,
-   we can create a [Sort_key] module. The [key] type of this module will depend on how
-   we handle missing values. If we handle missing keys by putting them first or last,
-   then we'll have [type key = 'a option]. If missing keys result in an error, or we
-   drop input sexps with missing keys, then we'll have [type key].
+   we can create a [Sort_key] module. The [key] type of this module will depend on how we
+   handle missing values. If we handle missing keys by putting them first or last, then
+   we'll have [type key = 'a option]. If missing keys result in an error, or we drop input
+   sexps with missing keys, then we'll have [type key].
 
    In this function we wrap the [extract] and [compare] functions to implement the desired
    behavior when we see missing values.
 
    Note that we add additional logic when we wrap the [compare] function, so we have to
    implement the final reversal _after_ wrapping, otherwise the new compare function
-   wouldn't flip the comparisons between missing keys and present keys. If we flipped
-   the compare function before wrapping it to handle missing keys, this would cause
-   "-missing first" to always put missing keys first, even if "-reverse" were passed
-   in. I think that behavior would be reasonable too ("I passed in '-missing first'.
-   I don't care if I also passed in '-reverse'. I want missing first."). Either way the
-   behavior could be slightly surprising but I think having "-reverse" always flip the
-   order of the output is less surprising.
+   wouldn't flip the comparisons between missing keys and present keys. If we flipped the
+   compare function before wrapping it to handle missing keys, this would cause "-missing
+   first" to always put missing keys first, even if "-reverse" were passed in. I think
+   that behavior would be reasonable too ("I passed in '-missing first'. I don't care if I
+   also passed in '-reverse'. I want missing first."). Either way the behavior could be
+   slightly surprising but I think having "-reverse" always flip the order of the output
+   is less surprising.
 *)
 let combine_extract_transform_and_compare_into_sort_key_module
   (type k)
@@ -265,8 +262,8 @@ let combine_extract_transform_and_compare_into_sort_key_module
   let (module Sexp_key : Sort_key) =
     match handle_missing with
     | Error ->
-      (* We could just keep the error as is, but we do a little extra work here to
-         add helpful context to the error message we show the user. *)
+      (* We could just keep the error as is, but we do a little extra work here to add
+         helpful context to the error message we show the user. *)
       let extract sexp =
         match extract sexp with
         | Ok x -> transform x
@@ -296,8 +293,8 @@ let combine_extract_transform_and_compare_into_sort_key_module
         | Error (Key_extractor.Extraction_error.Missing_key, _) -> Ok None
         | Error (_, s) -> Error s
       in
-      (* When we have two [Some]s we just use the normal compare function, but
-         otherwise we sort [None]s (missing keys) before or after actual keys. *)
+      (* When we have two [Some]s we just use the normal compare function, but otherwise
+         we sort [None]s (missing keys) before or after actual keys. *)
       let none_to_some, some_to_none =
         match handle_missing with
         | First -> -1, 1
@@ -373,8 +370,8 @@ module Chain_sort (A : Sort_key) (B : Sort_key) : Sort_key = struct
 
   let extract sexp : key Extraction_result.t =
     match A.extract sexp, B.extract sexp with
-    (* We always surface errors, even if the behavior for one
-       key says we should drop the input sexp. *)
+    (* We always surface errors, even if the behavior for one key says we should drop the
+       input sexp. *)
     | Error e1, Error e2 -> Error (e1 ^ "\n" ^ e2)
     | Error e, _ -> Error e
     | _, Error e -> Error e

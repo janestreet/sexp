@@ -13,12 +13,10 @@ end
 
 type 'sexp query_meaning = 'sexp -> Sexp.t Lazy_list.t
 
-(*
-   This module contains multiple implementations for the same interface [S].
-   Each implementation improves on the prior one in some way, but at the
-   cost of readability.  To help with maintenance of the code, the entire
-   sequence of implementations is preserved here.  We ultimately end up
-   using the final implementation in the sequence.
+(* This module contains multiple implementations for the same interface [S]. Each
+   implementation improves on the prior one in some way, but at the cost of readability.
+   To help with maintenance of the code, the entire sequence of implementations is
+   preserved here. We ultimately end up using the final implementation in the sequence.
 *)
 module type S = sig
   val query : Query.t -> Sexp.t query_meaning
@@ -70,6 +68,13 @@ module _ : S = struct
   let atomic = function
     | Atom _ as s -> one s
     | List _ -> nil
+  ;;
+
+  let int i = one ([%sexp_of: int] i)
+
+  let length = function
+    | Atom _ -> int 1
+    | List l -> int (List.length l)
   ;;
 
   let index i = function
@@ -146,6 +151,7 @@ module _ : S = struct
     match q with
     | Syntax.This -> one s
     | Syntax.Die -> nil
+    | Syntax.Length -> length s
     | Syntax.Atomic -> atomic s
     | Syntax.Index i -> index i s
     | Syntax.Smash -> smash s
@@ -370,6 +376,12 @@ module _ : S = struct
       | List _ -> nil k
     ;;
 
+    let length s k =
+      match s with
+      | Atom _ -> one ([%sexp_of: int] 1) k
+      | List l -> one ([%sexp_of: int] (List.length l)) k
+    ;;
+
     let index i s k =
       match s with
       | Atom _ -> nil k
@@ -385,7 +397,7 @@ module _ : S = struct
       | y :: ys -> k (Cons (y, fun k -> of_list ys k))
     ;;
 
-    (*let rec to_list xs k =
+    (*=let rec to_list xs k =
       xs (function
       | Nil -> k []
       | Cons (y, ys) -> to_list ys (fun ys -> k (y :: ys)))
@@ -473,6 +485,7 @@ module _ : S = struct
       | Syntax.This -> one s k
       | Syntax.Die -> nil k
       | Syntax.Atomic -> atomic s k
+      | Syntax.Length -> length s k
       | Syntax.Index i -> index i s k
       | Syntax.Smash -> smash s k
       | Syntax.Pipe (q1, q2) ->
@@ -725,6 +738,12 @@ module _ : S = struct
       | List _ -> nil k
     ;;
 
+    let length s k =
+      match s with
+      | Atom _ -> one ([%sexp_of: int] 1) k
+      | List l -> one ([%sexp_of: int] (List.length l)) k
+    ;;
+
     let index i s k =
       match s with
       | Atom _ -> nil k
@@ -829,6 +848,7 @@ module _ : S = struct
       | Syntax.This -> one s k
       | Syntax.Die -> nil k
       | Syntax.Atomic -> atomic s k
+      | Syntax.Length -> length s k
       | Syntax.Index i -> index i s k
       | Syntax.Smash -> smash s k
       | Syntax.Pipe (q1, q2) ->
@@ -1024,18 +1044,16 @@ module Nofun : S = struct
       ; value : Sexp.t
       }
 
-    (* some constructors below were useful for incrementally
-       defunctionalizing the code with help from the type checker.
-       Even after this process is complete, they are still useful as
-       type-checked documentation to indicate what function type the
-       datatypes correspond to.  We mark these scaffolding constructors
-       with an uninhabited type named [_unused] so that the type-checker
-       also enforces that the constructors are not actually used at
-       run-time. *)
+    (* some constructors below were useful for incrementally defunctionalizing the code
+       with help from the type checker. Even after this process is complete, they are
+       still useful as type-checked documentation to indicate what function type the
+       datatypes correspond to. We mark these scaffolding constructors with an uninhabited
+       type named [_unused] so that the type-checker also enforces that the constructors
+       are not actually used at run-time. *)
     type _unused
 
     type 'r seq =
-      (*| SEQ of ('r cont -> 'r) * _unused*)
+      (*=| SEQ of ('r cont -> 'r) * _unused*)
       | Nil_seq
       | Suspend of Query.t * Sexp.t
       | App of 'r seq * 'r seq
@@ -1068,7 +1086,7 @@ module Nofun : S = struct
       | Cons of Sexp.t * 'r seq
 
     and 'r seq' =
-      (*| SEQ' of ('r cont' -> 'r) * _unused*)
+      (*=| SEQ' of ('r cont' -> 'r) * _unused*)
       | Nil_seq'
       | App' of 'r seq' * 'r seq'
       | Rows of Sexp.t * Syntax.Query.t Syntax.anti_quote Template.t list
@@ -1078,7 +1096,7 @@ module Nofun : S = struct
       | Map of 'r seq' * 'r mapf'
 
     and 'r cont' =
-      (*| CONT' of ('r node' -> 'r) * _unused*)
+      (*=| CONT' of ('r node' -> 'r) * _unused*)
       | Remember of 'r cache ref * 'r cont'
       | App'_body of 'r seq' * 'r cont'
       | Bind'_body of 'r bindf'_ * 'r cont
@@ -1093,26 +1111,26 @@ module Nofun : S = struct
       | Unevaluated of 'r seq'
 
     and 'r bindf =
-      (*| BINDF of (Sexp.t -> 'r cont -> 'r) * _unused*)
+      (*=| BINDF of (Sexp.t -> 'r cont -> 'r) * _unused*)
       | Smash
       | Query of Query.t
       | Extract_field of string
 
-    and 'r bindf'_ = (*| BINDF'_ of (Sexp.t list -> 'r cont -> 'r) * _unused*)
+    and 'r bindf'_ = (*=| BINDF'_ of (Sexp.t list -> 'r cont -> 'r) * _unused*)
       | Wrap
 
     and 'r bindf_' =
-      (*| BINDF_' of (Sexp.t -> 'r cont' -> 'r) * _unused*)
+      (*=| BINDF_' of (Sexp.t -> 'r cont' -> 'r) * _unused*)
       | Prepend_col of 'r seq'
 
     and 'r mapf' =
-      (*| MAPF' of (Sexp.t list -> Sexp.t list) * _unused*)
+      (*=| MAPF' of (Sexp.t list -> Sexp.t list) * _unused*)
       | Prepend_one of Sexp.t
       | Prepend_row of Sexp.t list
 
     let rec apply_seq code k =
       match code with
-      (*| SEQ (f, _never_fires) -> f k*)
+      (*=| SEQ (f, _never_fires) -> f k*)
       | Nil_seq -> nil k
       | Suspend (q, s) -> query q s k
       | App (m', n) -> app m' n k
@@ -1175,7 +1193,7 @@ module Nofun : S = struct
 
     and apply_bindf code x k =
       match code with
-      (*| BINDF (f, _never_fires) -> f x k*)
+      (*=| BINDF (f, _never_fires) -> f x k*)
       | Smash -> smash x k (* faster version of [Query Smash] *)
       | Query q -> query q x k
       | Extract_field name ->
@@ -1185,17 +1203,17 @@ module Nofun : S = struct
 
     and apply_bindf'_ code row k =
       match code with
-      (*| BINDF'_ (f, _never_fires) -> f row k*)
+      (*=| BINDF'_ (f, _never_fires) -> f row k*)
       | Wrap -> one (List row) k
 
     and apply_bindf_' code x k =
       match code with
-      (*| BINDF_' (f, _never_fires) -> f x k*)
+      (*=| BINDF_' (f, _never_fires) -> f x k*)
       | Prepend_col blocks -> map' blocks ~f:(Prepend_one x) k
 
     and apply_seq' code k =
       match code with
-      (*| SEQ' (f, _never_fires) -> f k*)
+      (*=| SEQ' (f, _never_fires) -> f k*)
       | Nil_seq' -> nil' k
       | App' (xs, n) -> app' xs n k
       | Rows (s, ts) -> rows s ts k
@@ -1209,7 +1227,7 @@ module Nofun : S = struct
 
     and apply_cont' code node =
       match code with
-      (*| CONT' (f, _never_fires) -> f node*)
+      (*=| CONT' (f, _never_fires) -> f node*)
       | Remember (cache, k) ->
         cache := Evaluated node;
         apply_cont' k node
@@ -1230,7 +1248,7 @@ module Nofun : S = struct
 
     and apply_mapf' code ys =
       match code with
-      (*| MAPF' (f, _never_fires) -> f ys*)
+      (*=| MAPF' (f, _never_fires) -> f ys*)
       | Prepend_one x -> x :: ys
       | Prepend_row xs -> xs @ ys
 
@@ -1248,6 +1266,11 @@ module Nofun : S = struct
       match s with
       | Atom _ as s -> one s k
       | List _ -> nil k
+
+    and length s k =
+      match s with
+      | Atom _ -> one ([%sexp_of: int] 1) k
+      | List l -> one ([%sexp_of: int] (List.length l)) k
 
     and index i s k =
       match s with
@@ -1320,6 +1343,7 @@ module Nofun : S = struct
       match q with
       | Syntax.This -> one s k
       | Syntax.Die -> nil k
+      | Syntax.Length -> length s k
       | Syntax.Atomic -> atomic s k
       | Syntax.Index i -> index i s k
       | Syntax.Smash -> smash s k

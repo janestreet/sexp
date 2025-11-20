@@ -33,6 +33,7 @@ syntax is as follows:
         -- transformations -------
         | (change C)
         | restructure
+        | length
 
 The meaning of an expression is a function from an input s-expression to a
 (possibly empty) sequence of output s-expressions.  The toplevel command is
@@ -296,3 +297,8 @@ Sometimes the contents of an atom will be the string representation of
 a sequence of sexps. `restructure` will do this interpretation for you:
 
     restructure : "A (B C) D" => {A (B C) D}
+
+Sometimes you want the number of elements in a list.
+    
+    length : ATOM => {1}
+    length : (T[1] ... T[N]) => {N}
