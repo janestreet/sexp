@@ -190,18 +190,21 @@ let change_semantics_dot_md =
   \     P ::= ATOM | (P ... P) | $VAR | @VAR\n\n\
    Note that variables are distinguished from atoms by a prefix of `$` or `@`.\n\
    Variables starting with `$` are scalar and they match a single s-expression,\n\
-   while those starting with `@` match a list of s-expressions.\n\n\
+   while those starting with `@` match a list of s-expressions.\n\
+   To match literal atoms starting with `$` or `@`, repeat the prefix character.\n\n\
    Some examples\n\n\
-  \             (rewrite foo bar) : foo => bar\n\
-  \             (rewrite foo bar) : abc => _|_          (indicates failure)\n\
-  \             (rewrite foo bar) : (foo bar) => _|_\n\
-  \       (rewrite (foo bar) wow) : (foo bar) => wow\n\
-  \         (rewrite (foo $X) $X) : (foo bar) => bar\n\
-  \         (rewrite (foo $X) $X) : (foo (bar none)) => (bar none)\n\
-  \    (rewrite (foo $X) ($X $X)) : (foo bar) => (bar bar)\n\
-  \       (rewrite (foo @X) (@X)) : (foo bar baz) => (bar baz)\n\
-  \       (rewrite (foo @X) (@X)) : (foo (bar a) (baz b)) => ((bar a) (baz b))\n\
-  \    (rewrite (foo @X) (@X @X)) : (foo bar baz) => (bar baz bar baz)\n\n\
+  \                (rewrite foo bar) : foo => bar\n\
+  \                (rewrite foo bar) : abc => _|_          (indicates failure)\n\
+  \                (rewrite foo bar) : (foo bar) => _|_\n\
+  \          (rewrite (foo bar) wow) : (foo bar) => wow\n\
+  \            (rewrite (foo $X) $X) : (foo bar) => bar\n\
+  \            (rewrite (foo $X) $X) : (foo (bar none)) => (bar none)\n\
+  \       (rewrite (foo $X) ($X $X)) : (foo bar) => (bar bar)\n\
+  \          (rewrite (foo @X) (@X)) : (foo bar baz) => (bar baz)\n\
+  \          (rewrite (foo @X) (@X)) : (foo (bar a) (baz b)) => ((bar a) (baz b))\n\
+  \       (rewrite (foo @X) (@X @X)) : (foo bar baz) => (bar baz bar baz)\n\
+  \    (rewrite ($$foo $X) (bar $X)) : ($foo wow) => (bar wow)\n\
+  \    (rewrite (foo $X) (@@bar $X)) : (foo wow) => (@bar wow)\n\n\
    Some rewrite rules are not well formed.  The following rules apply:\n\n\
   \    well-formedness rule                          non-conforming program\n\
   \    -----------------------------------------------------------------------\n\
@@ -763,7 +766,8 @@ let query_semantics_dot_md =
   \        | (quote T[0])\n\
   \        -- transformations -------\n\
   \        | (change C)\n\
-  \        | restructure\n\n\
+  \        | restructure\n\
+  \        | length\n\n\
    The meaning of an expression is a function from an input s-expression to a\n\
    (possibly empty) sequence of output s-expressions.  The toplevel command is\n\
    applied to each expression in the input.  We will look at five categories\n\
@@ -943,5 +947,9 @@ let query_semantics_dot_md =
    change semantics).\n\n\
    Sometimes the contents of an atom will be the string representation of\n\
    a sequence of sexps. `restructure` will do this interpretation for you:\n\n\
-  \    restructure : \"A (B C) D\" => {A (B C) D}\n"
+  \    restructure : \"A (B C) D\" => {A (B C) D}\n\n\
+   Sometimes you want the number of elements in a list.\n\
+  \    \n\
+  \    length : ATOM => {1}\n\
+  \    length : (T[1] ... T[N]) => {N}\n"
 ;;

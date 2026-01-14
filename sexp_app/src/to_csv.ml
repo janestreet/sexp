@@ -102,7 +102,7 @@ let csv_of_sexp ~view_atoms_as_strings ~two_pass_processing sexps =
     let warn_on_missing_fields =
       (* The whole point of two-pass processing is to gather up field names across all
          records since presumably the first row isn't good enough to consult for this
-         purpose since we not all rows will populate the same columns.  So no point in
+         purpose since we not all rows will populate the same columns. So no point in
          complaining about that very thing. *)
       not two_pass_processing
     in

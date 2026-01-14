@@ -84,8 +84,8 @@ module Make_engine (S : Sexplike) = struct
       match query with
       | Capture (subquery, capture_idx) ->
         let prev_contents = revcapture_buf.(capture_idx) in
-        (* Try catch makes sure that we properly restore [revcapture_buf]
-           upon an exception, such as the one involved in With_return *)
+        (* Try catch makes sure that we properly restore [revcapture_buf] upon an
+           exception, such as the one involved in With_return *)
         (try
            iter_matches subquery sexps ~f:(fun nconsumed rev_consumed tail ->
              revcapture_buf.(capture_idx) <- rev_consumed;
@@ -136,8 +136,9 @@ module Make_engine (S : Sexplike) = struct
         in
         loop 0 [] sexps
       | Star_greedy subquery ->
-        (* [Star_greedy q] is equivalent to [Or_all [Sequence [q; Star_greedy q]; Sequence []]]
-           (modulo numbering of unlabeled captures), *)
+        (* [Star_greedy q] is equivalent to
+           [Or_all [Sequence [q; Star_greedy q]; Sequence []]] (modulo numbering of
+           unlabeled captures), *)
         let rec loop nconsumed rev_consumed sexps =
           (* so first try consuming q followed by [Star_greedy q] *)
           iter_matches subquery sexps ~f:(fun n rc tail ->
@@ -171,8 +172,8 @@ module Make_engine (S : Sexplike) = struct
         (* First try consuming zero things *)
         f 0 [] sexps;
         iter_matches subquery sexps ~f:(fun n rc tail ->
-          (* If it consumed zero things, then we're done, break and fail since we
-             already tried consuming zero ourselves. *)
+          (* If it consumed zero things, then we're done, break and fail since we already
+             tried consuming zero ourselves. *)
           if n = 0 then () else f n rc tail)
       | Maybe_greedy subquery ->
         iter_matches subquery sexps ~f:(fun n rc tail ->
@@ -208,7 +209,8 @@ module Make_engine (S : Sexplike) = struct
                         subquery
                         [ subsexp ]
                         ~f:(fun nconsumed _rev_consumed _subtail ->
-                          (* If the subquery didn't actually consume the subsexp, it doesn't count *)
+                          (* If the subquery didn't actually consume the subsexp, it
+                             doesn't count *)
                           if nconsumed = 0
                           then ()
                           else (
@@ -399,13 +401,13 @@ let no_planned_replacements_yet ~planned_replacements ~targets =
    [no_planned_replacements_yet]. *)
 let replace_sequence_with ~planned_replacements ~targets ~desired =
   assert (not (List.is_empty targets));
-  (* Replace the sequence of targets with the desired results sequence.
-     Do this by first replacing the first sexp with the desired sequence... *)
+  (* Replace the sequence of targets with the desired results sequence. Do this by first
+     replacing the first sexp with the desired sequence... *)
   Hashtbl.set
     planned_replacements
     ~key:(List.hd_exn targets).Labeled_sexp.node_id
     ~data:desired;
-  (* ... then deleting all the rest  *)
+  (* ... then deleting all the rest *)
   List.iter (List.tl_exn targets) ~f:(fun target ->
     Hashtbl.set planned_replacements ~key:target.node_id ~data:[])
 ;;
@@ -440,8 +442,8 @@ let replace
     |> String.Table.of_alist_exn
   in
   let replace_idx = Hashtbl.find_exn capture_label_to_idx_map replace_capture_label in
-  (* Two-pass algorithm, first iterate over all matches and record the labeled sexp id
-     of the subsexp that the [replace] target hit along with the captures at that time. *)
+  (* Two-pass algorithm, first iterate over all matches and record the labeled sexp id of
+     the subsexp that the [replace] target hit along with the captures at that time. *)
   let planned_replacements = Int.Table.create () in
   Labeled_sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
     match List.rev revcapture_buf.(replace_idx) with
@@ -483,8 +485,8 @@ let replace' ~query ~f sexp =
     |> Array.to_list
     |> String.Map.of_alist_exn
   in
-  (* Two-pass algorithm, first iterate over all matches and record the labeled sexp id
-     of the subsexp that the [replace] target hit along with the captures at that time. *)
+  (* Two-pass algorithm, first iterate over all matches and record the labeled sexp id of
+     the subsexp that the [replace] target hit along with the captures at that time. *)
   let planned_replacements = Int.Table.create () in
   Labeled_sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () ->
     let captures_by_label =

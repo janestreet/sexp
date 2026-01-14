@@ -12,10 +12,10 @@ module El = struct
   [@@deriving compare]
 end
 
-(* When converting a sexp to JSON, we want to convert things that look like numbers
-   to _valid_ JSON, and, critically, we also don't want to lose any information.
-   (Idempotent sexp -> json -> sexp round-tripping seems like a desirable property.)
-   It turns out this is rather tricky.
+(* When converting a sexp to JSON, we want to convert things that look like numbers to
+   _valid_ JSON, and, critically, we also don't want to lose any information. (Idempotent
+   sexp -> json -> sexp round-tripping seems like a desirable property.) It turns out this
+   is rather tricky.
 
    OCaml and JSON have different grammars for numbers. The set of valid OCaml number
    literals is a strict superset of valid JSON number literals. Examples (not guaranteed
@@ -40,8 +40,8 @@ end
    modifications...
 
    ... with one exception: since we very frequently use underscores for readability in
-   larger numbers, we will convert strings-that-look-like-numbers-with-underscores to
-   JSON numbers by stripping out the underscores.
+   larger numbers, we will convert strings-that-look-like-numbers-with-underscores to JSON
+   numbers by stripping out the underscores.
 
    OCaml is very generous in that it accepts any number of underscores anywhere in a
    number, e.g., "_-__1_.__2_e__+_3_4" is valid floating point literal. Conceivably, we
@@ -55,7 +55,7 @@ end
    integer that really represents a fixed point number. Ultimately there's too much gray
    area here, so we'll simply accept underscores anywhere like OCaml does.
 
-   [1]: https://www.json.org/json-en.html
+   [1] : https://www.json.org/json-en.html
 *)
 
 module Assemble_to_json = struct
@@ -76,8 +76,8 @@ module Assemble_to_json = struct
   ;;
 end
 
-(* regex based on diagram on https://www.json.org/json-en.html, but also with support
-   for underscores *)
+(* regex based on diagram on https://www.json.org/json-en.html, but also with support for
+   underscores *)
 let json_number_with_underscores_re =
   Re2.create_exn
     ~options:{ Re2.Options.default with never_capture = true }

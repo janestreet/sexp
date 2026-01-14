@@ -1132,9 +1132,9 @@ let%expect_test _ =
 
 let%expect_test _ =
   run_single "(.* %[foo]+ .*)" "(foo foo bar baz foo bar)";
-  (* yes, we get FOUR of them. The extra foo comes from when %[foo]+ matches
-     "foo foo", and since the capture is inside the +, it successively captures
-     the first "foo" and then second "foo" which overwrites the first. *)
+  (* yes, we get FOUR of them. The extra foo comes from when %[foo]+ matches "foo foo",
+     and since the capture is inside the +, it successively captures the first "foo" and
+     then second "foo" which overwrites the first. *)
   [%expect
     {|
     :foo

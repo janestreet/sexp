@@ -14,7 +14,7 @@ module Template : sig
 end
 
 module Quotation : sig
-  (*
+  (*=
      a non-regular datatype for quasi-quotation
      due to Ross Paterson and Richard Bird
      "de Bruijn notation as a nested datatype"
@@ -73,6 +73,7 @@ type query =
   | Each
   | Smash
   | Atomic
+  | Length
   | Wrap of query
   | Test of query
   | Not of query

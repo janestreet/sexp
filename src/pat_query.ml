@@ -1,6 +1,6 @@
 open! Core
 
-(* We want to support sorting by multiple captured values, e.g., with -pat-query "{
+(*=We want to support sorting by multiple captured values, e.g., with -pat-query "{
    (field1 %0) (field2 %1) }", so we want to use the List output method. If there's only
    one capture, we'll use Single_capture. (This matches the behavior of
    default_output_method, which uses List when there are any numbered captures, or

@@ -33,8 +33,8 @@ let read_of_next_char
   let follows_escape_in_string = ref false in
   let atom_so_far = Buffer.create 32 in
   let all_done = ref false in
-  (* Read from the in_channel and either return `Eof or return `Ok s where s is a chunk
-     of input, possibly zero-length *)
+  (* Read from the in_channel and either return `Eof or return `Ok s where s is a chunk of
+     input, possibly zero-length *)
   let read () =
     if !all_done
     then `Eof
@@ -72,8 +72,8 @@ let read_of_next_char
           Buffer.add_char atom_so_far c;
           `Ok "" (* Else... *))
         else (
-          (* We have a naked atom that didn't appear as a string in the sexp - quote
-             if it needed *)
+          (* We have a naked atom that didn't appear as a string in the sexp - quote if it
+             needed *)
           let ret = Buffer.contents atom_so_far in
           Buffer.clear atom_so_far;
           let ret = maybe_quote_not_inside_string_atom ret in

@@ -24,9 +24,8 @@ val filter_map : f:('a -> 'b option) -> 'a t -> 'b t
 val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b t -> 'a
 val fold_right : f:('a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
 
-(* [foldr ~f t ~init] is a lazy version of [fold_right] that doesn't
-   necessarily force a traversal of the entire list, as is more
-   natural for a lazy list.
+(* [foldr ~f t ~init] is a lazy version of [fold_right] that doesn't necessarily force a
+   traversal of the entire list, as is more natural for a lazy list.
 *)
 
 val foldr : 'a t -> f:('a -> 'b Lazy.t -> 'b) -> init:'b -> 'b Lazy.t
@@ -66,9 +65,9 @@ module Of_container : sig
   end
 end
 
-(* Iterators are useful when you're trying to avoid closing over the head of
-   a lazy list to avoid a space leak.  Just create one of these outside said
-   closure and close over the iterator instead.
+(* Iterators are useful when you're trying to avoid closing over the head of a lazy list
+   to avoid a space leak. Just create one of these outside said closure and close over the
+   iterator instead.
 *)
 module Iterator : sig
   type 'a lazy_list = 'a t
