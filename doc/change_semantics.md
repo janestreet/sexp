@@ -41,19 +41,22 @@ The syntax of the LHS and RHS patterns is as follows:
 Note that variables are distinguished from atoms by a prefix of `$` or `@`.
 Variables starting with `$` are scalar and they match a single s-expression,
 while those starting with `@` match a list of s-expressions.
+To match literal atoms starting with `$` or `@`, repeat the prefix character.
 
 Some examples
 
-             (rewrite foo bar) : foo => bar
-             (rewrite foo bar) : abc => _|_          (indicates failure)
-             (rewrite foo bar) : (foo bar) => _|_
-       (rewrite (foo bar) wow) : (foo bar) => wow
-         (rewrite (foo $X) $X) : (foo bar) => bar
-         (rewrite (foo $X) $X) : (foo (bar none)) => (bar none)
-    (rewrite (foo $X) ($X $X)) : (foo bar) => (bar bar)
-       (rewrite (foo @X) (@X)) : (foo bar baz) => (bar baz)
-       (rewrite (foo @X) (@X)) : (foo (bar a) (baz b)) => ((bar a) (baz b))
-    (rewrite (foo @X) (@X @X)) : (foo bar baz) => (bar baz bar baz)
+                (rewrite foo bar) : foo => bar
+                (rewrite foo bar) : abc => _|_          (indicates failure)
+                (rewrite foo bar) : (foo bar) => _|_
+          (rewrite (foo bar) wow) : (foo bar) => wow
+            (rewrite (foo $X) $X) : (foo bar) => bar
+            (rewrite (foo $X) $X) : (foo (bar none)) => (bar none)
+       (rewrite (foo $X) ($X $X)) : (foo bar) => (bar bar)
+          (rewrite (foo @X) (@X)) : (foo bar baz) => (bar baz)
+          (rewrite (foo @X) (@X)) : (foo (bar a) (baz b)) => ((bar a) (baz b))
+       (rewrite (foo @X) (@X @X)) : (foo bar baz) => (bar baz bar baz)
+    (rewrite ($$foo $X) (bar $X)) : ($foo wow) => (bar wow)
+    (rewrite (foo $X) (@@bar $X)) : (foo wow) => (@bar wow)
 
 Some rewrite rules are not well formed.  The following rules apply:
 

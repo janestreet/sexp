@@ -1013,8 +1013,8 @@ module _ : S = struct
   ;;
 end
 
-(* defunctionalization of [Mono] to eliminate the overhead of constructing
-   so many closures. *)
+(* defunctionalization of [Mono] to eliminate the overhead of constructing so many
+   closures. *)
 module Nofun : S = struct
   module Internal : sig
     open Syntax

@@ -190,18 +190,21 @@ let change_semantics_dot_md =
   \     P ::= ATOM | (P ... P) | $VAR | @VAR\n\n\
    Note that variables are distinguished from atoms by a prefix of `$` or `@`.\n\
    Variables starting with `$` are scalar and they match a single s-expression,\n\
-   while those starting with `@` match a list of s-expressions.\n\n\
+   while those starting with `@` match a list of s-expressions.\n\
+   To match literal atoms starting with `$` or `@`, repeat the prefix character.\n\n\
    Some examples\n\n\
-  \             (rewrite foo bar) : foo => bar\n\
-  \             (rewrite foo bar) : abc => _|_          (indicates failure)\n\
-  \             (rewrite foo bar) : (foo bar) => _|_\n\
-  \       (rewrite (foo bar) wow) : (foo bar) => wow\n\
-  \         (rewrite (foo $X) $X) : (foo bar) => bar\n\
-  \         (rewrite (foo $X) $X) : (foo (bar none)) => (bar none)\n\
-  \    (rewrite (foo $X) ($X $X)) : (foo bar) => (bar bar)\n\
-  \       (rewrite (foo @X) (@X)) : (foo bar baz) => (bar baz)\n\
-  \       (rewrite (foo @X) (@X)) : (foo (bar a) (baz b)) => ((bar a) (baz b))\n\
-  \    (rewrite (foo @X) (@X @X)) : (foo bar baz) => (bar baz bar baz)\n\n\
+  \                (rewrite foo bar) : foo => bar\n\
+  \                (rewrite foo bar) : abc => _|_          (indicates failure)\n\
+  \                (rewrite foo bar) : (foo bar) => _|_\n\
+  \          (rewrite (foo bar) wow) : (foo bar) => wow\n\
+  \            (rewrite (foo $X) $X) : (foo bar) => bar\n\
+  \            (rewrite (foo $X) $X) : (foo (bar none)) => (bar none)\n\
+  \       (rewrite (foo $X) ($X $X)) : (foo bar) => (bar bar)\n\
+  \          (rewrite (foo @X) (@X)) : (foo bar baz) => (bar baz)\n\
+  \          (rewrite (foo @X) (@X)) : (foo (bar a) (baz b)) => ((bar a) (baz b))\n\
+  \       (rewrite (foo @X) (@X @X)) : (foo bar baz) => (bar baz bar baz)\n\
+  \    (rewrite ($$foo $X) (bar $X)) : ($foo wow) => (bar wow)\n\
+  \    (rewrite (foo $X) (@@bar $X)) : (foo wow) => (@bar wow)\n\n\
    Some rewrite rules are not well formed.  The following rules apply:\n\n\
   \    well-formedness rule                          non-conforming program\n\
   \    -----------------------------------------------------------------------\n\

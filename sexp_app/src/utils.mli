@@ -31,6 +31,7 @@ val replace_field
   -> Sexp.t
   -> [ `Immediate | `Recursive ]
   -> Sexp.t Or_error.t
+  @@ portable
 
 (** [ remove_field ~field sexp scope ] removes the field if it exists in the designated
     scope. If `Recursive is chosen, it will replace as many instances as appear. It will

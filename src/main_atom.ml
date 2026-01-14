@@ -84,7 +84,7 @@ module Unescape = struct
       [%map_open.Command
         let () = return ()
         and sep =
-          flag_optional_with_default_doc
+          flag_optional_with_default_doc_sexp
             "-sep"
             string
             [%sexp_of: string]

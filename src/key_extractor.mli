@@ -92,11 +92,11 @@ module Extraction_error : sig
     | Multiple_keys
 end
 
-(* Build a function that will extract out part of the input [Sexp.t] that is specified
-   by the key extractor. It will error if nothing is extracted from the input [Sexp.t],
-   or if multiple values are extracted. The [string] paired with the [Extraction_error.t]
-   in the [Error] case can be used in an error message to indicate which flag on the
-   command line was used when getting this value. *)
+(* Build a function that will extract out part of the input [Sexp.t] that is specified by
+   the key extractor. It will error if nothing is extracted from the input [Sexp.t], or if
+   multiple values are extracted. The [string] paired with the [Extraction_error.t] in the
+   [Error] case can be used in an error message to indicate which flag on the command line
+   was used when getting this value. *)
 val extract_or_error_fn
   :  t
   -> (Sexp.t -> (Sexp.t, Extraction_error.t * string) result) Staged.t

@@ -65,9 +65,9 @@ module Of_container : sig
   end
 end
 
-(* Iterators are useful when you're trying to avoid closing over the head of
-   a lazy list to avoid a space leak.  Just create one of these outside said
-   closure and close over the iterator instead.
+(* Iterators are useful when you're trying to avoid closing over the head of a lazy list
+   to avoid a space leak. Just create one of these outside said closure and close over the
+   iterator instead.
 *)
 module Iterator : sig
   type 'a lazy_list = 'a t

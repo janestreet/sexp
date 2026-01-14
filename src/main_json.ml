@@ -26,7 +26,7 @@ let of_json ~in_channel ~machine =
       Conv.sexp_of_list sexp_of_item alist
   in
   let parser_state =
-    (* Print as we go so the incremental work can be gc'd  *)
+    (* Print as we go so the incremental work can be gc'd *)
     Angstrom.lift (convert >> print_s ?mach:(Option.some_if machine ())) Jsonaf.Parser.t
     |> Angstrom.many
     |> Angstrom.map ~f:(fun (_ : unit list) -> ())
