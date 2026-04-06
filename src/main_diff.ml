@@ -114,7 +114,7 @@ Like the unix diff utility, this command exits non-zero (with exit code 2) when 
 are different, so it can be used as a sexp equality test with the -quiet flag.  Passing
 the -for-patch flag disables this behavior.
 
-It also exists non-zero (with exit code 1) if either sexp is malformed.
+It also exits non-zero (with exit code 1) if either sexp is malformed.
 |})
     (let%map_open.Command file1, file2 =
        anon (t2 ("FILE1" %: Filename_unix.arg_type) ("FILE2" %: Filename_unix.arg_type))
