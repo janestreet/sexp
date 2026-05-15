@@ -5,4 +5,5 @@
  (preprocess
   (pps ppx_jane)))
 
-(ocamllex csv_lexeme)
+(ocamllex
+ (modules csv_lexeme))
