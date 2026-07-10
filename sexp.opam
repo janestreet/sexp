@@ -30,9 +30,11 @@ depends: [
   "shell"
   "angstrom"    {>= "0.15.0"}
   "dune"        {>= "3.17.0"}
-  "uri"         {>= "3.0.0"}
 ]
 available: arch != "x86_32"
+conflicts: [
+  "oxcaml-compiler" {< "5.2.0minus39"}
+]
 synopsis: "S-expression swiss knife"
 description: "
 A suite of tools for working with s-expressions from the command line.
