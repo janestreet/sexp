@@ -30,7 +30,6 @@ depends: [
   "shell"
   "angstrom"    {>= "0.15.0"}
   "dune"        {>= "3.17.0"}
-  "uri"         {>= "3.0.0"}
 ]
 available: arch != "x86_32"
 synopsis: "S-expression swiss knife"

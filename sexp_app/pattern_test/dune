@@ -1,5 +1,5 @@
 (library
  (name sexp_app_pattern_test)
- (libraries core expect_test_helpers_core sexp_app_pattern sexplib)
+ (libraries core expect_test_helpers_core sexp_app_pattern)
  (preprocess
   (pps ppx_jane)))
