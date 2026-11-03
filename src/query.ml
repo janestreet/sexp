@@ -1,5 +1,4 @@
 open Core
-open Sexp_app
 
 type output_mode =
   | Sexp
@@ -14,19 +13,17 @@ type t =
   ; group : bool
   ; machine : bool
   ; fail_on_parse_error : bool
-  ; perform_query : Sexp_ext.t -> on_result:(Sexp.t -> unit) -> unit
+  ; perform_query : Sexp.t -> on_result:(Sexp.t -> unit) -> unit
   }
 
 type parameters = t
-
-let singleton x = Lazy_list.cons x (Lazy_list.empty ())
 
 let scan lexbuf ~fail_on_parse_error =
   Lazy_list.build ~seed:() ~f:(fun () ->
     try
       match Sexp.scan_sexp_opt lexbuf with
       | None -> None
-      | Some sexp -> Some (Sexp_ext.t_of_sexp sexp, ())
+      | Some sexp -> Some (sexp, ())
     with
     | _ignored_exn when not fail_on_parse_error -> None)
 ;;
@@ -110,19 +107,20 @@ end
 let execute t =
   let transform = Transform.make t in
   let channels = Located.channels t.inputs in
-  let input =
-    Located.map channels ~f:(fun chan ->
-      let sexps =
-        scan (Lexing.from_channel chan) ~fail_on_parse_error:t.fail_on_parse_error
-      in
-      if t.group then singleton (Sexp_ext.List sexps) else sexps)
-  in
-  let iter_source label sexps =
+  let iter_source label chan =
+    let sexps =
+      scan (Lexing.from_channel chan) ~fail_on_parse_error:t.fail_on_parse_error
+    in
     let process_sexp = Transform.initialize_source transform label in
-    Lazy_list.iter sexps ~f:(fun sexp -> t.perform_query sexp ~on_result:process_sexp);
+    if t.group
+    then (
+      let sexp = Sexp.List (Lazy_list.to_list sexps) in
+      t.perform_query sexp ~on_result:process_sexp)
+    else
+      Lazy_list.iter sexps ~f:(fun sexp -> t.perform_query sexp ~on_result:process_sexp);
     Transform.finalize_source transform label
   in
-  Located.iter input ~f:iter_source;
+  Located.iter channels ~f:iter_source;
   Transform.finalize_all transform;
   exit (if Transform.any_output transform then 0 else 1)
 ;;

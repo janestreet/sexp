@@ -64,8 +64,8 @@ module Display_function = struct
         (optional int)
         ~doc:"INT set [num_shown] in Display_options (default: 3)"
     in
-    match display_as_plain_string, collapse_threshold, num_shown with
-    | false, None, None -> None
+    match display_as_plain_string, collapse_threshold, layout, num_shown with
+    | false, None, None, None -> None
     | _ ->
       Some (create ~display_as_plain_string ?collapse_threshold ?layout ?num_shown ())
   ;;

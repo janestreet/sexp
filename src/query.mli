@@ -1,5 +1,4 @@
 open! Core
-open Sexp_app
 
 type output_mode =
   | Sexp
@@ -14,7 +13,7 @@ type t =
   ; group : bool
   ; machine : bool
   ; fail_on_parse_error : bool
-  ; perform_query : Sexp_ext.t -> on_result:(Sexp.t -> unit) -> unit
+  ; perform_query : Sexp.t -> on_result:(Sexp.t -> unit) -> unit
   }
 
 val execute : t -> unit

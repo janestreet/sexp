@@ -2,6 +2,29 @@ open Core
 open Expect_test_helpers_core
 open Sexp_app_pattern
 
+let%expect_test "compiled matchers return existence, discard captures, and can be reused" =
+  let matches =
+    Parser.parse_exn ".. %state=(status /Halt.*/)"
+    |> Engine.compile_matcher_exn
+    |> Staged.unstage
+  in
+  List.map
+    [ "((status Halted) (note ignored))"
+    ; "((status Open) (note Halted))"
+    ; {|"((status Halted))"|}
+    ; "((nested ((status Halted))))"
+    ; "()"
+    ; "((status Halted) (status Halted))"
+    ]
+    ~f:(fun text -> matches (Sexp.of_string text))
+  |> [%sexp_of: bool list]
+  |> print_s;
+  [%expect {| (true false false true false true) |}];
+  require
+    (Or_error.is_error
+       (Or_error.try_with (fun () -> Parser.parse_exn "/[/" |> Engine.compile_matcher_exn)))
+;;
+
 module Wrap_mode_for_run = struct
   type t =
     | Output of Output_method.some_output_method

@@ -37,8 +37,8 @@ let create_perform_query_f ~source ~is_change =
     | File file -> load_file file ~skip_first_line:false ~is_change
     | Script file -> load_file file ~skip_first_line:true ~is_change
   in
-  fun sexp_ext ~on_result ->
-    let lazy_results = Semantics.query' prgm sexp_ext in
+  fun sexp ~on_result ->
+    let lazy_results = Semantics.query prgm sexp in
     Lazy_list.iter lazy_results ~f:on_result
 ;;
 

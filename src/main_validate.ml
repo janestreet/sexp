@@ -12,10 +12,7 @@ let command =
     ~summary:"validate s-expressions from stdin or one or more files"
     (let%map_open.Command files = anon (sequence ("FILE" %: Filename_unix.arg_type)) in
      fun () ->
-       let perform_query sexp_ext ~on_result =
-         let lazy_results = Sexp_app.Semantics.query' Sexp_app.Syntax.This sexp_ext in
-         Lazy_list.iter lazy_results ~f:on_result
-       in
+       let perform_query sexp ~on_result = on_result sexp in
        execute
          { inputs =
              (match files with

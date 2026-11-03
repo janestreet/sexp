@@ -99,19 +99,17 @@ let pat_query_command =
        in
        let perform_query_returning_sexps
          ~(output_method : Sexp.t Sexp_app_pattern.Output_method.t)
-         sexp_ext
+         sexp
          ~(on_result : Sexp.t -> unit)
          =
-         let sexp = Sexp_app.Sexp_ext.sexp_of_t sexp_ext in
          Sexp_app_pattern.Engine.iter_matches ~query ~output_method sexp ~f:(fun output ->
            on_result output)
        in
        let perform_query_returning_sexp_lists
          ~(output_method : Sexp.t list Sexp_app_pattern.Output_method.t)
-         sexp_ext
+         sexp
          ~(on_result : Sexp.t -> unit)
          =
-         let sexp = Sexp_app.Sexp_ext.sexp_of_t sexp_ext in
          Sexp_app_pattern.Engine.iter_matches ~query ~output_method sexp ~f:(fun output ->
            List.iter ~f:on_result output)
        in
@@ -322,9 +320,8 @@ let pat_change_command =
          | `Format format -> Sexp_app_pattern.Output_method.Format.ts_of_string format
          | `Delete -> []
        in
-       let perform_query sexp_ext ~on_result =
+       let perform_query sexp ~on_result =
          let (Sexp_app_pattern.Output_method.Wrap_mode.T wrap_mode) = wrap_mode in
-         let sexp = Sexp_app.Sexp_ext.sexp_of_t sexp_ext in
          let sexps =
            Sexp_app_pattern.Engine.replace ~query ~replace ~with_:formats sexp ~wrap_mode
          in
