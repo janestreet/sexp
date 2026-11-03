@@ -1,4 +1,8 @@
 
+## Release v0.18.0
+
+- Added a subcommand [group] for grouping a sequence of sexps by some subexpression. 
+
 ## Release v0.17.0
 
 - [index] expressions in [sexp query] now support negative indexes. -1 selects the last

@@ -105,7 +105,7 @@ let rec flatten = function
 
 module Var = struct
   module T = struct
-    type t = string [@@deriving compare, bin_io, hash]
+    type t = string [@@deriving compare ~localize, bin_io, hash]
 
     let prefixes = [ '$'; '@' ]
     let invariant t = String.length t > 0 && List.mem prefixes t.[0] ~equal:Char.equal

@@ -4,13 +4,13 @@ module Path = struct
   include Sexplib.Path
 
   module X : sig
-    val compare_el : el -> el -> int
+    val%template compare_el : el @ m -> el @ m -> int [@@mode m = (global, local)]
   end = struct
     type nonrec el = el =
       | Pos of int
       | Match of string * int
       | Rec of string
-    [@@deriving compare]
+    [@@deriving compare ~localize]
   end
 
   include X
@@ -66,7 +66,7 @@ let flatten t = flatten [] t
 let rec assemble (l : (Path.t * Sexp.t) list) =
   let group l =
     List.group l ~break:(fun (p1, _) (p2, _) ->
-      not ([%compare.equal: Path.el option] (List.hd p1) (List.hd p2)))
+      not (([%compare.equal: Path.el option] [@mode local]) (List.hd p1) (List.hd p2)))
   in
   let one_deeper l =
     List.map l ~f:(fun (p, v) ->

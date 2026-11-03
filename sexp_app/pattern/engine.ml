@@ -315,6 +315,15 @@ let maybe_wrap_results
   | Wrap_always -> List (List.rev revcapture)
 ;;
 
+let compile_matcher_exn query =
+  let query, `Labels_of_captures labels = Compiled_query.create query Output_method.Map in
+  Staged.stage (fun sexp ->
+    let revcapture_buf = Array.map labels ~f:(fun _ -> []) in
+    with_return (fun { return } ->
+      Sexp_engine.iter_matches ~revcapture_buf query sexp ~f:(fun () -> return true);
+      false))
+;;
+
 let iter_matches
   (type a)
   ~query

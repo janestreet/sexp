@@ -3,7 +3,7 @@
  (public_name sexp.sexp_app)
  (libraries core jsonaf lazy_list re2 sexplib str)
  (preprocess
-  (pps ppx_jane)))
+  (pps ppx_jane -compare-require-explicit-locality)))
 
 (ocamllex
  (modules csv_lexeme))

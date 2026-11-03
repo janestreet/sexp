@@ -118,7 +118,7 @@ module%test Utils = struct
   ;;
 
   let%test _ =
-    [%compare.equal: Sexp.t Or_error.t]
+    ([%compare.equal: Sexp.t Or_error.t] [@mode local])
       (get_one_field sexp "second")
       (Ok (Sexp.Atom "123"))
   ;;
@@ -126,7 +126,9 @@ module%test Utils = struct
   let%test _ = Result.is_error (get_one_field sexp "zoo")
 
   let%test _ =
-    [%compare.equal: Sexp.t Or_error.t] (get_one_field sexp "boo") (Ok (Sexp.Atom "b"))
+    ([%compare.equal: Sexp.t Or_error.t] [@mode local])
+      (get_one_field sexp "boo")
+      (Ok (Sexp.Atom "b"))
   ;;
 
   let%test _ = Result.is_error (immediate_fields (Sexp.of_string "zoo"))
@@ -135,7 +137,7 @@ module%test Utils = struct
   let%test _ = Result.is_error (immediate_fields (Sexp.of_string "((good true)(bad))"))
 
   let%test _ =
-    [%equal: Sexp.t]
+    ([%equal: Sexp.t] [@mode local])
       (List.Assoc.find_exn
          (Or_error.ok_exn (immediate_fields sexp))
          ~equal:String.equal
@@ -144,7 +146,7 @@ module%test Utils = struct
   ;;
 
   let%test _ =
-    [%equal: Sexp.t]
+    ([%equal: Sexp.t] [@mode local])
       (List.Assoc.find_exn
          (Or_error.ok_exn (immediate_fields sexp))
          ~equal:String.equal
@@ -153,7 +155,7 @@ module%test Utils = struct
   ;;
 
   let%test _ =
-    [%equal: Sexp.t]
+    ([%equal: Sexp.t] [@mode local])
       (List.Assoc.find_exn
          (Or_error.ok_exn (immediate_fields sexp))
          ~equal:String.equal
@@ -162,13 +164,15 @@ module%test Utils = struct
   ;;
 
   let%test _ =
-    [%equal: Sexp.t] (to_record_sexp (Or_error.ok_exn (immediate_fields sexp))) sexp
+    ([%equal: Sexp.t] [@mode local])
+      (to_record_sexp (Or_error.ok_exn (immediate_fields sexp)))
+      sexp
   ;;
 
   let%test _ =
     let value = Sexp.Atom "my-new-value" in
     let sexp = Or_error.ok_exn (replace_field ~field:"second" ~value sexp `Immediate) in
-    [%equal: Sexp.t]
+    ([%equal: Sexp.t] [@mode local])
       (List.Assoc.find_exn
          (Or_error.ok_exn (immediate_fields sexp))
          ~equal:String.equal
@@ -189,17 +193,17 @@ module%test Utils = struct
   let%test _ =
     let value = Sexp.Atom "my-new-value" in
     let sexp = Or_error.ok_exn (replace_field ~field:"foo" ~value sexp `Recursive) in
-    [%equal: Sexp.t] (sexp -@! "fourth" -@! "foo") value
+    ([%equal: Sexp.t] [@mode local]) (sexp -@! "fourth" -@! "foo") value
   ;;
 
   let%test "remove_field immediate" =
     let sexp = Or_error.ok_exn (remove_field ~field:"second" sexp `Immediate) in
-    [%equal: Sexp.t option] (sexp -@? "second") None
+    ([%equal: Sexp.t option] [@mode local]) (sexp -@? "second") None
   ;;
 
   let%test "remove_field recursive" =
     let sexp = Or_error.ok_exn (remove_field ~field:"foo" sexp `Recursive) in
-    [%equal: Sexp.t option] (sexp -@! "fourth" -@? "foo") None
+    ([%equal: Sexp.t option] [@mode local]) (sexp -@! "fourth" -@? "foo") None
   ;;
 
   let%test "remove_field error" =

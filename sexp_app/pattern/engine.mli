@@ -1,5 +1,9 @@
 open Core
 
+(** Compile a predicate that stops at the first match and discards captures. Raises if the
+    query cannot be compiled, for example because of an invalid regex. *)
+val compile_matcher_exn : Query.t -> (Sexp.t -> bool) Staged.t
+
 (** {v
  Match a query against a sexp.
 

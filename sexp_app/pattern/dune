@@ -4,7 +4,7 @@
  (libraries core re2 str)
  (flags :standard -w -68)
  (preprocess
-  (pps ppx_jane)))
+  (pps ppx_jane -compare-require-explicit-locality)))
 
 (ocamllex lexer)
 

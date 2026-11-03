@@ -4,7 +4,7 @@ include Hash_set.Make (struct
     type t = Sexp.t =
       | Atom of string
       | List of t list
-    [@@deriving compare]
+    [@@deriving compare ~localize]
 
     let sexp_of_t = Fn.id
     let t_of_sexp = Fn.id

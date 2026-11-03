@@ -35,7 +35,10 @@ module If_no_key = struct
 
   let flag =
     let open Command.Param in
-    flag "if-no-key" (optional_with_default Fail (Arg_type.enumerated (module T))) ~doc:""
+    flag
+      "if-no-key"
+      (required (Arg_type.enumerated (module T)))
+      ~doc:"ACTION How to handle sexps where the key is missing"
   ;;
 
   let from_modifiers modifiers ~flag_and_arg =
@@ -94,7 +97,7 @@ module Extraction_result = struct
   let map t ~f =
     match t with
     | Ok x -> Ok (f x)
-    | Error s -> Error s
+    | Error e -> Error e
     | Drop -> Drop
   ;;
 end
@@ -168,7 +171,14 @@ let add_exn (t : t) ~extract sexp =
       | None -> Some { Entry.first_line = t.line; values = [ sexp ] }
       | Some { first_line; values } -> Some { first_line; values = sexp :: values })
   | Drop -> ()
-  | Error s -> cmd_error ("Error on sexp " ^ Int.to_string t.line ^ ": " ^ s)
+  | Error message ->
+    let input =
+      let max_len = 100 in
+      let s = Sexp.to_string sexp in
+      if String.length s <= max_len then s else String.prefix s (max_len - 3) ^ "..."
+    in
+    cmd_error
+      ("Error on sexp " ^ Int.to_string t.line ^ ": " ^ message ^ "\nInput: " ^ input)
 ;;
 
 let groups (t : t) =
@@ -182,16 +192,19 @@ let groups (t : t) =
   |> List.map ~f:snd
 ;;
 
-let main ~keys ~default_if_no_key =
+let main ~keys ~default_if_no_key ~machine =
   let t = create () in
   let extract = create_extractor ~keys ~default_if_no_key |> unstage in
+  let sexp_to_string =
+    if machine then Sexp.to_string_mach else fun sexp -> Sexp.to_string_hum sexp
+  in
   let%bind () =
     Reader.read_sexps (Lazy.force Reader.stdin)
     |> Pipe.iter_without_pushback ~f:(add_exn t ~extract)
   in
   groups t
   |> Deferred.List.iter ~how:`Sequential ~f:(fun group ->
-    [%sexp_of: Group.t] group |> Core.print_s;
+    [%sexp_of: Group.t] group |> sexp_to_string |> Core.print_endline;
     return ())
 ;;
 
@@ -240,9 +253,9 @@ containing each individual key. You can specify multiple keys by passing the sam
 selector format multiple times, e.g., "-field foo -field bar", or, if you want to use
 multiple kinds of selectors, by using the special "-key" flag (see below).
 
-Missing keys can be handled in various ways by using the "-if-no-key" flag. By default
-input sexps with missing keys will cause an error. By passing "-if-no-key drop", inputs
-with missing keys will be dropped from the input. Missing keys can also just be treated
+The required "-if-no-key" flag controls how input sexps with missing keys are handled.
+With "-if-no-key fail", a missing key causes an error. With "-if-no-key drop", inputs
+with missing keys are dropped from the input. Missing keys can also just be treated
 as units ( "()" ) by passing "-if-no-key unit".
 
 When using "-if-no-key unit", there is no way to disambiguate between a missing key
@@ -258,8 +271,9 @@ different handling of missing values for each key, use the "-key" flag and pass 
 string of the form "<access_kind><modifiers>:<arg>", where:
   - <access_kind> is one of (field|index|query|pat-query|get|select)
   - <modifiers> are optional strings to control specific sort behavior for that column.
-    Each modifier is prefixed with a '/'. Options are:
-      mfail  -> raise an error if the key is missing (default)
+    Each modifier is prefixed with a '/'. Keys without a modifier use the behavior
+    specified by "-if-no-key". Options are:
+      mfail  -> raise an error if the key is missing
       mdrop  -> drop sexps with missing keys from the output
       munit  -> treat missing keys as unit ( "()" )
       mwrap  -> wrap all keys in an outer sexp; missing keys are units ( "()" )
@@ -272,6 +286,7 @@ string of the form "<access_kind><modifiers>:<arg>", where:
     ~summary:"group input sexps by an arbitrary key"
     ~readme
     (let%map_open.Command default_if_no_key = If_no_key.flag
+     and machine = Shared_params.machine
      and keys =
        choose_one
          ~if_nothing_chosen:Raise
@@ -290,5 +305,5 @@ string of the form "<access_kind><modifiers>:<arg>", where:
      in
      fun () ->
        Deferred.Or_error.try_with ~extract_exn:true (fun () ->
-         main ~default_if_no_key ~keys))
+         main ~default_if_no_key ~keys ~machine))
 ;;

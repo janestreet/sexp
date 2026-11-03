@@ -1,5 +1,4 @@
 open Core
-module Main_group = Main_group
 
 let summary = "the s-expression toolkit"
 
@@ -14,6 +13,7 @@ let command =
      ; "flatten", Main_parts.flatten_command
      ; "fzf", Main_fzf.command
      ; "get", Main_get.command
+     ; "group", Main_group.command
      ; "multi-select", Main_select.multi_command
      ; "of-json", Main_json.of_json_command
      ; "of-xml", Main_of_xml.command
@@ -33,6 +33,5 @@ let command =
      ; "to-json", Main_json.to_json_command
      ; "validate", Main_validate.command
      ]
-     @ []
-     @ if am_running_test then [ "group", Main_group.command ] else [])
+     @ [])
 ;;

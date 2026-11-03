@@ -45,7 +45,13 @@ end
 
 type 'a t = 'a Base.t
 
-include (Monad.Make (Base) : Monad.S with type 'a t := 'a t)
+include (
+  Monad.Make [@modality portable]
+    (Base) :
+    sig
+    @@ portable
+      include Monad.S with type 'a t := 'a t
+    end)
 
 let empty = Base.empty
 let append = Base.append

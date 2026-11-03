@@ -1,5 +1,4 @@
-Sexp - The s-expression toolkit
-===============================
+# Sexp - The s-expression toolkit
 
 A suite of tools for working with s-expressions from the command line.
 It contains subcommands for pretty printing, querying, and modifying

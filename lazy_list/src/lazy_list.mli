@@ -1,3 +1,5 @@
+@@ portable
+
 open! Core
 
 (** Lazy lists. *)

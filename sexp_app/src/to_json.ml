@@ -9,7 +9,7 @@ module El = struct
     | Pos of int
     | Match of string * int
     | Rec of string
-  [@@deriving compare]
+  [@@deriving compare ~localize]
 end
 
 (* When converting a sexp to JSON, we want to convert things that look like numbers to
@@ -119,7 +119,7 @@ let one_deeper l =
 
 let group_by_path l =
   List.group l ~break:(fun (p1, _) (p2, _) ->
-    not ([%compare.equal: El.t option] (List.hd p1) (List.hd p2)))
+    not (([%compare.equal: El.t option] [@mode local]) (List.hd p1) (List.hd p2)))
 ;;
 
 let rec assemble_to_json (l : (Sexplib.Path.t * Sexp.t) list) =
